@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+workflow_files=()
+while IFS= read -r -d '' workflow_file; do
+  [[ -f "$workflow_file" ]] || continue
+  workflow_files+=("$workflow_file")
+done < <(git ls-files -z -- '.github/workflows/*.yml' '.github/workflows/*.yaml')
+
+if ((${#workflow_files[@]} == 0)); then
+  exit 0
+fi
+
+report_file="reports/lint/actionlint.json"
+mkdir -p "$(dirname "$report_file")"
+
+set +e
+# The Go template is consumed by actionlint and must not be expanded by Bash.
+# shellcheck disable=SC2016
+actionlint -format '{{json .}}' "${workflow_files[@]}" > "$report_file"
+result=$?
+set -e
+
+if [[ ! -s "$report_file" && "$result" -eq 0 ]]; then
+  printf '[]\n' > "$report_file"
+fi
+if ! jq -e 'type == "array"' "$report_file" >/dev/null; then
+  printf 'actionlint did not produce a valid JSON report.\n' >&2
+  exit 1
+fi
+
+if [[ "${GITHUB_ACTIONS:-}" == "true" ]]; then
+  jq -r '
+    def property: tostring | gsub("%"; "%25") | gsub("\\r"; "%0D") | gsub("\\n"; "%0A") | gsub(":"; "%3A") | gsub(","; "%2C");
+    def data: tostring | gsub("%"; "%25") | gsub("\\r"; "%0D") | gsub("\\n"; "%0A");
+    .[]
+    | "::error file=\(.filepath | property),line=\(.line),col=\(.column),title=actionlint::\(.message | data)"
+  ' "$report_file"
+else
+  jq -r '.[] | "\(.filepath):\(.line):\(.column): \(.message) [\(.kind)]"' "$report_file" >&2
+fi
+
+exit "$result"

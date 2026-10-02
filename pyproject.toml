@@ -1,0 +1,83 @@
+# -----------------------------------------------
+# Core project metadata
+# -----------------------------------------------
+[project]
+name = "fourmee"
+version = "0.1.0"
+description = "Fourmee: Agent Skills that take a use case from requirements to parallel lanes to draft pull requests"
+license = "Apache-2.0"
+license-files = ["LICENSE"]
+requires-python = ">=3.12,<3.13"
+readme = "README.md"
+authors = [
+    { name = "Ancelin Serre" },
+]
+keywords = []
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3.12",
+]
+
+# -----------------------------------------------
+# Dependencies management
+# -----------------------------------------------
+# Every checker below is a public PyPI package: the kit needs no private index.
+[dependency-groups]
+lint = [
+    "cisco-ai-skill-scanner>=2.0.9,<3.0",
+    "skillcheck[tiktoken]>=1.3.0,<2",
+    "PyYAML>=6.0,<7",
+]
+test = [
+    "pytest>=9.0.1,<10",
+    "pytest-html>=4.1.1,<5",
+    "PyYAML>=6.0,<7",
+]
+
+[tool.uv]
+required-version = ">=0.8.0"
+default-groups = []
+package = false
+
+# -----------------------------------------------
+# Development tools
+# -----------------------------------------------
+[tool.ruff]
+line-length = 120
+exclude = [".git", ".mypy_cache", ".pytest_cache", ".venv", "reports/*"]
+
+[tool.ruff.lint]
+select = ["ALL"]
+ignore = [
+    "CPY001",
+    "ANN",
+    "COM",
+    "D",
+    "EM",
+    "FIX",
+]
+
+[tool.ruff.lint.per-file-ignores]
+".mise/scripts/lint-security.py" = ["INP001", "T201"]
+".agents/skills/*/scripts/**/*.py" = ["INP001"]
+"tests/**/*.py" = ["S101", "PLR0913"]
+
+[tool.rumdl]
+disable = [
+    "MD004",
+    "MD007",
+    "MD013",
+    "MD014",
+    "MD024",
+    "MD029",
+    "MD033",
+    "MD034",
+    "MD046",
+    "MD055",
+    "MD059",
+]
+
+[tool.rumdl.per-file-ignores]
+# A section appended to a project's AGENTS.md, not a document of its own.
+".agents/skills/fourmee/assets/agents-routing.md" = ["MD041"]

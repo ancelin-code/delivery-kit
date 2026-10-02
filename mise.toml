@@ -1,0 +1,102 @@
+min_version = "2026.8.1"
+
+[tools]
+python = "3.12"
+uv = "0.12.10"
+prek = "0.5.2"
+ruff = "0.16.6"
+shellcheck = "0.11.0"
+actionlint = "1.7.12"
+jq = "1.8.2"
+"pipx:rumdl" = "0.2.67"
+vale = "3.20.0"
+
+[settings]
+# Exact tool pins are updated deliberately. The release-age guard applies to
+# fuzzy selectors such as Python patch releases.
+minimum_release_age = "7d"
+
+[tasks.dev]
+description = "Set up the local .venv with all dependency groups and install git hooks."
+run = [
+  "uv sync --all-groups --no-install-project",
+  "prek install --hook-type pre-commit --hook-type pre-push",
+]
+
+[tasks."uv:lock"]
+description = "Upgrade uv.lock."
+run = "uv lock --upgrade"
+
+[tasks.lock]
+description = "Upgrade uv.lock."
+run = [{ task = "uv:lock" }]
+
+[tasks.format]
+description = "Check Python import order and formatting."
+run = [
+  "ruff check .mise tests .agents/skills --select I",
+  "ruff format .mise tests .agents/skills --check",
+]
+
+[tasks."test:python"]
+description = "Run the behavioural tests for one supported Python version."
+usage = 'arg "<version>" { choices "3.12" }'
+run = 'uv run --isolated --locked --only-group=test --python="$usage_version" bash .mise/scripts/test-python "$usage_version"'
+
+[tasks.test]
+description = "Run the behavioural tests."
+run = [{ task = "test:python", args = ["3.12"] }]
+
+[tasks.lint]
+description = "Run every repository lint task and accumulate failures."
+run = """
+mise run --output interleave --continue-on-error --jobs 1 \
+  lint:ruff ::: \
+  lint:shell ::: \
+  lint:markdown ::: \
+  lint:actions ::: \
+  lint:vale ::: \
+  lint:skills ::: \
+  lint:helper-modes ::: \
+  lint:security
+"""
+
+[tasks."lint:ruff"]
+description = "Lint Python and Python snippets with Ruff."
+run = "ruff check .mise tests .agents/skills --output-format={% if get_env(name='GITHUB_ACTIONS', default='') == 'true' %}github{% else %}full{% endif %}"
+
+[tasks."lint:shell"]
+description = "Lint repository shell scripts with ShellCheck."
+run = "bash .mise/scripts/lint-shell"
+
+[tasks."lint:markdown"]
+description = "Lint repository Markdown with rumdl."
+run = "rumdl check --output-format {% if get_env(name='GITHUB_ACTIONS', default='') == 'true' %}github{% else %}full{% endif %} ."
+
+[tasks."lint:actions"]
+description = "Lint GitHub Actions workflows with actionlint."
+run = "bash .mise/scripts/lint-actions"
+
+[tasks."lint:vale"]
+description = "Check skill content policy with Vale."
+run = "bash .mise/scripts/lint-vale"
+
+[tasks."lint:skills"]
+description = "Validate skill format and quality with skillcheck."
+run = "bash .mise/scripts/lint-skills"
+
+[tasks."lint:helper-modes"]
+description = "Reject executable helper files shipped inside skills."
+run = "bash .mise/scripts/lint-helper-modes"
+
+[tasks."lint:security"]
+description = "Scan changed skills for malicious or unsafe behavior."
+run = "uv run --isolated --locked --only-group=lint python .mise/scripts/lint-security.py"
+
+[tasks."lint:security:all"]
+description = "Scan every skill for malicious or unsafe behavior."
+run = "uv run --isolated --locked --only-group=lint python .mise/scripts/lint-security.py --all"
+
+[tasks.default]
+description = "Run the default repository checks."
+run = [{ task = "lint" }]

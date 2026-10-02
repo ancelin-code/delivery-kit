@@ -1,0 +1,45 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: check-added-large-files
+        args: [--maxkb=500000]
+      - id: check-case-conflict
+      - id: check-merge-conflict
+      - id: end-of-file-fixer
+      - id: mixed-line-ending
+      - id: trailing-whitespace
+  - repo: https://github.com/Lucas-C/pre-commit-hooks
+    rev: v1.5.6
+    hooks:
+      - id: remove-crlf
+      - id: remove-tabs
+  - repo: https://github.com/sirosen/texthooks
+    rev: 0.7.1
+    hooks:
+      - id: fix-smartquotes
+      - id: fix-ligatures
+      - id: fix-spaces
+      - id: fix-unicode-dashes
+  - repo: https://github.com/rvben/rumdl-pre-commit
+    rev: v0.2.67
+    hooks:
+      - id: rumdl
+  - repo: https://github.com/betterleaks/betterleaks
+    rev: v1.8.1
+    hooks:
+      - id: betterleaks
+  - repo: local
+    hooks:
+      - id: mise-lint
+        name: mise run lint
+        entry: mise run lint
+        language: system
+        pass_filenames: false
+        stages: [pre-push]
+      - id: mise-test
+        name: mise run test
+        entry: mise run test
+        language: system
+        pass_filenames: false
+        stages: [pre-push]

@@ -1,0 +1,55 @@
+text := import("text")
+
+matches := []
+needle := "scripts/"
+delimiters := " \t\r`\"'()"
+offset := 0
+
+for line in text.split(scope, "\n") {
+    if !text.re_match("(^|.*[\\s`\"'$;&|(])scripts/[A-Za-z0-9_.-]+.*", line) {
+        offset += len(line) + 1
+        continue
+    }
+
+    search_from := 0
+
+    for search_from < len(line) {
+        idx_in_tail := text.index(line[search_from:], needle)
+        if idx_in_tail < 0 {
+            break
+        }
+
+        idx := search_from + idx_in_tail
+        if !text.re_match("scripts/[A-Za-z0-9_.-]+.*", line[idx:]) {
+            search_from = idx + len(needle)
+            continue
+        }
+
+        if idx > 0 {
+            previous := line[idx-1:idx]
+            link_target := previous == "(" && idx > 1 && line[idx-2:idx-1] == "]"
+            if previous == ">" || previous == "/" || previous == "[" || link_target || text.re_match("[A-Za-z0-9_.-]", previous) {
+                search_from = idx + len(needle)
+                continue
+            }
+        }
+
+        end := idx
+        for end < len(line) {
+            char := line[end:end+1]
+            if text.index(delimiters, char) >= 0 {
+                break
+            }
+            end++
+        }
+
+        matches = append(matches, {begin: offset + idx, end: offset + end})
+        break
+    }
+
+    if len(matches) > 0 {
+        break
+    }
+
+    offset += len(line) + 1
+}

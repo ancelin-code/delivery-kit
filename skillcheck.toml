@@ -1,0 +1,25 @@
+format = "json"
+max_lines = 500
+max_tokens = 5000
+strict_all = true
+skip_ref_check = true
+
+# These skills intentionally carry repository metadata beyond the portable
+# discovery minimum, and cross-agent behavior is not inferred from this
+# heuristic in this repository.
+ignore = [
+  "compat.unverified",
+  "disclosure.metadata-budget",
+]
+
+[frontmatter]
+extension_fields = [
+  "author",
+  "compatibility",
+  "keywords",
+  "license",
+  "metadata",
+  "product-version",
+  "repository",
+  "spec-version",
+]

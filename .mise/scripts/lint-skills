@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+report_file="reports/lint/skillcheck.json"
+mkdir -p "$(dirname "$report_file")"
+
+set +e
+uv run --isolated --locked --only-group=lint \
+  skillcheck .agents/skills --config skillcheck.toml > "$report_file"
+result=$?
+set -e
+
+if ! jq -e 'type == "object" and (.results | type == "array")' "$report_file" >/dev/null; then
+  printf 'skillcheck did not produce a valid JSON report.\n' >&2
+  exit 1
+fi
+
+checked=$(jq -r '.files_checked // 0' "$report_file")
+passed=$(jq -r '.files_passed // 0' "$report_file")
+failed=$(jq -r '.files_failed // 0' "$report_file")
+printf 'Skill format and quality: %s/%s passed, %s failed.\n' "$passed" "$checked" "$failed"
+
+if [[ "${GITHUB_ACTIONS:-}" == "true" ]]; then
+  jq -r '
+    def property: tostring | gsub("%"; "%25") | gsub("\\r"; "%0D") | gsub("\\n"; "%0A") | gsub(":"; "%3A") | gsub(","; "%2C");
+    def data: tostring | gsub("%"; "%25") | gsub("\\r"; "%0D") | gsub("\\n"; "%0A");
+    .results[]
+    | .path as $path
+    | .diagnostics[]
+    | select(.severity != "info")
+    | "::error file=\($path | property),line=\(.line // 1),title=skillcheck \(.rule | property)::\(.message | data)"
+  ' "$report_file"
+else
+  jq -r '
+    .results[]
+    | .path as $path
+    | .diagnostics[]
+    | select(.severity != "info")
+    | "\($path):\(.line // 1): \(.severity): \(.rule): \(.message)"
+  ' "$report_file" >&2
+fi
+
+exit "$result"

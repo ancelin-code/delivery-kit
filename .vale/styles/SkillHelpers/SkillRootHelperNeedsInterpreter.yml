@@ -1,0 +1,5 @@
+extends: script
+message: "Invoke <skill-root>/scripts/... through an explicit interpreter such as bash, sh, python, python3, or uv run python."
+level: error
+scope: raw
+script: SkillRootHelperNeedsInterpreter.tengo

@@ -1,0 +1,51 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+report_file="reports/lint/vale.json"
+mkdir -p "$(dirname "$report_file")"
+
+# Prime Vale before the content scan because its first invocation may initialize
+# the bundled runtime.
+vale --version >/dev/null
+
+set +e
+vale \
+  --config=.vale.ini \
+  --output=JSON \
+  .agents/skills > "$report_file"
+result=$?
+set -e
+
+if ((result > 1)); then
+  exit "$result"
+fi
+if ! jq -e 'type == "object"' "$report_file" >/dev/null; then
+  printf 'Vale did not produce a valid JSON report.\n' >&2
+  exit 1
+fi
+
+finding_count=$(jq '[to_entries[].value[]] | length' "$report_file")
+if ((finding_count == 0)); then
+  printf 'Vale content policy passed.\n'
+  exit 0
+fi
+
+if [[ "${GITHUB_ACTIONS:-}" == "true" ]]; then
+  jq -r '
+    def property: tostring | gsub("%"; "%25") | gsub("\\r"; "%0D") | gsub("\\n"; "%0A") | gsub(":"; "%3A") | gsub(","; "%2C");
+    def data: tostring | gsub("%"; "%25") | gsub("\\r"; "%0D") | gsub("\\n"; "%0A");
+    to_entries[]
+    | .key as $path
+    | .value[]
+    | "::error file=\($path | property),line=\(.Line // 1),title=\(.Check // "Vale" | property)::\(.Message // "Content policy violation" | data)"
+  ' "$report_file"
+else
+  jq -r '
+    to_entries[]
+    | .key as $path
+    | .value[]
+    | "\($path):\(.Line // 1): \(.Check // "Vale"): \(.Message // "Content policy violation")"
+  ' "$report_file" >&2
+fi
+
+exit "$result"

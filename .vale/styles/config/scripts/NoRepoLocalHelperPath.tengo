@@ -1,0 +1,42 @@
+text := import("text")
+
+matches := []
+needle := ".agents/skills/"
+delimiters := " \t\r`\"'()"
+offset := 0
+
+for line in text.split(scope, "\n") {
+    search_from := 0
+
+    for search_from < len(line) {
+        idx_in_tail := text.index(line[search_from:], needle)
+        if idx_in_tail < 0 {
+            break
+        }
+
+        idx := search_from + idx_in_tail
+        candidate := line[idx:]
+        if !text.re_match("\\.agents/skills/[A-Za-z0-9_.-]+/scripts/[^\\s`\"'()]+.*", candidate) {
+            search_from = idx + len(needle)
+            continue
+        }
+
+        end := idx
+        for end < len(line) {
+            char := line[end:end+1]
+            if text.index(delimiters, char) >= 0 {
+                break
+            }
+            end++
+        }
+
+        matches = append(matches, {begin: offset + idx, end: offset + end})
+        break
+    }
+
+    if len(matches) > 0 {
+        break
+    }
+
+    offset += len(line) + 1
+}

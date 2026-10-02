@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+report_file="reports/lint/skill-helper-modes.txt"
+mkdir -p "$(dirname "$report_file")"
+
+executable_helpers=()
+while IFS= read -r line; do
+  [[ "${line%% *}" == "100755" ]] || continue
+  executable_helpers+=("${line#*$'\t'}")
+done < <(git ls-files --stage -- '.agents/skills/*/scripts/*')
+
+if ((${#executable_helpers[@]} == 0)); then
+  printf 'No executable skill helper files found.\n' | tee "$report_file"
+  exit 0
+fi
+
+printf '%s\n' "${executable_helpers[@]}" > "$report_file"
+for path in "${executable_helpers[@]}"; do
+  if [[ "${GITHUB_ACTIONS:-}" == "true" ]]; then
+    escaped_path=${path//'%'/'%25'}
+    escaped_path=${escaped_path//$'\r'/'%0D'}
+    escaped_path=${escaped_path//$'\n'/'%0A'}
+    escaped_path=${escaped_path//':'/'%3A'}
+    escaped_path=${escaped_path//','/'%2C'}
+    printf '::error file=%s,title=Executable skill helper::Remove the executable bit; invoke skill helpers through an explicit interpreter.\n' "$escaped_path"
+  else
+    printf 'error: executable skill helper: %s\n' "$path" >&2
+  fi
+done
+
+exit 1

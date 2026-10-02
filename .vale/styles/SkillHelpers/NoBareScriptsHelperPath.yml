@@ -1,0 +1,5 @@
+extends: script
+message: "Do not invoke bare scripts/... helper paths; use <skill-root>/scripts/... through an explicit interpreter."
+level: error
+scope: raw
+script: NoBareScriptsHelperPath.tengo

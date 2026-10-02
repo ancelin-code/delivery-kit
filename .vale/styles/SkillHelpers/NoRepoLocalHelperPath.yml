@@ -1,0 +1,5 @@
+extends: script
+message: "Do not invoke repository-local helper paths directly; use <skill-root>/scripts/... through an explicit interpreter."
+level: error
+scope: raw
+script: NoRepoLocalHelperPath.tengo

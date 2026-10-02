@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# The kit's helpers are bash, exercised behaviourally by the pytest suite.
+# There is no Python source to measure, so no coverage gate is applied.
+
+python_version=$1
+pytest_dir="reports/pytest/python-${python_version}"
+
+rm -rf "$pytest_dir"
+mkdir -p "$pytest_dir"
+
+pytest \
+  --junitxml "$pytest_dir/pytest.xml" \
+  --html "$pytest_dir/pytest.html"
