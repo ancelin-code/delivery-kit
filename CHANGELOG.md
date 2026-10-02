@@ -15,6 +15,9 @@ First public release.
   `fourmee-status`.
 - Parallel implementation lanes with claims made by create-only git pushes, so
   git is the only state.
+- Tasks name a capability `tier` (`plan`, `build` or `chore`) instead of a
+  vendor's model. A `tiers.conf` maps a tier to a harness and a model; with
+  none, the harness picks its own default.
 - Multi-repository use cases planned once and landed where each change belongs.
 - A status snapshot that external tools can project into their own views.
 - Licensed under Apache-2.0.

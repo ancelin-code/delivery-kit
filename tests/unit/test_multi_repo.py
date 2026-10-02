@@ -77,7 +77,7 @@ def task(home: Path, task_id: str, *, repo: str | None = None, depends_on: str =
     (tasks / f"{task_id}.md").write_text(
         "---\n"
         f"id: {task_id}\ntitle: Do {task_id}\nepic: a\ndepends_on: [{depends_on}]\n"
-        f"parallel: true\nconflicts_with: []\nmodel: sonnet\n"
+        f"parallel: true\nconflicts_with: []\ntier: build\n"
         f"{'' if repo is None else f'repo: {repo}\n'}"
         f"{'' if not review else f'review: [{review}]\n'}"
         "---\n\n## Acceptance criteria\n- observable\n",

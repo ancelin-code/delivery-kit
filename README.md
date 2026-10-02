@@ -8,12 +8,11 @@ not a catalogue you pick from. Each phase consumes the file the previous phase
 wrote, so a single skill installed alone is a phase with no input and no
 consumer. Install them together.
 
-The kit targets two harnesses, Claude Code and GitHub Copilot CLI, and holds no
-harness-specific tool names. An Anthropic license is not required: `opus`,
-`sonnet` and `haiku` also run on Copilot CLI, and the launcher falls back to it
-by itself when a lane's default harness has no binary installed. A developer
-with only a Copilot license reaches the whole routing table with no flag
-needed; see [model labels](.agents/skills/fourmee/references/conventions.md#model-labels).
+The skills hold no harness-specific tool names. The lane launcher drives Claude
+Code and GitHub Copilot CLI today and runs on whichever is installed, so no
+single vendor's license is required. A task says how much capability it needs
+with a [tier](.agents/skills/fourmee/references/conventions.md#tiers), and the
+harness, or your own mapping, decides which model that means.
 
 ## How the kit fits together
 
@@ -194,33 +193,46 @@ from the same tasks.
 
 ### Which model runs a lane
 
-Each task's `model` label names a tier, and the tier picks both the model and
-the harness, and so which budget pays:
+Each task's `tier` says how much capability its work needs:
 
-| Label | For | Runs on | Copilot model |
-|---|---|---|---|
-| `opus` | requirements, design, decomposition | Claude Code | `claude-opus-5.5` |
-| `sonnet` | lane execution, review | Claude Code | `claude-sonnet-5` |
-| `terra` | lane execution | Copilot CLI | `gpt-5.6-terra` |
-| `luna` | mechanical chores | Copilot CLI | `gpt-6-luna` |
-| `haiku` | chores once the Copilot budget is spent | Claude Code | `claude-haiku-4.5` |
+| Tier | For |
+|---|---|
+| `plan` | Design decisions, contracts, a task with interacting constraints |
+| `build` | Ordinary execution against explicit acceptance criteria. The default |
+| `chore` | Mechanical changes with no judgement in them |
 
-The Claude Code and Copilot budgets do not pool, so which side a lane runs on is
-a budget decision before it is a model one. `luna` is by far the cheapest tier
-and spends the Copilot allowance rather than the one planning needs, so chores
-go there first. Labelling everything with the most capable model is how a
-budget disappears; review the labels when you approve a decomposition.
+A tier is a hint, not a model name. Fourmee cannot know which models your
+account may use, so by default it passes no model at all and the harness applies
+its own default. To say what a tier means for you, write a `tiers.conf` at
+`~/.config/fourmee/tiers.conf`. The names below are examples:
 
-`opus`, `sonnet` and `haiku` also run on Copilot, and the launcher falls back
-to it when a machine has no `claude`. `--harness` moves a whole launch to one
-side on purpose, for example the side whose budget still has room.
+```text
+# tier   harness   model
+plan     claude    opus
+build    claude    sonnet
+chore    copilot   gpt-6-luna
+```
 
-Copilot model ids change with Copilot releases, and an organization's policy
-decides which ones an account may use. Check each developer's account before a
-run that matters; an id it cannot use fails immediately and costs nothing:
+Harness and model are both optional, and `-` stands for "any harness" or "the
+harness default". A mapping applies only to the harness it names, so a model id
+never reaches a harness that would refuse it. A team that agrees on a mapping
+can commit it as `delivery/tiers.conf`; the developer's own file wins, tier by
+tier. The full rules are in the
+[conventions](.agents/skills/fourmee/references/conventions.md#mapping-a-tier-to-a-model).
+
+A lane runs on the first of: `--harness`, the harness its tier maps to,
+`$FOURMEE_HARNESS`, then the first harness found installed. `--harness` moves a
+whole launch on purpose, for example to the one whose allowance still has room.
+
+Putting every task on `plan` is how a budget disappears, so review the tiers when
+you approve a decomposition.
+
+Model ids change with releases, and an account's plan decides which ones it may
+use. A harness refuses an id it cannot use before any request, which costs
+nothing, so check an id before it goes into a mapping. For Copilot CLI:
 
 ```sh
-copilot -p "Reply OK." --model gpt-6-luna
+copilot -p "Reply OK." --model <id>
 ```
 
 ### Several repositories
@@ -636,7 +648,7 @@ This is a maintainer's task, not part of a run. It is deliberately not in any
 
 The route, the gates and the lane policy live in the `fourmee`
 skill. Shared conventions - the use case, epic and task units, placeholders,
-task schema, branch names, the claim protocol, model labels, pull request rules -
+task schema, branch names, the claim protocol, tiers, pull request rules -
 are in its `references/`, loaded on demand during a run.
 
 Everything an agent does not need at run time stays out of the skills and lives

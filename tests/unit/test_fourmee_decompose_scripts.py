@@ -12,7 +12,7 @@ from pathlib import Path
 
 import pytest
 
-from tests.unit.model_labels import EFFORTS, LABELS
+from tests.unit.tiers import EFFORTS, TIERS
 
 SKILLS = Path(__file__).resolve().parents[2] / ".agents" / "skills"
 SCRIPT = SKILLS / "fourmee-decompose" / "scripts" / "validate-tasks.sh"
@@ -31,7 +31,8 @@ def write_task(
     epic: str = "ingestion",
     depends_on: str = "",
     conflicts_with: str = "",
-    model: str = "sonnet",
+    tier: str | None = "build",
+    legacy_model: str | None = None,
     effort: str | None = None,
     task_type: str | None = None,
     parallel: str = "true",
@@ -48,7 +49,8 @@ def write_task(
         f"depends_on: [{depends_on}]\n"
         f"parallel: {parallel}\n"
         f"conflicts_with: [{conflicts_with}]\n"
-        f"model: {model}\n"
+        f"{'' if tier is None else f'tier: {tier}\n'}"
+        f"{'' if legacy_model is None else f'model: {legacy_model}\n'}"
         f"{'' if effort is None else f'effort: {effort}\n'}"
         f"{'' if task_type is None else f'type: {task_type}\n'}"
         "---\n\n" + body,
@@ -197,16 +199,16 @@ class TestRejectedTaskSets:
         assert result.returncode == INVALID
         assert "does not match the filename" in result.stdout
 
-    @pytest.mark.parametrize("label", LABELS)
-    def test_accepts_every_documented_model_label(self, tmp_path: Path, label: str) -> None:
+    @pytest.mark.parametrize("tier", TIERS)
+    def test_accepts_every_documented_tier(self, tmp_path: Path, tier: str) -> None:
         """The validator and the conventions table have to agree.
 
-        The labels come from the conventions, so adding one there without
+        The tiers come from the conventions, so adding one there without
         teaching the validator fails here rather than at decomposition, after
         the epic has already been written.
         """
         tasks = tmp_path / "tasks"
-        write_task(tasks, "ingestion-001", model=label)
+        write_task(tasks, "ingestion-001", tier=tier)
         result = validate(tasks)
         assert result.returncode == VALID, result.stdout
 
@@ -248,12 +250,28 @@ class TestRejectedTaskSets:
         assert result.returncode == INVALID
         assert "unknown effort" in result.stdout
 
-    def test_rejects_an_unknown_model_label(self, tmp_path: Path) -> None:
+    @pytest.mark.parametrize("tier", ["gpt4", "opus", "luna", "Build"])
+    def test_rejects_an_unknown_tier_and_names_the_real_ones(self, tmp_path: Path, tier: str) -> None:
+        """The old vendor labels must say what replaced them, not just fail."""
         tasks = tmp_path / "tasks"
-        write_task(tasks, "ingestion-001", model="gpt4")
+        write_task(tasks, "ingestion-001", tier=tier)
         result = validate(tasks)
         assert result.returncode == INVALID
-        assert "unknown model label" in result.stdout
+        assert f"unknown tier: '{tier}' (expected plan, build, or chore)" in result.stdout
+
+    def test_rejects_the_old_model_field_and_points_at_tier(self, tmp_path: Path) -> None:
+        tasks = tmp_path / "tasks"
+        write_task(tasks, "ingestion-001", tier=None, legacy_model="sonnet")
+        result = validate(tasks)
+        assert result.returncode == INVALID
+        assert "the model field is now tier: plan, build, or chore (found model: sonnet)" in result.stdout
+
+    def test_rejects_a_task_with_no_tier(self, tmp_path: Path) -> None:
+        tasks = tmp_path / "tasks"
+        write_task(tasks, "ingestion-001", tier=None)
+        result = validate(tasks)
+        assert result.returncode == INVALID
+        assert "missing required field: tier" in result.stdout
 
     def test_rejects_a_task_without_acceptance_criteria(self, tmp_path: Path) -> None:
         """Without criteria there is nothing to check the work against."""

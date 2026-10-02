@@ -6,7 +6,7 @@ epic: <epic>
 depends_on: []
 parallel: true
 conflicts_with: []
-model: sonnet
+tier: build
 effort: medium
 review: []
 ---

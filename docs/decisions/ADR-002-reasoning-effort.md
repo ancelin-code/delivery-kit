@@ -9,15 +9,15 @@ Every lane runs at a pinned reasoning effort, because an unset effort lets each
 harness apply its own default and two lanes on the same tier then think for
 different lengths of time, for no stated reason.
 
-The value has to come from somewhere. The task file already carries a `model`
-label that routes the lane, so the question is whether effort belongs beside it
+The value has to come from somewhere. The task file already carries a `tier`
+that says how much capability the lane needs, so the question is whether effort belongs beside it
 or belongs to the launch.
 
 The case for the launch is that effort looks like a restatement of the tier:
 work needing more thought needs a more capable model. The case against is
 concrete and decides it. Designing a frontend and planning a change both want
-`opus`, and they do not want the same amount of deliberation. Implementing a
-feature wants `sonnet` at medium. Tier and effort are independent axes: the tier
+`plan`, and they do not want the same amount of deliberation. Implementing a
+feature wants `build` at medium. Tier and effort are independent axes: the tier
 is the class of judgement the work needs, the effort is how much deliberation
 this particular task needs within it.
 
@@ -28,7 +28,7 @@ both harnesses accept: `low`, `medium`, `high`, `xhigh`, `max`. A task that
 omits it runs at medium.
 
 The launcher's `--effort` overrides every task in the batch, the same way
-`--harness` overrides the harness implied by the model label. The task states
+`--harness` overrides the harness a tier maps to. The task states
 what its work needs; the operator overrides when the run, not the task, is what
 changed.
 
@@ -46,7 +46,7 @@ cannot validate and then fail at launch on one side only.
 - **Leaving effort unset and taking each harness default** - Rejected. This is
   what the kit did while the conventions claimed execution ran at medium. The
   claim was false and nothing surfaced it.
-- **Deriving effort from the model label** - Rejected. It is the assumption the
+- **Deriving effort from the tier** - Rejected. It is the assumption the
   frontend example breaks: the same tier legitimately wants different amounts of
   thinking on different tasks.
 

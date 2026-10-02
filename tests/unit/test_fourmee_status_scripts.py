@@ -346,7 +346,7 @@ def write_task(repo: Path, task_id: str, *, depends_on: str = "") -> None:
         f"depends_on: [{depends_on}]\n"
         "parallel: true\n"
         "conflicts_with: []\n"
-        "model: sonnet\n"
+        "tier: build\n"
         "---\n\n## Acceptance criteria\n- observable\n",
         encoding="utf-8",
     )

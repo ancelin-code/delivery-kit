@@ -9,11 +9,12 @@ import os
 import shutil
 import subprocess
 import time
+from collections.abc import Callable
 from pathlib import Path
 
 import pytest
 
-from tests.unit.model_labels import ROUTING
+from tests.unit.tiers import TIERS
 
 SKILLS = Path(__file__).resolve().parents[2] / ".agents" / "skills"
 SCRIPT = SKILLS / "fourmee" / "scripts" / "launch-lanes.sh"
@@ -50,7 +51,7 @@ def add_task(
     task_id: str,
     *,
     conflicts_with: str = "",
-    model: str = "sonnet",
+    tier: str | None = "build",
     effort: str | None = None,
     alone: bool = False,
 ) -> None:
@@ -62,19 +63,43 @@ def add_task(
     (tasks / f"{task_id}.md").write_text(
         "---\n"
         f"id: {task_id}\ntitle: Do {task_id}\nepic: a\ndepends_on: []\n"
-        f"parallel: {str(not alone).lower()}\nconflicts_with: [{conflicts_with}]\nmodel: {model}\n"
+        f"parallel: {str(not alone).lower()}\nconflicts_with: [{conflicts_with}]\n"
+        f"{'' if tier is None else f'tier: {tier}\n'}"
         f"{effort_line}"
         "---\n\n## Acceptance criteria\n- observable\n",
         encoding="utf-8",
     )
 
 
+def clean_env(repo: Path) -> dict[str, str]:
+    """The ambient environment without the developer's own Fourmee settings.
+
+    A real ~/.config/fourmee/tiers.conf or FOURMEE_HARNESS on the machine
+    running the suite would otherwise change what the launcher decides.
+    """
+    env = {k: v for k, v in os.environ.items() if not k.startswith("FOURMEE_")}
+    env["XDG_CONFIG_HOME"] = str(repo.parent / "no-user-config")
+    return env
+
+
+def write_tiers(path: Path, text: str) -> Path:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(text, encoding="utf-8")
+    return path
+
+
 def launch(
-    repo: Path, args: list[str], *, stdin: str | None = None, worktree_root: str | None = None
+    repo: Path,
+    args: list[str],
+    *,
+    stdin: str | None = None,
+    worktree_root: str | None = None,
+    env_extra: dict[str, str] | None = None,
 ) -> subprocess.CompletedProcess[str]:
-    env = {k: v for k, v in os.environ.items() if k != "FOURMEE_WORKTREE_ROOT"}
+    env = clean_env(repo)
     if worktree_root is not None:
         env["FOURMEE_WORKTREE_ROOT"] = worktree_root
+    env.update(env_extra or {})
     return subprocess.run(  # noqa: S603
         ["bash", str(SCRIPT), *args],  # noqa: S607
         cwd=repo,
@@ -84,6 +109,17 @@ def launch(
         text=True,
         check=False,
     )
+
+
+def wait_for(condition: Callable[[], object], seconds: float = 10.0) -> None:
+    """Poll until a lane's background session has done what the test looks for."""
+    deadline = time.monotonic() + seconds
+    while time.monotonic() < deadline:
+        if condition():
+            return
+        time.sleep(0.1)
+    message = "timed out waiting for the lane's session"
+    raise AssertionError(message)
 
 
 def launched_ids(stdout: str) -> list[str]:
@@ -189,51 +225,155 @@ class TestRunsAlone:
         assert launched_ids(result.stdout) == ["a-001"]
 
 
-class TestModelRouting:
-    @pytest.mark.parametrize(("label", "expected_harness"), sorted(ROUTING.items()))
-    def test_routes_each_label_to_its_harness(self, tmp_path: Path, label: str, expected_harness: str) -> None:
-        """The harness column of the conventions table is what is asserted here.
+def fields(stdout: str) -> list[str]:
+    """The tab-separated fields of the first launch line."""
+    return stdout.splitlines()[0].split("\t")
 
-        Routing a label to the wrong side spends the wrong budget, and the two
-        do not pool, so the error is not visible until an allowance runs out.
-        """
+
+HARNESS, MODEL = 2, 3
+
+
+class TestTiers:
+    """A tier is a hint. Which harness and model it means is the developer's mapping."""
+
+    @pytest.mark.parametrize("tier", TIERS)
+    def test_every_documented_tier_is_launchable(self, tmp_path: Path, tier: str) -> None:
         repo = make_repo(tmp_path)
-        add_task(repo, "a-001", model=label)
+        add_task(repo, "a-001", tier=tier)
         result = launch(repo, ["--dry-run", "a-001"])
-        assert result.stdout.split("\t")[2] == expected_harness
+        assert result.returncode == OK, result.stderr
+        assert result.stdout.startswith("WOULD-LAUNCH\ta-001")
 
-    def test_an_explicit_harness_overrides_the_label(self, tmp_path: Path) -> None:
+    def test_an_unmapped_tier_leaves_harness_and_model_to_the_harness(self, tmp_path: Path) -> None:
+        """No mapping, no model flag: the harness applies its own default."""
         repo = make_repo(tmp_path)
-        add_task(repo, "a-001", model="sonnet")
-        result = launch(repo, ["--dry-run", "--harness", "copilot", "a-001"])
-        assert result.stdout.split("\t")[2] == "copilot"
+        add_task(repo, "a-001", tier="plan")
+        result = launch(repo, ["--dry-run", "a-001"])
+        assert fields(result.stdout)[HARNESS] == "auto"
+        assert fields(result.stdout)[MODEL] == "default"
+
+    def test_a_task_with_no_tier_is_a_build_task(self, tmp_path: Path) -> None:
+        repo = make_repo(tmp_path)
+        add_task(repo, "a-001", tier=None)
+        conf = write_tiers(tmp_path / "tiers.conf", "build - sonnet\n")
+        result = launch(repo, ["--dry-run", "a-001"], env_extra={"FOURMEE_TIERS": str(conf)})
+        assert fields(result.stdout)[MODEL] == "sonnet"
+
+    def test_an_unknown_tier_in_a_task_file_is_skipped_and_names_the_real_ones(self, tmp_path: Path) -> None:
+        repo = make_repo(tmp_path)
+        add_task(repo, "a-001", tier="opus")
+        result = launch(repo, ["--dry-run", "a-001"])
+        assert result.stdout.startswith("SKIP\ta-001\tunknown tier in task file: opus (expected plan, build, or chore)")
+
+    def test_a_mapping_picks_the_harness_and_the_model(self, tmp_path: Path) -> None:
+        repo = make_repo(tmp_path)
+        add_task(repo, "a-001", tier="plan")
+        add_task(repo, "a-002", tier="chore")
+        conf = write_tiers(tmp_path / "tiers.conf", "plan claude opus\nchore copilot gpt-6-luna\n")
+        result = launch(repo, ["--dry-run", "a-001", "a-002"], env_extra={"FOURMEE_TIERS": str(conf)})
+        rows = [line.split("\t") for line in result.stdout.splitlines() if line.startswith("WOULD")]
+        assert [r[HARNESS : MODEL + 1] for r in rows] == [["claude", "opus"], ["copilot", "gpt-6-luna"]]
+
+    def test_a_dash_means_any_harness_and_the_harness_default_model(self, tmp_path: Path) -> None:
+        repo = make_repo(tmp_path)
+        add_task(repo, "a-001", tier="build")
+        add_task(repo, "a-002", tier="chore")
+        conf = write_tiers(tmp_path / "tiers.conf", "build - sonnet\nchore claude -\n")
+        result = launch(repo, ["--dry-run", "a-001", "a-002"], env_extra={"FOURMEE_TIERS": str(conf)})
+        rows = [line.split("\t") for line in result.stdout.splitlines() if line.startswith("WOULD")]
+        assert [r[HARNESS : MODEL + 1] for r in rows] == [["auto", "sonnet"], ["claude", "default"]]
+
+    def test_a_mapping_applies_only_to_the_harness_it_names(self, tmp_path: Path) -> None:
+        """A model id means nothing to another harness: passing it through ends the session at startup."""
+        repo = make_repo(tmp_path)
+        add_task(repo, "a-001", tier="chore")
+        conf = write_tiers(tmp_path / "tiers.conf", "chore copilot gpt-6-luna\n")
+        result = launch(repo, ["--dry-run", "--harness", "claude", "a-001"], env_extra={"FOURMEE_TIERS": str(conf)})
+        assert fields(result.stdout)[HARNESS : MODEL + 1] == ["claude", "default"]
+
+    def test_the_flag_wins_over_the_mapping_and_the_environment(self, tmp_path: Path) -> None:
+        repo = make_repo(tmp_path)
+        add_task(repo, "a-001", tier="plan")
+        conf = write_tiers(tmp_path / "tiers.conf", "plan claude opus\n")
+        env = {"FOURMEE_TIERS": str(conf), "FOURMEE_HARNESS": "claude"}
+        result = launch(repo, ["--dry-run", "--harness", "copilot", "a-001"], env_extra=env)
+        assert fields(result.stdout)[HARNESS] == "copilot"
+
+    def test_the_mapping_wins_over_the_environment(self, tmp_path: Path) -> None:
+        repo = make_repo(tmp_path)
+        add_task(repo, "a-001", tier="plan")
+        conf = write_tiers(tmp_path / "tiers.conf", "plan copilot\n")
+        env = {"FOURMEE_TIERS": str(conf), "FOURMEE_HARNESS": "claude"}
+        result = launch(repo, ["--dry-run", "a-001"], env_extra=env)
+        assert fields(result.stdout)[HARNESS] == "copilot"
+
+    def test_the_environment_picks_the_harness_when_nothing_else_does(self, tmp_path: Path) -> None:
+        repo = make_repo(tmp_path)
+        add_task(repo, "a-001")
+        result = launch(repo, ["--dry-run", "a-001"], env_extra={"FOURMEE_HARNESS": "copilot"})
+        assert fields(result.stdout)[HARNESS] == "copilot"
+
+    def test_auto_is_accepted_as_a_choice(self, tmp_path: Path) -> None:
+        repo = make_repo(tmp_path)
+        add_task(repo, "a-001")
+        assert launch(repo, ["--dry-run", "--harness", "auto", "a-001"]).returncode == OK
+        assert launch(repo, ["--dry-run", "a-001"], env_extra={"FOURMEE_HARNESS": "auto"}).returncode == OK
+
+    def test_the_developers_file_is_read_from_the_xdg_config_directory(self, tmp_path: Path) -> None:
+        repo = make_repo(tmp_path)
+        add_task(repo, "a-001")
+        write_tiers(tmp_path / "xdg" / "fourmee" / "tiers.conf", "build claude sonnet\n")
+        result = launch(repo, ["--dry-run", "a-001"], env_extra={"XDG_CONFIG_HOME": str(tmp_path / "xdg")})
+        assert fields(result.stdout)[HARNESS : MODEL + 1] == ["claude", "sonnet"]
+
+    def test_the_project_file_is_the_default_and_the_developer_wins_per_tier(self, tmp_path: Path) -> None:
+        repo = make_repo(tmp_path)
+        add_task(repo, "a-001", tier="plan")
+        add_task(repo, "a-002", tier="build")
+        write_tiers(repo / "delivery" / "tiers.conf", "plan claude opus\nbuild claude sonnet\n")
+        mine = write_tiers(tmp_path / "mine.conf", "build claude haiku\n")
+        result = launch(repo, ["--dry-run", "a-001", "a-002"], env_extra={"FOURMEE_TIERS": str(mine)})
+        rows = [line.split("\t") for line in result.stdout.splitlines() if line.startswith("WOULD")]
+        assert [r[MODEL] for r in rows] == ["opus", "haiku"]
+
+    def test_comments_and_blank_lines_are_ignored(self, tmp_path: Path) -> None:
+        repo = make_repo(tmp_path)
+        add_task(repo, "a-001")
+        conf = write_tiers(tmp_path / "t.conf", "# tier harness model\n\nbuild claude sonnet  # my pick\n")
+        result = launch(repo, ["--dry-run", "a-001"], env_extra={"FOURMEE_TIERS": str(conf)})
+        assert fields(result.stdout)[MODEL] == "sonnet"
 
     @pytest.mark.parametrize(
-        ("label", "harness", "model"),
+        ("text", "message"),
         [
-            ("opus", "claude", "opus"),
-            ("sonnet", "claude", "sonnet"),
-            ("haiku", "claude", "haiku"),
-            ("opus", "copilot", "claude-opus-5.5"),
-            ("sonnet", "copilot", "claude-sonnet-5"),
-            ("haiku", "copilot", "claude-haiku-4.5"),
-            ("terra", "copilot", "gpt-5.6-terra"),
-            ("luna", "copilot", "gpt-6-luna"),
+            ("buidl claude sonnet\n", "t.conf:1: unknown tier 'buidl' (expected plan, build, or chore)"),
+            ("# note\nbuild gemini x\n", "t.conf:2: unknown harness 'gemini' (expected claude, copilot, or -)"),
+            ("build claude sonnet extra\n", "t.conf:1: expected 'tier [harness [model]]'"),
+            ("build claude a\nbuild claude b\n", "t.conf:2: tier 'build' is named twice"),
         ],
     )
-    def test_passes_each_harness_its_own_model_id(self, tmp_path: Path, label: str, harness: str, model: str) -> None:
-        """Copilot rejects a bare label such as "luna" and the lane dies at startup."""
+    def test_a_malformed_mapping_stops_the_launch_with_its_line(self, tmp_path: Path, text: str, message: str) -> None:
+        """A typo in a mapping must not quietly fall back to the harness default."""
         repo = make_repo(tmp_path)
-        add_task(repo, "a-001", model=label)
-        result = launch(repo, ["--dry-run", "--harness", harness, "a-001"])
-        assert result.stdout.split("\t")[3] == model
+        add_task(repo, "a-001")
+        conf = write_tiers(tmp_path / "t.conf", text)
+        result = launch(repo, ["--dry-run", "a-001"], env_extra={"FOURMEE_TIERS": str(conf)})
+        assert result.returncode == USAGE_ERROR
+        assert message in result.stderr
 
-    def test_a_copilot_only_label_cannot_be_forced_onto_claude(self, tmp_path: Path) -> None:
-        """Claude Code has no terra; passing the name through would fail inside the lane."""
+    def test_a_named_mapping_file_that_does_not_exist_is_an_error(self, tmp_path: Path) -> None:
         repo = make_repo(tmp_path)
-        add_task(repo, "a-001", model="terra")
-        result = launch(repo, ["--dry-run", "--harness", "claude", "a-001"])
-        assert result.stdout.startswith("SKIP\ta-001\tclaude has no terra model")
+        add_task(repo, "a-001")
+        result = launch(repo, ["--dry-run", "a-001"], env_extra={"FOURMEE_TIERS": str(tmp_path / "nope.conf")})
+        assert result.returncode == USAGE_ERROR
+        assert "FOURMEE_TIERS names a missing file" in result.stderr
+
+    def test_an_unknown_harness_in_the_environment_is_an_error(self, tmp_path: Path) -> None:
+        repo = make_repo(tmp_path)
+        add_task(repo, "a-001")
+        result = launch(repo, ["--dry-run", "a-001"], env_extra={"FOURMEE_HARNESS": "gemini"})
+        assert result.returncode == USAGE_ERROR
+        assert "FOURMEE_HARNESS must be" in result.stderr
 
 
 class TestLauncherUsage:
@@ -353,10 +493,17 @@ def fake_harness(
 
 
 def launch_live(
-    repo: Path, args: list[str], bin_dir: Path, log: Path, *, isolated: bool = False
+    repo: Path,
+    args: list[str],
+    bin_dir: Path,
+    log: Path,
+    *,
+    isolated: bool = False,
+    env_extra: dict[str, str] | None = None,
 ) -> subprocess.CompletedProcess[str]:
-    env = os.environ.copy()
-    # A fallback test fakes only one harness name and relies on the other one
+    env = clean_env(repo)
+    env.update(env_extra or {})
+    # A selection test fakes only one harness name and relies on the other one
     # genuinely being absent. Prepending to the ambient PATH is not enough for
     # that: a real claude or copilot binary installed on this machine would
     # still be found further down it, and the test would start a real,
@@ -405,58 +552,103 @@ class TestLaneStartup:
         assert recorded.strip(), "the harness was never invoked"
         assert str(tmp_path / "lanes" / "a-001") in recorded
 
-    def test_falls_back_to_the_installed_harness_for_a_portable_label(self, tmp_path: Path) -> None:
-        """No Anthropic license is required to run this kit.
-
-        opus, sonnet and haiku are Claude models the launcher can also run on
-        Copilot CLI. A machine with only a Copilot license has no "claude"
-        binary at all, so auto-routing must not skip these lanes.
-        """
+    @staticmethod
+    def one_task_remote(tmp_path: Path, tier: str = "build") -> Path:
         origin_path = make_shared_origin(tmp_path)
         dev = clone_of(tmp_path, origin_path, "devA")
-        add_task(dev, "b-001", model="opus")
+        add_task(dev, "b-001", tier=tier)
         git(dev, "add", "-A")
         git(dev, "commit", "-q", "-m", "add b-001")
         git(dev, "push", "-q", "origin", "HEAD:refs/heads/main")
+        return dev
+
+    @staticmethod
+    def go(dev: Path, tmp_path: Path, bin_dir: Path, log: Path, *extra: str, env: dict[str, str] | None = None):
+        return launch_live(
+            dev,
+            ["--claim-script", str(CLAIM), "--worktree-root", str(tmp_path / "lanes"), *extra, "b-001"],
+            bin_dir,
+            log,
+            isolated=True,
+            env_extra=env,
+        )
+
+    def test_auto_uses_the_first_harness_that_is_installed(self, tmp_path: Path) -> None:
+        """No license for one vendor is required: a machine with only Copilot launches on Copilot."""
+        dev = self.one_task_remote(tmp_path)
         log = tmp_path / "agent.log"
         bin_dir = fake_harness(tmp_path, log, names=("copilot",))
 
-        result = launch_live(
-            dev,
-            ["--claim-script", str(CLAIM), "--worktree-root", str(tmp_path / "lanes"), "b-001"],
-            bin_dir,
-            log,
-            isolated=True,
-        )
+        result = self.go(dev, tmp_path, bin_dir, log)
 
         assert result.returncode == OK, result.stderr
-        assert result.stdout.strip().startswith("LAUNCHED\tb-001\tcopilot\tclaude-opus-5.5")
+        assert result.stdout.strip().startswith("LAUNCHED\tb-001\tcopilot\tdefault")
         assert log.read_text(encoding="utf-8").strip(), "copilot was never invoked"
 
-    def test_a_copilot_only_label_has_no_fallback(self, tmp_path: Path) -> None:
-        """terra has no Claude Code equivalent, so a missing copilot must still skip.
+    def test_auto_prefers_claude_when_both_are_installed(self, tmp_path: Path) -> None:
+        dev = self.one_task_remote(tmp_path)
+        log = tmp_path / "agent.log"
+        bin_dir = fake_harness(tmp_path, log)
 
-        Falling back to claude for it would silently launch the wrong model.
-        """
-        origin_path = make_shared_origin(tmp_path)
-        dev = clone_of(tmp_path, origin_path, "devA")
-        add_task(dev, "b-001", model="terra")
-        git(dev, "add", "-A")
-        git(dev, "commit", "-q", "-m", "add b-001")
-        git(dev, "push", "-q", "origin", "HEAD:refs/heads/main")
+        result = self.go(dev, tmp_path, bin_dir, log)
+
+        assert result.stdout.strip().startswith("LAUNCHED\tb-001\tclaude\tdefault")
+
+    def test_no_installed_harness_skips_the_lane(self, tmp_path: Path) -> None:
+        dev = self.one_task_remote(tmp_path)
+        log = tmp_path / "agent.log"
+        bin_dir = fake_harness(tmp_path, log, names=())
+
+        result = self.go(dev, tmp_path, bin_dir, log)
+
+        assert result.stdout.strip() == "SKIP\tb-001\tno supported harness on PATH (claude copilot)\nLANES\t0"
+
+    def test_a_harness_somebody_chose_is_never_swapped_for_another(self, tmp_path: Path) -> None:
+        """A lane on a harness nobody asked for would spend an allowance nobody meant to spend."""
+        dev = self.one_task_remote(tmp_path)
         log = tmp_path / "agent.log"
         bin_dir = fake_harness(tmp_path, log, names=("claude",))
+        conf = write_tiers(tmp_path / "t.conf", "build copilot\n")
 
-        result = launch_live(
-            dev,
-            ["--claim-script", str(CLAIM), "--worktree-root", str(tmp_path / "lanes"), "b-001"],
-            bin_dir,
-            log,
-            isolated=True,
-        )
+        result = self.go(dev, tmp_path, bin_dir, log, env={"FOURMEE_TIERS": str(conf)})
 
         assert result.stdout.strip() == "SKIP\tb-001\tcopilot not found on PATH\nLANES\t0"
         assert not log.read_text(encoding="utf-8").strip(), "nothing should have been invoked"
+
+    def test_an_unmapped_tier_passes_no_model_flag(self, tmp_path: Path) -> None:
+        dev = self.one_task_remote(tmp_path)
+        log = tmp_path / "agent.log"
+        bin_dir = fake_harness(tmp_path, log)
+
+        self.go(dev, tmp_path, bin_dir, log)
+
+        wait_for(lambda: log.read_text(encoding="utf-8").strip())
+        assert "--model" not in log.read_text(encoding="utf-8")
+
+    @pytest.mark.parametrize("harness", ["claude", "copilot"])
+    def test_a_mapped_model_reaches_the_harness_it_is_for(self, tmp_path: Path, harness: str) -> None:
+        dev = self.one_task_remote(tmp_path)
+        log = tmp_path / "agent.log"
+        bin_dir = fake_harness(tmp_path, log)
+        conf = write_tiers(tmp_path / "t.conf", f"build {harness} some-model\n")
+
+        result = self.go(dev, tmp_path, bin_dir, log, env={"FOURMEE_TIERS": str(conf)})
+
+        assert f"LAUNCHED\tb-001\t{harness}\tsome-model" in result.stdout
+        wait_for(lambda: log.read_text(encoding="utf-8").strip())
+        assert "--model some-model" in log.read_text(encoding="utf-8")
+
+    def test_a_model_mapped_for_another_harness_is_not_passed_on(self, tmp_path: Path) -> None:
+        dev = self.one_task_remote(tmp_path, tier="chore")
+        log = tmp_path / "agent.log"
+        bin_dir = fake_harness(tmp_path, log)
+        conf = write_tiers(tmp_path / "t.conf", "chore copilot gpt-6-luna\n")
+
+        result = self.go(dev, tmp_path, bin_dir, log, "--harness", "claude", env={"FOURMEE_TIERS": str(conf)})
+
+        assert "LAUNCHED\tb-001\tclaude\tdefault" in result.stdout
+        wait_for(lambda: log.read_text(encoding="utf-8").strip())
+        assert "gpt-6-luna" not in log.read_text(encoding="utf-8")
 
     def test_refuses_to_start_without_a_usable_claim_script(self, tmp_path: Path) -> None:
         """An unclaimed lane is worse than no lane.
@@ -754,7 +946,7 @@ class TestLaneStartup:
         assert (tmp_path / "lanes" / "a-001").is_dir()
 
     def test_pins_reasoning_effort_on_both_harnesses(self, tmp_path: Path) -> None:
-        """Effort is a cost axis the model label does not cover.
+        """Effort is a cost axis the tier does not cover.
 
         Unset, each harness applies its own default, so the cost of a lane stops
         following from its task file. The flag is spelled differently per harness,
@@ -834,8 +1026,8 @@ class TestLaneStartup:
     def test_a_task_sets_its_own_effort(self, tmp_path: Path, level: str) -> None:
         """The tier is the class of judgement; the effort is how much of it.
 
-        They are independent: a design-bearing task can want opus at high while
-        a planning task wants opus at medium.
+        They are independent: a design-bearing task can want plan at high while
+        a planning task wants plan at medium.
         """
         repo = make_repo(tmp_path)
         add_task(repo, "a-001", effort=level)
@@ -850,7 +1042,7 @@ class TestLaneStartup:
         assert result.stdout.split("\t")[4] == "medium"
 
     def test_the_batch_flag_overrides_every_task(self, tmp_path: Path) -> None:
-        """Mirrors --harness overriding the harness the model label implies.
+        """Mirrors --harness overriding the harness a tier maps to.
 
         Holding a launch down when a budget is nearly spent has to beat what the
         task files ask for, or the override is not one.

@@ -37,10 +37,10 @@ claim back through release-lane.sh. Both sit beside this script.
 
 Options:
   --max-lanes <n>       Most lanes to run at once (default: 3).
-  --harness <name>      claude, copilot, or auto (default: auto, by model label).
-                        auto falls back to whichever harness is installed for
-                        opus/sonnet/haiku tasks, so a Copilot-only machine
-                        needs no Anthropic license.
+  --harness <name>      claude, copilot, or auto (default: auto). auto uses the
+                        harness the task's tier maps to in tiers.conf, then
+                        $FOURMEE_HARNESS, then the first one installed. Naming
+                        one forces every lane in the batch onto it.
   --effort <level>      Override the effort of every task in this batch: low,
                         medium, high, xhigh or max. Defaults to each task's own
                         effort field, or medium where it has none.
@@ -70,7 +70,10 @@ USAGE
 }
 
 max_lanes=3
-harness="auto"
+# The harnesses this launcher can drive, in the order auto tries them.
+harnesses=(claude copilot)
+harness_flag=""
+env_harness="${FOURMEE_HARNESS:-}"
 # Reasoning effort is a second cost axis, independent of the model: the same
 # tier can think for longer. Left unset, each harness applies its own default,
 # so two lanes on the same tier cost differently for no stated reason. Each task
@@ -99,7 +102,7 @@ task_ids=()
 while (($# > 0)); do
   case "$1" in
     --max-lanes) [[ $# -ge 2 ]] || die "--max-lanes requires a value"; max_lanes="$2"; shift 2 ;;
-    --harness) [[ $# -ge 2 ]] || die "--harness requires a value"; harness="$2"; shift 2 ;;
+    --harness) [[ $# -ge 2 ]] || die "--harness requires a value"; harness_flag="$2"; shift 2 ;;
     --effort) [[ $# -ge 2 ]] || die "--effort requires a value"; effort_override="$2"; shift 2 ;;
     --tasks-dir) [[ $# -ge 2 ]] || die "--tasks-dir requires a value"; tasks_dir="$2"; shift 2 ;;
     --worktree-root) [[ $# -ge 2 ]] || die "--worktree-root requires a value"; worktree_root="$2"; shift 2 ;;
@@ -115,7 +118,16 @@ while (($# > 0)); do
 done
 
 [[ "$max_lanes" =~ ^[1-9][0-9]*$ ]] || die "--max-lanes must be a positive number"
-case "$harness" in claude | copilot | auto) ;; *) die "--harness must be claude, copilot, or auto" ;; esac
+is_harness() {
+  local h
+  for h in "${harnesses[@]}"; do [[ "$1" == "$h" ]] && return 0; done
+  return 1
+}
+# auto is the same as not choosing, so it is stored as nothing.
+[[ "$harness_flag" != auto ]] || harness_flag=""
+[[ "$env_harness" != auto ]] || env_harness=""
+[[ -z "$harness_flag" ]] || is_harness "$harness_flag" || die "--harness must be claude, copilot, or auto"
+[[ -z "$env_harness" ]] || is_harness "$env_harness" || die "FOURMEE_HARNESS must be claude, copilot, or auto"
 # The portable set: Claude Code takes low..max, Copilot CLI also takes none and
 # minimal. Accepting only the intersection keeps a batch launchable on either
 # side, so a value chosen here never fails on one harness and not the other.
@@ -158,66 +170,59 @@ field() {
   ' "$1"
 }
 
-# A model label names a tier. Routing execution to the most capable model
-# everywhere is the single easiest way to exhaust a budget.
-harness_for() {
-  case "$1" in
-    # Mirrors the harness column of the model labels table in the delivery
-    # conventions. A test parses that table and fails if the two drift apart.
-    opus | sonnet | haiku) printf 'claude' ;;
-    terra | luna) printf 'copilot' ;;
-    *) printf 'claude' ;;
-  esac
+# A tier is a hint about how much capability a task needs; which model that
+# means is the developer's choice, read from tiers.conf. Two files are read and
+# the first to name a tier wins: the developer's own, outside every repository,
+# then the project's. A tier no file names passes no model flag, and the harness
+# applies its own default.
+is_tier() {
+  case "$1" in plan | build | chore) return 0 ;; *) return 1 ;; esac
 }
 
-# opus, sonnet and haiku are Claude models available on both harnesses. terra
-# and luna are Copilot-only model names with no Claude Code equivalent, so a
-# missing Claude Code has nowhere to send them.
-is_portable() {
-  case "$1" in
-    opus | sonnet | haiku) return 0 ;;
-    *) return 1 ;;
-  esac
-}
-
-# An Anthropic license is not required to use this kit: a developer with only
-# a Copilot license has no "claude" binary at all, and every task labelled for
-# Claude Code's default would otherwise skip a real launch. Only the real
-# launch checks this, not --dry-run: dry-run stays a pure function of the task
-# files and flags, unaffected by what happens to be installed on the machine
-# previewing it.
-fallback_harness() {
-  local label="$1" unavailable="$2"
-  is_portable "$label" || return 1
-  local fallback="copilot"
-  [[ "$unavailable" == "copilot" ]] && fallback="claude"
-  command -v "$fallback" >/dev/null 2>&1 || return 1
-  printf '%s' "$fallback"
-}
-
-# The label is the kit's name for a tier; each harness has its own id for it.
-# Copilot rejects a bare "sonnet" or "luna" outright ("not available"), so the
-# lane would die before doing anything. The ids follow the /models picker in an
-# interactive copilot session; `copilot help config` lists stale ones. Probe an
-# id with: copilot -p "Reply OK." --model <id>
-model_for() {
-  local label="$1" side="$2"
-  if [[ "$side" == "claude" ]]; then
-    case "$label" in
-      opus | sonnet | haiku) printf '%s' "$label" ;;
-      *) return 1 ;;
-    esac
-  else
-    case "$label" in
-      opus) printf 'claude-opus-5.5' ;;
-      sonnet) printf 'claude-sonnet-5' ;;
-      haiku) printf 'claude-haiku-4.5' ;;
-      terra) printf 'gpt-5.6-terra' ;;
-      luna) printf 'gpt-6-luna' ;;
-      *) return 1 ;;
-    esac
+declare -A tier_harness=()
+declare -A tier_model=()
+load_tiers() {
+  local files=() file line n tier h m extra
+  local user_conf="${XDG_CONFIG_HOME:-${HOME:-}/.config}/fourmee/tiers.conf"
+  if [[ -n "${FOURMEE_TIERS:-}" ]]; then
+    [[ -f "$FOURMEE_TIERS" ]] || die "FOURMEE_TIERS names a missing file: $FOURMEE_TIERS"
+    files+=("$FOURMEE_TIERS")
+  elif [[ -f "$user_conf" ]]; then
+    files+=("$user_conf")
   fi
+  [[ ! -f "$(dirname "$tasks_dir")/tiers.conf" ]] || files+=("$(dirname "$tasks_dir")/tiers.conf")
+  for file in "${files[@]+"${files[@]}"}"; do
+    local -A in_file=()
+    n=0
+    while IFS= read -r line || [[ -n "$line" ]]; do
+      n=$((n + 1))
+      line="${line%%#*}"
+      read -r tier h m extra <<<"$line"
+      [[ -n "$tier" ]] || continue
+      [[ -z "$extra" ]] || die "$file:$n: expected 'tier [harness [model]]'"
+      is_tier "$tier" || die "$file:$n: unknown tier '$tier' (expected plan, build, or chore)"
+      [[ -z "$h" || "$h" == "-" ]] || is_harness "$h" ||
+        die "$file:$n: unknown harness '$h' (expected claude, copilot, or -)"
+      [[ -z "${in_file[$tier]:-}" ]] || die "$file:$n: tier '$tier' is named twice"
+      in_file["$tier"]=1
+      # An earlier file already named this tier, and the first one wins.
+      [[ -z "${tier_harness[$tier]:-}" ]] || continue
+      tier_harness["$tier"]="${h:--}"
+      tier_model["$tier"]="${m:--}"
+    done <"$file"
+  done
 }
+
+# The model a tier maps to, when it applies to the harness the lane runs on. A
+# mapping names its harness because a model id means nothing to another one:
+# passing it through would end the session at startup.
+model_for() {
+  local model="${tier_model[$1]:--}" mapped="${tier_harness[$1]:--}"
+  [[ "$model" != "-" ]] || return 0
+  [[ "$mapped" == "-" || "$mapped" == "$2" ]] || return 0
+  printf '%s' "$model"
+}
+load_tiers
 
 # A task with "parallel: false" runs alone: no other lane of the set may be in
 # flight while it runs, here or on another developer's machine. Only the remote
@@ -315,11 +320,15 @@ for task_id in "${task_ids[@]}"; do
       { printf 'SKIP\t%s\truns alone, and this batch already started lanes\n' "$task_id"; continue; }
   fi
 
-  label="$(field "$task_file" model)"
-  [[ -n "$label" ]] || label="sonnet"
+  tier="$(field "$task_file" tier)"
+  [[ -n "$tier" ]] || tier="build"
+  # The validator rejects an unknown tier, so reaching here means the task set
+  # was never validated.
+  is_tier "$tier" ||
+    { printf 'SKIP\t%s\tunknown tier in task file: %s (expected plan, build, or chore)\n' "$task_id" "$tier"; continue; }
 
   # The task states the effort its work needs; --effort overrides the batch, the
-  # same way --harness overrides the model label's harness.
+  # same way --harness overrides the harness a tier maps to.
   effort="$effort_override"
   if [[ -z "$effort" ]]; then
     effort="$(field "$task_file" effort)"
@@ -330,8 +339,17 @@ for task_id in "${task_ids[@]}"; do
   # refuse, which would fail after the claim and the worktree already exist.
   valid_effort "$effort" ||
     { printf 'SKIP\t%s\tunknown effort in task file: %s\n' "$task_id" "$effort"; continue; }
-  use_harness="$harness"
-  [[ "$use_harness" != "auto" ]] || use_harness="$(harness_for "$label")"
+  # --harness is the operator's choice for the batch and wins; then the tier's
+  # own mapping, then the developer's default. What is left is auto, decided at
+  # launch from what is installed.
+  use_harness="auto"
+  if [[ -n "$harness_flag" ]]; then
+    use_harness="$harness_flag"
+  elif [[ "${tier_harness[$tier]:--}" != "-" ]]; then
+    use_harness="${tier_harness[$tier]}"
+  elif [[ -n "$env_harness" ]]; then
+    use_harness="$env_harness"
+  fi
 
   branch="task/$task_id"
   worktree="$worktree_root/$task_id"
@@ -339,9 +357,8 @@ for task_id in "${task_ids[@]}"; do
   repo_name="$(basename "$repo_dir")"
 
   if ((dry_run == 1)); then
-    model="$(model_for "$label" "$use_harness")" ||
-      { printf 'SKIP\t%s\t%s has no %s model\n' "$task_id" "$use_harness" "$label"; continue; }
-    printf 'WOULD-LAUNCH\t%s\t%s\t%s\t%s\t%s\t%s\n' "$task_id" "$use_harness" "$model" "$effort" "$worktree" "$repo_name"
+    model="$(model_for "$tier" "$use_harness")"
+    printf 'WOULD-LAUNCH\t%s\t%s\t%s\t%s\t%s\t%s\n' "$task_id" "$use_harness" "${model:-default}" "$effort" "$worktree" "$repo_name"
     ! runs_alone "$task_id" || alone_started="$task_id"
     launched_ids["$task_id"]=1
     launched=$((launched + 1))
@@ -349,19 +366,21 @@ for task_id in "${task_ids[@]}"; do
   fi
 
   [[ -e "$worktree" ]] && { printf 'SKIP\t%s\tworktree path already exists: %s\n' "$task_id" "$worktree"; continue; }
-  if ! command -v "$use_harness" >/dev/null 2>&1; then
-    # Only auto-routing falls back. --harness named a side on purpose, and
-    # silently moving off it would launch a lane on a harness nobody asked for.
-    fallback=""
-    if [[ "$harness" == "auto" ]]; then
-      fallback="$(fallback_harness "$label" "$use_harness")" || true
-    fi
-    [[ -n "$fallback" ]] || { printf 'SKIP\t%s\t%s not found on PATH\n' "$task_id" "$use_harness"; continue; }
-    use_harness="$fallback"
+  if [[ "$use_harness" == "auto" ]]; then
+    # Nothing chose a harness, so use the first one this machine has.
+    for candidate in "${harnesses[@]}"; do
+      command -v "$candidate" >/dev/null 2>&1 && { use_harness="$candidate"; break; }
+    done
+    [[ "$use_harness" != "auto" ]] ||
+      { printf 'SKIP\t%s\tno supported harness on PATH (%s)\n' "$task_id" "${harnesses[*]}"; continue; }
+  elif ! command -v "$use_harness" >/dev/null 2>&1; then
+    # A harness somebody chose is never swapped for another: a lane on a harness
+    # nobody asked for would spend an allowance nobody meant to spend.
+    printf 'SKIP\t%s\t%s not found on PATH\n' "$task_id" "$use_harness"
+    continue
   fi
-  # Resolved after any fallback: the same label has a different id on each side.
-  model="$(model_for "$label" "$use_harness")" ||
-    { printf 'SKIP\t%s\t%s has no %s model\n' "$task_id" "$use_harness" "$label"; continue; }
+  # Resolved after the harness is known: a mapping names the one it is for.
+  model="$(model_for "$tier" "$use_harness")"
 
   git -C "$repo_dir" rev-parse --is-inside-work-tree >/dev/null 2>&1 ||
     { printf 'SKIP\t%s\tno clone of %s at %s\n' "$task_id" "$repo_name" "$repo_dir"; continue; }
@@ -415,6 +434,8 @@ for task_id in "${task_ids[@]}"; do
     fi
   fi
 
+  model_args=()
+  [[ -z "$model" ]] || model_args=(--model "$model")
   if [[ "$use_harness" == "claude" ]]; then
     # acceptEdits alone denies every shell command in -p mode, and nobody is
     # there to approve one, so the lane could not run a single test. Allowing
@@ -426,7 +447,7 @@ for task_id in "${task_ids[@]}"; do
     if ((web == 1)); then allowed+=(WebFetch WebSearch); else denied+=(WebFetch WebSearch); fi
     session=(claude -p "$prompt"
       "${extra[@]+"${extra[@]}"}"
-      --model "$model"
+      "${model_args[@]+"${model_args[@]}"}"
       --effort "$effort"
       --permission-mode acceptEdits
       --allowedTools "${allowed[@]}"
@@ -436,7 +457,7 @@ for task_id in "${task_ids[@]}"; do
     # from the built-in GitHub MCP server.
     session=(copilot -p "$prompt"
       "${extra[@]+"${extra[@]}"}"
-      --model "$model"
+      "${model_args[@]+"${model_args[@]}"}"
       --reasoning-effort "$effort"
       --allow-all-tools
       --deny-tool 'shell(terraform apply)'
@@ -454,7 +475,7 @@ for task_id in "${task_ids[@]}"; do
     "$publish_script" "$release_script" "$lane_report" "$task_path" "${session[@]}" \
     </dev/null >"$log_file" 2>&1 &) || true
 
-  printf 'LAUNCHED\t%s\t%s\t%s\t%s\t%s\t%s\n' "$task_id" "$use_harness" "$model" "$effort" "$worktree" "$repo_name"
+  printf 'LAUNCHED\t%s\t%s\t%s\t%s\t%s\t%s\n' "$task_id" "$use_harness" "${model:-default}" "$effort" "$worktree" "$repo_name"
   ! runs_alone "$task_id" || alone_started="$task_id"
   launched_ids["$task_id"]=1
   launched=$((launched + 1))

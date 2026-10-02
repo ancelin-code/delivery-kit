@@ -73,10 +73,9 @@ done
 # whole cut, and a file inside tasks/ would be globbed as a task.
 [[ -n "$decomposition" ]] || decomposition="$(dirname "$tasks_dir")/decomposition.md"
 
-# Mirrors the model labels table in the delivery conventions, which is where a
-# label's meaning is defined. A test parses that table and fails if the two
-# drift apart.
-VALID_MODELS=" opus sonnet terra luna haiku "
+# Mirrors the tiers table in the delivery conventions, which is where a tier's
+# meaning is defined. A test parses that table and fails if the two drift apart.
+VALID_TIERS=" plan build chore "
 
 # The levels both harnesses accept. Copilot CLI also takes none and minimal,
 # which Claude Code rejects; a task carrying one of those would validate here
@@ -162,7 +161,8 @@ for file in "${task_files[@]}"; do
   id="$(field "$file" id)"
   title="$(field "$file" title)"
   epic="$(field "$file" epic)"
-  model="$(field "$file" model)"
+  tier="$(field "$file" tier)"
+  old_model="$(field "$file" model)"
   effort="$(field "$file" effort)"
   type="$(field "$file" type)"
   parallel="$(field "$file" parallel)"
@@ -189,10 +189,15 @@ for file in "${task_files[@]}"; do
   fi
   seen_id["$id"]=1
 
-  if [[ -n "$model" && "$VALID_MODELS" != *" $model "* ]]; then
-    fail "$base" "unknown model label: '$model' (expected opus, sonnet, terra, luna, or haiku)"
+  # The field was `model` with vendor labels before tiers; say what replaced it
+  # rather than only reporting a missing field.
+  if [[ -n "$old_model" ]]; then
+    fail "$base" "the model field is now tier: plan, build, or chore (found model: $old_model)"
+  elif [[ -n "$tier" && "$VALID_TIERS" != *" $tier "* ]]; then
+    fail "$base" "unknown tier: '$tier' (expected plan, build, or chore)"
+  elif [[ -z "$tier" ]]; then
+    fail "$base" "missing required field: tier (plan, build, or chore)"
   fi
-  [[ -n "$model" ]] || fail "$base" "missing required field: model"
 
   # Optional: a task with no effort runs at the launcher's default.
   if [[ -n "$effort" && "$VALID_EFFORTS" != *" $effort "* ]]; then
