@@ -5,37 +5,76 @@ on:
     branches: [main]
   pull_request:
   workflow_dispatch:
+  workflow_call:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
-  ci:
+  lint:
+    name: lint
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
 
       - name: Set up mise and the pinned tools
-        uses: jdx/mise-action@e6a8b3978addb5a52f2b4cd9d91eafa7f0ab959d
+        uses: jdx/mise-action@7a4e45a543138629540c9a1616d08632b893e492 # v5.0.1
         with:
-          version: 2026.9.1
+          version: 2026.9.18
           install: true
           cache: true
 
-      - name: Run tests
-        run: mise run test
-
       - name: Run lint checks
-        if: always()
         env:
           SKILL_SCAN_BASE: ${{ github.event.pull_request.base.sha }}
         run: mise run lint
 
-      - name: Upload reports
-        if: always()
-        uses: actions/upload-artifact@c24449f33cd45d4826c6702db7e49f7cdb9b551d
+  test:
+    name: test (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      # macOS ships bash 3.2 and the helpers need 4.4. Install a current bash
+      # first so the suite runs on what a developer would have after the
+      # README's setup; the guard tests still exercise the old system bash.
+      - name: Install a current bash
+        if: runner.os == 'macOS'
+        run: |
+          brew install bash
+          echo "$(brew --prefix)/bin" >> "$GITHUB_PATH"
+
+      - name: Set up mise and the tools the tests need
+        uses: jdx/mise-action@7a4e45a543138629540c9a1616d08632b893e492 # v5.0.1
         with:
-          name: ci-reports
+          version: 2026.9.18
+          install: true
+          install_args: python uv
+          cache: true
+
+      - name: Show the bash the suite runs on
+        run: bash --version | head -n 1
+
+      - name: Run tests
+        run: mise run test
+
+      - name: Upload test reports
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: test-reports-${{ matrix.os }}
           path: reports/
           if-no-files-found: warn
           retention-days: 14

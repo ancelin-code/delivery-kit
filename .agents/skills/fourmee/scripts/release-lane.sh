@@ -1,6 +1,12 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Fail early and clearly on an older bash, such as the 3.2 macOS ships.
+if ((BASH_VERSINFO[0] < 4 || (BASH_VERSINFO[0] == 4 && BASH_VERSINFO[1] < 4))); then
+  printf 'ERROR\tbash 4.4 or later is required, found %s\n' "$BASH_VERSION" >&2
+  exit 1
+fi
+
 # Give a task back after its lane's session failed without doing anything.
 #
 # An expired login or a model the account cannot use ends the session at once,

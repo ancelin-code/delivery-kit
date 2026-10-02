@@ -323,7 +323,7 @@ def fake_gh(
         "    *) printf '\\n' ;;\n"
         "  esac\n"
         'elif [[ "$*" == *"--state merged"* && -n "$head" ]]; then\n'
-        f"  for b in {every_merged}; do [[ \"$b\" != \"$head\" ]] || printf '%s\\n' \"$b\"; done\n"
+        f'  for b in {every_merged}; do [[ "$b" != "$head" ]] || printf \'%s\\n\' "$b"; done\n'
         'elif [[ "$*" == *"--state merged"* ]]; then\n'
         f"  printf '%s' {shlex.quote(merged_out)}\n"
         'elif [[ "$*" == *"--state open"* ]]; then\n'
@@ -452,9 +452,7 @@ class TestDerivedStatus:
 
         assert rows["ingestion-001"][1] == "done"
 
-    def test_a_task_merged_long_ago_with_its_branch_deleted_stays_done(
-        self, tmp_path: Path, origin: Path
-    ) -> None:
+    def test_a_task_merged_long_ago_with_its_branch_deleted_stays_done(self, tmp_path: Path, origin: Path) -> None:
         """Past the bulk query's window, with no branch left, it must not read as ready."""
         dev = developer(tmp_path, origin, "devA")
         write_task(dev, "ingestion-001")
@@ -466,9 +464,7 @@ class TestDerivedStatus:
         assert rows["ingestion-001"][1] == "done"
         assert rows["ingestion-002"][1] == "ready"
 
-    def test_dies_without_gh_rather_than_reporting_merged_work_as_ready(
-        self, tmp_path: Path, origin: Path
-    ) -> None:
+    def test_dies_without_gh_rather_than_reporting_merged_work_as_ready(self, tmp_path: Path, origin: Path) -> None:
         dev = developer(tmp_path, origin, "devA")
         write_task(dev, "ingestion-001")
         no_gh = tmp_path / "no-gh"

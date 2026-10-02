@@ -75,4 +75,6 @@ Concretely:
 CI runs `mise run lint` and `mise run test` on every push and pull request.
 The **pre-push hook** installed by `mise run dev` runs the same tasks locally,
 so a failure shows up before anything is shared. Do not bypass it with
-`--no-verify`. Reference every action by its full commit SHA, not a tag.
+`--no-verify`. Reference every action by its full commit SHA, with the version
+in a trailing comment; Dependabot keeps both current. Tests run on Linux and
+macOS, lint on Linux only.

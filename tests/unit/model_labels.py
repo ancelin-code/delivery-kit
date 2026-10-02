@@ -16,14 +16,7 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
-CONVENTIONS = (
-    Path(__file__).resolve().parents[2]
-    / ".agents"
-    / "skills"
-    / "fourmee"
-    / "references"
-    / "conventions.md"
-)
+CONVENTIONS = Path(__file__).resolve().parents[2] / ".agents" / "skills" / "fourmee" / "references" / "conventions.md"
 
 HARNESS_BY_NAME = {"Claude Code": "claude", "Copilot CLI": "copilot"}
 
@@ -72,9 +65,7 @@ def _efforts() -> list[str]:
             continue
         if not in_section or not line.startswith("| `"):
             continue
-        levels.extend(
-            name for name in re.findall(r"`([a-z]+)`", line.split("|")[1]) if name not in ROUTING
-        )
+        levels.extend(name for name in re.findall(r"`([a-z]+)`", line.split("|")[1]) if name not in ROUTING)
     if not levels:
         message = f"no effort levels parsed from {CONVENTIONS}"
         raise AssertionError(message)

@@ -1,6 +1,12 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Fail early and clearly on an older bash, such as the 3.2 macOS ships.
+if ((BASH_VERSINFO[0] < 4 || (BASH_VERSINFO[0] == 4 && BASH_VERSINFO[1] < 4))); then
+  printf 'ERROR\tbash 4.4 or later is required, found %s\n' "$BASH_VERSION" >&2
+  exit 1
+fi
+
 # Print the state of the use case as one JSON document, for connectors that
 # project it into an external tool such as Jira or Confluence. The contract
 # those connectors follow is ADR-005 in the kit's repository.

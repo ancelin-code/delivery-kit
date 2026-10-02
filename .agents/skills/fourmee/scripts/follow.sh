@@ -1,6 +1,12 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Fail early and clearly on an older bash, such as the 3.2 macOS ships.
+if ((BASH_VERSINFO[0] < 4 || (BASH_VERSINFO[0] == 4 && BASH_VERSINFO[1] < 4))); then
+  printf 'ERROR\tbash 4.4 or later is required, found %s\n' "$BASH_VERSION" >&2
+  exit 1
+fi
+
 # Keep a task set moving without anyone polling: watch the remote, report what
 # changed, and launch the tasks each merge makes ready.
 #

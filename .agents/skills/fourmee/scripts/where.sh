@@ -1,6 +1,12 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Fail early and clearly on an older bash, such as the 3.2 macOS ships.
+if ((BASH_VERSINFO[0] < 4 || (BASH_VERSINFO[0] == 4 && BASH_VERSINFO[1] < 4))); then
+  printf 'ERROR\tbash 4.4 or later is required, found %s\n' "$BASH_VERSION" >&2
+  exit 1
+fi
+
 # Where the project stands and what comes next, in one call.
 #
 # Everything is read from delivery/ and git, the same sources a phase starts
