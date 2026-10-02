@@ -64,8 +64,17 @@ def recording_launcher(tmp_path: Path) -> Path:
 def follow(repo: Path, status: Path, launcher: Path, *args: str) -> subprocess.CompletedProcess[str]:
     return subprocess.run(  # noqa: S603
         [  # noqa: S607
-            "bash", str(SCRIPT), "--interval", "0", "--summary-every", "100000",
-            "--status-script", str(status), "--launcher", str(launcher), *args,
+            "bash",
+            str(SCRIPT),
+            "--interval",
+            "0",
+            "--summary-every",
+            "100000",
+            "--status-script",
+            str(status),
+            "--launcher",
+            str(launcher),
+            *args,
         ],
         cwd=repo,
         capture_output=True,

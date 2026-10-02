@@ -320,6 +320,10 @@ optional: task branches are deleted on merge, so merged pull requests are the
 only record of which tasks are done, and `status.sh` refuses to run without
 them.
 
+macOS ships bash 3.2, so install a current one with `brew install bash`. A
+helper run under the old bash stops at once and says so, instead of failing
+halfway through.
+
 ### 1. Install the kit into a target repository
 
 Use the `skills` CLI. It installs all five skills, writes each one to

@@ -1,0 +1,42 @@
+name: AI-assisted label
+
+# Adds the ai-assisted label to a pull request when agents worked on it.
+#
+# pull_request_target gives the token write access even for pull requests from
+# forks. That is only safe because nothing here checks out or runs the pull
+# request's code: the checkout is the base branch, and everything read from the
+# pull request is passed through the environment, never into a command line.
+on:
+  pull_request_target:
+    types: [opened, reopened, synchronize, edited, ready_for_review]
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+
+jobs:
+  label:
+    name: label
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout the base branch
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Add the label when agents worked on the pull request
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR: ${{ github.event.pull_request.number }}
+          PR_BODY: ${{ github.event.pull_request.body }}
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+        run: |
+          commits=$(gh api "repos/$REPO/pulls/$PR/commits" --paginate --jq '.[].commit.message')
+          if reason=$(printf '%s\n' "$commits" | bash .mise/scripts/detect-ai-assist); then
+            echo "Labelling: $reason"
+            gh label create ai-assisted --repo "$REPO" --color 8957e5 \
+              --description "AI agents worked on this change" 2>/dev/null || true
+            gh pr edit "$PR" --repo "$REPO" --add-label ai-assisted
+          else
+            echo "No sign that agents worked on this pull request."
+          fi

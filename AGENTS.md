@@ -75,4 +75,14 @@ Concretely:
 CI runs `mise run lint` and `mise run test` on every push and pull request.
 The **pre-push hook** installed by `mise run dev` runs the same tasks locally,
 so a failure shows up before anything is shared. Do not bypass it with
-`--no-verify`. Reference every action by its full commit SHA, not a tag.
+`--no-verify`. Reference every action by its full commit SHA, with the version
+in a trailing comment; Dependabot keeps both current. Tests run on Linux and
+macOS, lint on Linux only.
+
+## Pull requests
+
+Pull requests that agents worked on carry the `ai-assisted` label. A workflow
+adds it when a commit has a `Co-authored-by` or `Assisted-by` trailer naming an
+agent, when the template's AI box is ticked, or when an agent's own account
+opened the pull request. Do not add a "generated with" line to a description:
+the label says it.

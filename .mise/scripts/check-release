@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Check that a release tag agrees with the repository, and print its notes.
+#
+#   bash .mise/scripts/check-release v0.1.0 [--notes]
+#
+# The kit is installed whole, so one version covers every skill and the Python
+# project. The tag, each SKILL.md `version`, pyproject.toml and a CHANGELOG.md
+# heading must all name the same number. With --notes, the matching changelog
+# section is printed, which is the body of the GitHub release.
+
+root=${CHECK_RELEASE_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)}
+
+tag=${1:-}
+notes=false
+[[ "${2:-}" == "--notes" ]] && notes=true
+
+if [[ ! "$tag" =~ ^v([0-9]+\.[0-9]+\.[0-9]+)$ ]]; then
+  echo "usage: check-release vX.Y.Z [--notes]" >&2
+  exit 2
+fi
+version=${BASH_REMATCH[1]}
+
+failures=0
+fail() {
+  echo "ERROR: $*" >&2
+  failures=$((failures + 1))
+}
+
+for skill in "$root"/.agents/skills/*/SKILL.md; do
+  found=$(sed -n 's/^version: "\(.*\)"$/\1/p' "$skill" | head -n 1)
+  [[ "$found" == "$version" ]] || fail "$skill has version '${found:-none}', expected $version"
+done
+
+found=$(sed -n 's/^version = "\(.*\)"$/\1/p' "$root/pyproject.toml" | head -n 1)
+[[ "$found" == "$version" ]] || fail "pyproject.toml has version '${found:-none}', expected $version"
+
+section=$(awk -v h="## [$version]" '
+  index($0, h) == 1 { grab = 1; next }
+  grab && /^## / { exit }
+  grab { print }
+' "$root/CHANGELOG.md" 2>/dev/null || true)
+[[ -n "${section//[[:space:]]/}" ]] || fail "CHANGELOG.md has no filled '## [$version]' section"
+
+((failures == 0)) || exit 1
+$notes && printf '%s\n' "$section"
+exit 0

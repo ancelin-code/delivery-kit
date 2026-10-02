@@ -362,8 +362,16 @@ def launch_live(
     # still be found further down it, and the test would start a real,
     # billed session instead of proving the fallback logic. Replacing PATH
     # with just the fake bin dir plus the system dirs the script itself
-    # needs (git, awk, bash) closes that gap.
-    env["PATH"] = f"{bin_dir}{os.pathsep}/usr/bin:/bin" if isolated else f"{bin_dir}{os.pathsep}{env['PATH']}"
+    # needs (git, awk) closes that gap. bash is linked in from the one this
+    # suite runs on: on macOS the system dirs hold only bash 3.2, which the
+    # helpers rightly refuse.
+    if isolated:
+        bash_link = bin_dir / "bash"
+        if not bash_link.exists():
+            bash_link.symlink_to(shutil.which("bash") or "/bin/bash")
+        env["PATH"] = f"{bin_dir}{os.pathsep}/usr/bin:/bin"
+    else:
+        env["PATH"] = f"{bin_dir}{os.pathsep}{env['PATH']}"
     env["FAKE_LOG"] = str(log)
     return subprocess.run(  # noqa: S603
         ["bash", str(SCRIPT), *args],  # noqa: S607
