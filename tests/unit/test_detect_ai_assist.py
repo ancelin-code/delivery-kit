@@ -1,4 +1,4 @@
-"""The detector labels agent work from trailers, a ticked box or a bot author."""
+"""The detector labels agent work from commit trailers or an agent's own account."""
 
 import subprocess
 
@@ -12,14 +12,14 @@ YES = 0
 NO = 1
 
 
-def detect(commits: str = "", *, body: str = "", author: str = "someone") -> subprocess.CompletedProcess[str]:
+def detect(commits: str = "", *, author: str = "someone") -> subprocess.CompletedProcess[str]:
     return subprocess.run(  # noqa: S603
         ["bash", str(SCRIPT)],  # noqa: S607
         input=commits,
         capture_output=True,
         text=True,
         check=False,
-        env={"PATH": "/usr/bin:/bin", "PR_BODY": body, "PR_AUTHOR": author},
+        env={"PATH": "/usr/bin:/bin", "PR_AUTHOR": author},
     )
 
 
@@ -55,17 +55,6 @@ def test_merely_mentioning_a_tool_is_not_a_signal() -> None:
 
 def test_no_commits_and_nothing_else_is_not_assisted() -> None:
     assert detect().returncode == NO
-
-
-@pytest.mark.parametrize("box", ["- [x] AI agents worked on this change", "* [X] AI agents worked on this change"])
-def test_a_ticked_box_counts(box: str) -> None:
-    result = detect("fix: it\n", body=f"## AI assistance\r\n\r\n{box}\r\n")
-    assert result.returncode == YES
-    assert "body" in result.stdout
-
-
-def test_an_unticked_box_does_not_count() -> None:
-    assert detect("fix: it\n", body="- [ ] AI agents worked on this change\n").returncode == NO
 
 
 @pytest.mark.parametrize("author", ["Copilot", "copilot-swe-agent[bot]", "app/copilot-swe-agent", "claude[bot]"])
