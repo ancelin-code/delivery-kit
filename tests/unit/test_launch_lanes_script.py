@@ -77,6 +77,13 @@ def clean_env(repo: Path) -> dict[str, str]:
     return env
 
 
+def conf(**tiers: dict[str, str]) -> str:
+    """A tiers.conf in git-config form: one section per tier, then its keys."""
+    return "".join(
+        f"[{tier}]\n" + "".join(f"\t{key} = {value}\n" for key, value in keys.items()) for tier, keys in tiers.items()
+    )
+
+
 def write_tiers(path: Path, text: str) -> Path:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(text, encoding="utf-8")
@@ -250,8 +257,8 @@ class TestTiers:
     def test_a_task_with_no_tier_is_a_build_task(self, tmp_path: Path) -> None:
         repo = make_repo(tmp_path)
         add_task(repo, "a-001", tier=None)
-        conf = write_tiers(tmp_path / "tiers.conf", "build - sonnet\n")
-        result = launch(repo, ["--dry-run", "a-001"], env_extra={"FOURMEE_TIERS": str(conf)})
+        mapping = write_tiers(tmp_path / "tiers.conf", conf(build={"model": "sonnet"}))
+        result = launch(repo, ["--dry-run", "a-001"], env_extra={"FOURMEE_TIERS": str(mapping)})
         assert fields(result.stdout)[MODEL] == "sonnet"
 
     def test_an_unknown_tier_in_a_task_file_is_skipped_and_names_the_real_ones(self, tmp_path: Path) -> None:
@@ -264,17 +271,20 @@ class TestTiers:
         repo = make_repo(tmp_path)
         add_task(repo, "a-001", tier="plan")
         add_task(repo, "a-002", tier="chore")
-        conf = write_tiers(tmp_path / "tiers.conf", "plan claude opus\nchore copilot gpt-6-luna\n")
-        result = launch(repo, ["--dry-run", "a-001", "a-002"], env_extra={"FOURMEE_TIERS": str(conf)})
+        mapping = write_tiers(
+            tmp_path / "tiers.conf",
+            conf(plan={"harness": "claude", "model": "opus"}, chore={"harness": "copilot", "model": "gpt-6-luna"}),
+        )
+        result = launch(repo, ["--dry-run", "a-001", "a-002"], env_extra={"FOURMEE_TIERS": str(mapping)})
         rows = [line.split("\t") for line in result.stdout.splitlines() if line.startswith("WOULD")]
         assert [r[HARNESS : MODEL + 1] for r in rows] == [["claude", "opus"], ["copilot", "gpt-6-luna"]]
 
-    def test_a_dash_means_any_harness_and_the_harness_default_model(self, tmp_path: Path) -> None:
+    def test_harness_and_model_are_each_optional(self, tmp_path: Path) -> None:
         repo = make_repo(tmp_path)
         add_task(repo, "a-001", tier="build")
         add_task(repo, "a-002", tier="chore")
-        conf = write_tiers(tmp_path / "tiers.conf", "build - sonnet\nchore claude -\n")
-        result = launch(repo, ["--dry-run", "a-001", "a-002"], env_extra={"FOURMEE_TIERS": str(conf)})
+        mapping = write_tiers(tmp_path / "tiers.conf", conf(build={"model": "sonnet"}, chore={"harness": "claude"}))
+        result = launch(repo, ["--dry-run", "a-001", "a-002"], env_extra={"FOURMEE_TIERS": str(mapping)})
         rows = [line.split("\t") for line in result.stdout.splitlines() if line.startswith("WOULD")]
         assert [r[HARNESS : MODEL + 1] for r in rows] == [["auto", "sonnet"], ["claude", "default"]]
 
@@ -282,23 +292,23 @@ class TestTiers:
         """A model id means nothing to another harness: passing it through ends the session at startup."""
         repo = make_repo(tmp_path)
         add_task(repo, "a-001", tier="chore")
-        conf = write_tiers(tmp_path / "tiers.conf", "chore copilot gpt-6-luna\n")
-        result = launch(repo, ["--dry-run", "--harness", "claude", "a-001"], env_extra={"FOURMEE_TIERS": str(conf)})
+        mapping = write_tiers(tmp_path / "tiers.conf", conf(chore={"harness": "copilot", "model": "gpt-6-luna"}))
+        result = launch(repo, ["--dry-run", "--harness", "claude", "a-001"], env_extra={"FOURMEE_TIERS": str(mapping)})
         assert fields(result.stdout)[HARNESS : MODEL + 1] == ["claude", "default"]
 
     def test_the_flag_wins_over_the_mapping_and_the_environment(self, tmp_path: Path) -> None:
         repo = make_repo(tmp_path)
         add_task(repo, "a-001", tier="plan")
-        conf = write_tiers(tmp_path / "tiers.conf", "plan claude opus\n")
-        env = {"FOURMEE_TIERS": str(conf), "FOURMEE_HARNESS": "claude"}
+        mapping = write_tiers(tmp_path / "tiers.conf", conf(plan={"harness": "claude", "model": "opus"}))
+        env = {"FOURMEE_TIERS": str(mapping), "FOURMEE_HARNESS": "claude"}
         result = launch(repo, ["--dry-run", "--harness", "copilot", "a-001"], env_extra=env)
         assert fields(result.stdout)[HARNESS] == "copilot"
 
     def test_the_mapping_wins_over_the_environment(self, tmp_path: Path) -> None:
         repo = make_repo(tmp_path)
         add_task(repo, "a-001", tier="plan")
-        conf = write_tiers(tmp_path / "tiers.conf", "plan copilot\n")
-        env = {"FOURMEE_TIERS": str(conf), "FOURMEE_HARNESS": "claude"}
+        mapping = write_tiers(tmp_path / "tiers.conf", conf(plan={"harness": "copilot"}))
+        env = {"FOURMEE_TIERS": str(mapping), "FOURMEE_HARNESS": "claude"}
         result = launch(repo, ["--dry-run", "a-001"], env_extra=env)
         assert fields(result.stdout)[HARNESS] == "copilot"
 
@@ -317,7 +327,7 @@ class TestTiers:
     def test_the_developers_file_is_read_from_the_xdg_config_directory(self, tmp_path: Path) -> None:
         repo = make_repo(tmp_path)
         add_task(repo, "a-001")
-        write_tiers(tmp_path / "xdg" / "fourmee" / "tiers.conf", "build claude sonnet\n")
+        write_tiers(tmp_path / "xdg" / "fourmee" / "tiers.conf", conf(build={"harness": "claude", "model": "sonnet"}))
         result = launch(repo, ["--dry-run", "a-001"], env_extra={"XDG_CONFIG_HOME": str(tmp_path / "xdg")})
         assert fields(result.stdout)[HARNESS : MODEL + 1] == ["claude", "sonnet"]
 
@@ -325,34 +335,50 @@ class TestTiers:
         repo = make_repo(tmp_path)
         add_task(repo, "a-001", tier="plan")
         add_task(repo, "a-002", tier="build")
-        write_tiers(repo / "delivery" / "tiers.conf", "plan claude opus\nbuild claude sonnet\n")
-        mine = write_tiers(tmp_path / "mine.conf", "build claude haiku\n")
+        write_tiers(
+            repo / "delivery" / "tiers.conf",
+            conf(plan={"model": "opus"}, build={"model": "sonnet"}),
+        )
+        mine = write_tiers(tmp_path / "mine.conf", conf(build={"model": "haiku"}))
         result = launch(repo, ["--dry-run", "a-001", "a-002"], env_extra={"FOURMEE_TIERS": str(mine)})
         rows = [line.split("\t") for line in result.stdout.splitlines() if line.startswith("WOULD")]
         assert [r[MODEL] for r in rows] == ["opus", "haiku"]
 
+    def test_the_first_file_to_name_a_tier_decides_all_of_it(self, tmp_path: Path) -> None:
+        """A developer's model must not be paired with a harness the project chose."""
+        repo = make_repo(tmp_path)
+        add_task(repo, "a-001", tier="build")
+        write_tiers(repo / "delivery" / "tiers.conf", conf(build={"harness": "copilot", "model": "team-model"}))
+        mine = write_tiers(tmp_path / "mine.conf", conf(build={"model": "my-model"}))
+        result = launch(repo, ["--dry-run", "a-001"], env_extra={"FOURMEE_TIERS": str(mine)})
+        assert fields(result.stdout)[HARNESS : MODEL + 1] == ["auto", "my-model"]
+
     def test_comments_and_blank_lines_are_ignored(self, tmp_path: Path) -> None:
         repo = make_repo(tmp_path)
         add_task(repo, "a-001")
-        conf = write_tiers(tmp_path / "t.conf", "# tier harness model\n\nbuild claude sonnet  # my pick\n")
-        result = launch(repo, ["--dry-run", "a-001"], env_extra={"FOURMEE_TIERS": str(conf)})
+        text = "# my models\n\n[build]\n; the cheap one\n\tmodel = sonnet  # my pick\n"
+        mapping = write_tiers(tmp_path / "t.conf", text)
+        result = launch(repo, ["--dry-run", "a-001"], env_extra={"FOURMEE_TIERS": str(mapping)})
         assert fields(result.stdout)[MODEL] == "sonnet"
 
     @pytest.mark.parametrize(
         ("text", "message"),
         [
-            ("buidl claude sonnet\n", "t.conf:1: unknown tier 'buidl' (expected plan, build, or chore)"),
-            ("# note\nbuild gemini x\n", "t.conf:2: unknown harness 'gemini' (expected claude, copilot, or -)"),
-            ("build claude sonnet extra\n", "t.conf:1: expected 'tier [harness [model]]'"),
-            ("build claude a\nbuild claude b\n", "t.conf:2: tier 'build' is named twice"),
+            ("[buidl]\nmodel = x\n", "t.conf: unknown tier 'buidl' (expected plan, build, or chore)"),
+            ("[build]\nmodle = x\n", "t.conf: unknown key 'build.modle' (expected harness or model)"),
+            ("[build]\nharness = gemini\n", "t.conf: unknown harness 'gemini' (expected one of: claude copilot)"),
+            ("[build]\nmodel = a\nmodel = b\n", "t.conf: build.model is set twice"),
+            ("[build]\nmodel\n", "t.conf: 'build.model' has no value"),
+            ('[build "x"]\nmodel = a\n', "t.conf: unexpected key 'build.x.model'"),
+            ("[build\nmodel = x\n", "bad config line 1 in file"),
         ],
     )
-    def test_a_malformed_mapping_stops_the_launch_with_its_line(self, tmp_path: Path, text: str, message: str) -> None:
+    def test_a_malformed_mapping_stops_the_launch_and_says_where(self, tmp_path: Path, text: str, message: str) -> None:
         """A typo in a mapping must not quietly fall back to the harness default."""
         repo = make_repo(tmp_path)
         add_task(repo, "a-001")
-        conf = write_tiers(tmp_path / "t.conf", text)
-        result = launch(repo, ["--dry-run", "a-001"], env_extra={"FOURMEE_TIERS": str(conf)})
+        mapping = write_tiers(tmp_path / "t.conf", text)
+        result = launch(repo, ["--dry-run", "a-001"], env_extra={"FOURMEE_TIERS": str(mapping)})
         assert result.returncode == USAGE_ERROR
         assert message in result.stderr
 
@@ -603,9 +629,9 @@ class TestLaneStartup:
         dev = self.one_task_remote(tmp_path)
         log = tmp_path / "agent.log"
         bin_dir = fake_harness(tmp_path, log, names=("claude",))
-        conf = write_tiers(tmp_path / "t.conf", "build copilot\n")
+        mapping = write_tiers(tmp_path / "t.conf", conf(build={"harness": "copilot"}))
 
-        result = self.go(dev, tmp_path, bin_dir, log, env={"FOURMEE_TIERS": str(conf)})
+        result = self.go(dev, tmp_path, bin_dir, log, env={"FOURMEE_TIERS": str(mapping)})
 
         assert result.stdout.strip() == "SKIP\tb-001\tcopilot not found on PATH\nLANES\t0"
         assert not log.read_text(encoding="utf-8").strip(), "nothing should have been invoked"
@@ -625,9 +651,9 @@ class TestLaneStartup:
         dev = self.one_task_remote(tmp_path)
         log = tmp_path / "agent.log"
         bin_dir = fake_harness(tmp_path, log)
-        conf = write_tiers(tmp_path / "t.conf", f"build {harness} some-model\n")
+        mapping = write_tiers(tmp_path / "t.conf", conf(build={"harness": harness, "model": "some-model"}))
 
-        result = self.go(dev, tmp_path, bin_dir, log, env={"FOURMEE_TIERS": str(conf)})
+        result = self.go(dev, tmp_path, bin_dir, log, env={"FOURMEE_TIERS": str(mapping)})
 
         assert f"LAUNCHED\tb-001\t{harness}\tsome-model" in result.stdout
         wait_for(lambda: log.read_text(encoding="utf-8").strip())
@@ -637,9 +663,9 @@ class TestLaneStartup:
         dev = self.one_task_remote(tmp_path, tier="chore")
         log = tmp_path / "agent.log"
         bin_dir = fake_harness(tmp_path, log)
-        conf = write_tiers(tmp_path / "t.conf", "chore copilot gpt-6-luna\n")
+        mapping = write_tiers(tmp_path / "t.conf", conf(chore={"harness": "copilot", "model": "gpt-6-luna"}))
 
-        result = self.go(dev, tmp_path, bin_dir, log, "--harness", "claude", env={"FOURMEE_TIERS": str(conf)})
+        result = self.go(dev, tmp_path, bin_dir, log, "--harness", "claude", env={"FOURMEE_TIERS": str(mapping)})
 
         assert "LAUNCHED\tb-001\tclaude\tdefault" in result.stdout
         wait_for(lambda: log.read_text(encoding="utf-8").strip())

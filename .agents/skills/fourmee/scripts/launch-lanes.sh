@@ -160,8 +160,18 @@ is_tier() {
 
 declare -A tier_harness=()
 declare -A tier_model=()
+# A mapping is a git config file, one section per tier, read with git itself:
+#
+#   [chore]
+#       harness = copilot
+#       model = gpt-6-luna
+#
+# git is already required, so nothing here parses text. It brings the comments,
+# the quoting and the syntax errors, which it reports with the file and line.
+# What git cannot know is checked below: a section must be a tier and a key one
+# of the two.
 load_tiers() {
-  local files=() file line n tier h m extra
+  local files=() file out line name value tier key extra
   local user_conf="${XDG_CONFIG_HOME:-${HOME:-}/.config}/fourmee/tiers.conf"
   if [[ -n "${FOURMEE_TIERS:-}" ]]; then
     [[ -f "$FOURMEE_TIERS" ]] || die "FOURMEE_TIERS names a missing file: $FOURMEE_TIERS"
@@ -171,24 +181,34 @@ load_tiers() {
   fi
   [[ ! -f "$(dirname "$tasks_dir")/tiers.conf" ]] || files+=("$(dirname "$tasks_dir")/tiers.conf")
   for file in "${files[@]+"${files[@]}"}"; do
-    local -A in_file=()
-    n=0
-    while IFS= read -r line || [[ -n "$line" ]]; do
-      n=$((n + 1))
-      line="${line%%#*}"
-      read -r tier h m extra <<<"$line"
-      [[ -n "$tier" ]] || continue
-      [[ -z "$extra" ]] || die "$file:$n: expected 'tier [harness [model]]'"
-      is_tier "$tier" || die "$file:$n: unknown tier '$tier' (expected plan, build, or chore)"
-      [[ -z "$h" || "$h" == "-" ]] || is_harness "$h" ||
-        die "$file:$n: unknown harness '$h' (expected claude, copilot, or -)"
-      [[ -z "${in_file[$tier]:-}" ]] || die "$file:$n: tier '$tier' is named twice"
-      in_file["$tier"]=1
-      # An earlier file already named this tier, and the first one wins.
+    local -A named=() file_harness=() file_model=() seen=()
+    out="$(git config --file "$file" --list 2>&1)" || die "${out#fatal: }"
+    while IFS= read -r line; do
+      [[ -n "$line" ]] || continue
+      [[ "$line" == *=* ]] || die "$file: '$line' has no value"
+      name="${line%%=*}"
+      value="${line#*=}"
+      IFS=. read -r tier key extra <<<"$name"
+      [[ -n "$key" && -z "$extra" ]] || die "$file: unexpected key '$name' (expected a [tier] section)"
+      is_tier "$tier" || die "$file: unknown tier '$tier' (expected plan, build, or chore)"
+      case "$key" in harness | model) ;; *) die "$file: unknown key '$name' (expected harness or model)" ;; esac
+      [[ -z "${seen[$name]:-}" ]] || die "$file: $name is set twice"
+      seen["$name"]=1
+      named["$tier"]=1
+      if [[ "$key" == harness ]]; then
+        [[ -z "$value" ]] || is_harness "$value" ||
+          die "$file: unknown harness '$value' (expected one of: ${harnesses[*]})"
+        file_harness["$tier"]="$value"
+      else
+        file_model["$tier"]="$value"
+      fi
+    done <<<"$out"
+    # The first file to name a tier decides all of it, harness and model alike.
+    for tier in "${!named[@]}"; do
       [[ -z "${tier_harness[$tier]:-}" ]] || continue
-      tier_harness["$tier"]="${h:--}"
-      tier_model["$tier"]="${m:--}"
-    done <"$file"
+      tier_harness["$tier"]="${file_harness[$tier]:--}"
+      tier_model["$tier"]="${file_model[$tier]:--}"
+    done
   done
 }
 

@@ -32,17 +32,21 @@ developer decides what that means.**
   omits it is read as `build` only by the launcher, never by the validator.
 - A tier is not a model name. With nothing mapped, the launcher passes no model
   flag and the harness applies its own default.
-- A `tiers.conf` maps a tier to a harness and a model, either optional. Two
-  files are read and the first to name a tier wins: the developer's own, outside
-  every repository, then `delivery/tiers.conf` for a team that agrees on one.
+- A `tiers.conf` maps a tier to a harness and a model, either optional. It is a
+  git config file, one section per tier, read with `git config --file`. Two
+  files are read and the first to name a tier decides all of it: the
+  developer's own, outside every repository, then `delivery/tiers.conf` for a
+  team that agrees on one.
 - A mapping applies only to the harness it names. A model id means nothing to
   another harness, and passing it through would end the session at startup.
 - A lane runs on the first of `--harness`, the harness its tier maps to,
   `FOURMEE_HARNESS`, then the first harness installed.
 - The launcher holds no model ids, and no longer falls back between harnesses
   for a label. A harness somebody chose is never swapped for another.
-- A malformed mapping stops the launch and names its file and line. A typo must
-  not quietly fall back to the harness default.
+- A malformed mapping stops the launch and names its file. git reports syntax
+  errors with the line; the launcher checks what git cannot know, that a
+  section is a tier and a key is `harness` or `model`. A typo must not quietly
+  fall back to the harness default.
 
 **Reasoning effort is removed**, the task field and the `--effort` flag both,
 which supersedes [ADR-002](ADR-002-reasoning-effort.md). That decision treated
@@ -64,6 +68,15 @@ settings, where it is set once for the model in use.
 - **Environment variables per tier** - Rejected. They cannot carry a harness
   beside a model, and several tiers would need several variables. A file reads
   better and can be shared as a project default.
+- **A bespoke column format** - Tried first: whitespace-separated columns with a
+  `-` placeholder, parsed by hand. It needed its own parser and error handling,
+  and a new field meant a new column. Rejected for the git config format, which
+  git is already required to read.
+- **JSON, TOML or CSV** - Rejected. The launcher is bash and a consumer needs
+  only git, bash and gh. JSON has no comments and needs `jq`. Bash has no TOML
+  parser, so a hand-written subset would look like TOML and not be. CSV has no
+  comment syntax and is awkward to edit by hand. Git's format has comments,
+  quoting and errors, and nothing to install.
 - **An effort column in `tiers.conf`** - Rejected. It would work, since a
   mapping already names a harness and a model, but it makes the kit own a flag
   per harness and keep the accepted levels current as they change. The harness

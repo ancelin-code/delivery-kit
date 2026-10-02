@@ -193,21 +193,27 @@ is how a budget disappears.
 ### Mapping a tier to a model
 
 Which model a tier means depends on the licenses a developer holds, so the
-mapping is the developer's. `tiers.conf` names it, one tier per line:
+mapping is the developer's. `tiers.conf` names it in git's own config format,
+one section per tier, read with `git config`:
 
-```text
-# tier   harness   model
-plan     claude    opus
-build    claude    sonnet
-chore    copilot   gpt-6-luna
+```ini
+# Which model each tier means, for my licenses.
+[plan]
+    harness = claude
+    model = opus
+
+[chore]
+    harness = copilot
+    model = gpt-6-luna
 ```
 
-Harness and model are both optional. `-` stands for any harness, or for the
-harness's own default model, and trailing columns can be left off. A mapping
-applies only to the harness it names, so a model id never reaches a harness
-that would refuse it. A tier that no file names passes no model flag at all.
+`harness` and `model` are both optional: a missing `harness` means any, and a
+missing `model` means the harness's own default. A mapping applies only to the
+harness it names, so a model id never reaches a harness that would refuse it. A
+tier that no file names passes no model flag at all. Comments, quoting and
+syntax errors are git's.
 
-Two files are read, and the first to name a tier wins:
+Two files are read, and the first to name a tier decides all of it:
 
 1. The developer's own: `$FOURMEE_TIERS`, else
    `$XDG_CONFIG_HOME/fourmee/tiers.conf` (`~/.config/fourmee/tiers.conf`).

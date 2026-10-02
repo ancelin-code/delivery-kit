@@ -206,18 +206,24 @@ account may use, so by default it passes no model at all and the harness applies
 its own default. To say what a tier means for you, write a `tiers.conf` at
 `~/.config/fourmee/tiers.conf`. The names below are examples:
 
-```text
-# tier   harness   model
-plan     claude    opus
-build    claude    sonnet
-chore    copilot   gpt-6-luna
+```ini
+[plan]
+    harness = claude
+    model = opus
+
+[build]
+    model = sonnet
+
+[chore]
+    harness = copilot
+    model = gpt-6-luna
 ```
 
-Harness and model are both optional, and `-` stands for "any harness" or "the
-harness default". A mapping applies only to the harness it names, so a model id
-never reaches a harness that would refuse it. A team that agrees on a mapping
-can commit it as `delivery/tiers.conf`; the developer's own file wins, tier by
-tier. The full rules are in the
+The file uses git's own config format, so comments and quoting work as they do
+in `.gitconfig`. Harness and model are both optional. A mapping applies only to
+the harness it names, so a model id never reaches a harness that would refuse
+it. A team that agrees on a mapping can commit it as `delivery/tiers.conf`; the
+developer's own file wins, tier by tier. The full rules are in the
 [conventions](.agents/skills/fourmee/references/conventions.md#mapping-a-tier-to-a-model).
 
 A lane runs on the first of: `--harness`, the harness its tier maps to,
