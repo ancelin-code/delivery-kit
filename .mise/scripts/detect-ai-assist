@@ -5,14 +5,14 @@ set -euo pipefail
 #
 #   gh api .../pulls/<n>/commits --jq '.[].commit.message' | bash detect-ai-assist
 #
-# Commit messages arrive on stdin; PR_BODY and PR_AUTHOR come from the
-# environment. Exit 0 and print the reason when agents worked on it, exit 1 when
-# nothing says so. Three signals count, in this order:
+# Commit messages arrive on stdin and PR_AUTHOR comes from the environment.
+# Exit 0 and print the reason when agents worked on it, exit 1 when nothing
+# says so. Two signals count, in this order:
 #
 #   1. a Co-authored-by, Assisted-by or Generated-by trailer naming an agent
-#   2. a ticked "AI agents worked on this change" box in the pull request body,
-#      for tools that leave no trace in the commits
-#   3. a pull request opened by an agent's own bot account
+#   2. a pull request opened by an agent's own bot account
+#
+# A tool that leaves neither trace can be labelled by hand.
 #
 # Free text that merely mentions a tool is not a signal: only trailers count.
 
@@ -22,11 +22,6 @@ commits=$(cat)
 
 if grep -Eiq "^(co-authored-by|assisted-by|generated-by):.*(${tools})" <<<"$commits"; then
   echo "a commit trailer names an AI agent"
-  exit 0
-fi
-
-if grep -Eiq '^[[:space:]]*[-*] \[x\] .*AI agents' <<<"${PR_BODY:-}"; then
-  echo "the pull request body says AI agents worked on it"
   exit 0
 fi
 
