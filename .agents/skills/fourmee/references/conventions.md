@@ -190,10 +190,6 @@ tier is mapped (below) the harness picks its own default.
 Route by what the work needs, not by preference. Putting every task on `plan`
 is how a budget disappears.
 
-Reasoning effort is not a field. A level means something only for a particular
-model, and only the developer knows which one runs the lane, so it belongs to
-the harness's own settings.
-
 ### Mapping a tier to a model
 
 Which model a tier means depends on the licenses a developer holds, so the

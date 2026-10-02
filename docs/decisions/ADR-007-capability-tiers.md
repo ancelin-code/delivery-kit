@@ -51,9 +51,7 @@ something only for a particular model: the levels one harness accepts another
 refuses, and what `high` costs depends on the model behind it. Fourmee no longer
 chooses the model, so it cannot choose a level that fits it, and only the
 developer knows which model runs the lane. Effort belongs to the harness's own
-settings, where it is set once for the model in use. The validator rejects a
-leftover `effort` field and says so, so a stale value is never taken for one
-that is applied.
+settings, where it is set once for the model in use.
 
 ## Alternatives considered
 
@@ -84,9 +82,9 @@ that is applied.
 - The two-allowance routing is still possible, as a mapping that sends `chore`
   to one harness and `build` to another. It is a use of the mapping, not part of
   the kit.
-- The `model` field is rejected with a message that names the tiers, and the
-  `effort` field with one that says it was removed, so a task set written before
-  this change fails at validation, not at launch.
+- Nothing is installed anywhere yet, so there is no migration path and no
+  handling of the old fields: a task file still using `model` fails validation
+  for lacking a `tier`, and a leftover `effort` is ignored.
 - A lane's reasoning effort is whatever the harness is configured to use. Two
   lanes on the same tier can think for different lengths of time if their
   developers configured different defaults. That is the cost of not owning the

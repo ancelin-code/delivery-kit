@@ -157,8 +157,6 @@ for file in "${task_files[@]}"; do
   title="$(field "$file" title)"
   epic="$(field "$file" epic)"
   tier="$(field "$file" tier)"
-  old_model="$(field "$file" model)"
-  old_effort="$(field "$file" effort)"
   type="$(field "$file" type)"
   parallel="$(field "$file" parallel)"
   depends="$(field "$file" depends_on)"
@@ -184,22 +182,10 @@ for file in "${task_files[@]}"; do
   fi
   seen_id["$id"]=1
 
-  # The field was `model` with vendor labels before tiers; say what replaced it
-  # rather than only reporting a missing field.
-  if [[ -n "$old_model" ]]; then
-    fail "$base" "the model field is now tier: plan, build, or chore (found model: $old_model)"
-  elif [[ -n "$tier" && "$VALID_TIERS" != *" $tier "* ]]; then
+  if [[ -n "$tier" && "$VALID_TIERS" != *" $tier "* ]]; then
     fail "$base" "unknown tier: '$tier' (expected plan, build, or chore)"
-  elif [[ -z "$tier" ]]; then
-    fail "$base" "missing required field: tier (plan, build, or chore)"
   fi
-
-  # A level means something only for a particular model, and only the developer
-  # knows which one runs the lane. Say so, rather than let a stale field pass as
-  # if it were applied.
-  if [[ -n "$old_effort" ]]; then
-    fail "$base" "the effort field was removed: reasoning effort is the harness's own setting (found effort: $old_effort)"
-  fi
+  [[ -n "$tier" ]] || fail "$base" "missing required field: tier (plan, build, or chore)"
 
   # Optional: the commit and pull request type, feat when absent.
   if [[ -n "$type" && "$VALID_TYPES" != *" $type "* ]]; then

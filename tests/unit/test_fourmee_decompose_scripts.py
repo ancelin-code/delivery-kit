@@ -32,8 +32,6 @@ def write_task(
     depends_on: str = "",
     conflicts_with: str = "",
     tier: str | None = "build",
-    legacy_model: str | None = None,
-    legacy_effort: str | None = None,
     task_type: str | None = None,
     parallel: str = "true",
     criteria: bool = True,
@@ -50,8 +48,6 @@ def write_task(
         f"parallel: {parallel}\n"
         f"conflicts_with: [{conflicts_with}]\n"
         f"{'' if tier is None else f'tier: {tier}\n'}"
-        f"{'' if legacy_model is None else f'model: {legacy_model}\n'}"
-        f"{'' if legacy_effort is None else f'effort: {legacy_effort}\n'}"
         f"{'' if task_type is None else f'type: {task_type}\n'}"
         "---\n\n" + body,
         encoding="utf-8",
@@ -225,33 +221,13 @@ class TestRejectedTaskSets:
         write_task(tasks, "ingestion-001", task_type="fix")
         assert validate(tasks).returncode == VALID
 
-    @pytest.mark.parametrize("tier", ["gpt4", "opus", "luna", "Build"])
-    def test_rejects_an_unknown_tier_and_names_the_real_ones(self, tmp_path: Path, tier: str) -> None:
-        """The old vendor labels must say what replaced them, not just fail."""
+    @pytest.mark.parametrize("tier", ["gpt4", "Build"])
+    def test_rejects_an_unknown_tier(self, tmp_path: Path, tier: str) -> None:
         tasks = tmp_path / "tasks"
         write_task(tasks, "ingestion-001", tier=tier)
         result = validate(tasks)
         assert result.returncode == INVALID
         assert f"unknown tier: '{tier}' (expected plan, build, or chore)" in result.stdout
-
-    def test_rejects_the_old_model_field_and_points_at_tier(self, tmp_path: Path) -> None:
-        tasks = tmp_path / "tasks"
-        write_task(tasks, "ingestion-001", tier=None, legacy_model="sonnet")
-        result = validate(tasks)
-        assert result.returncode == INVALID
-        assert "the model field is now tier: plan, build, or chore (found model: sonnet)" in result.stdout
-
-    @pytest.mark.parametrize("level", ["medium", "high", "minimal"])
-    def test_rejects_the_removed_effort_field_and_says_why(self, tmp_path: Path, level: str) -> None:
-        """A stale effort must not pass as if it were applied."""
-        tasks = tmp_path / "tasks"
-        write_task(tasks, "ingestion-001", legacy_effort=level)
-        result = validate(tasks)
-        assert result.returncode == INVALID
-        assert (
-            f"the effort field was removed: reasoning effort is the harness's own setting (found effort: {level})"
-            in result.stdout
-        )
 
     def test_rejects_a_task_with_no_tier(self, tmp_path: Path) -> None:
         tasks = tmp_path / "tasks"

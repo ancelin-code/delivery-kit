@@ -256,9 +256,9 @@ class TestTiers:
 
     def test_an_unknown_tier_in_a_task_file_is_skipped_and_names_the_real_ones(self, tmp_path: Path) -> None:
         repo = make_repo(tmp_path)
-        add_task(repo, "a-001", tier="opus")
+        add_task(repo, "a-001", tier="gpt4")
         result = launch(repo, ["--dry-run", "a-001"])
-        assert result.stdout.startswith("SKIP\ta-001\tunknown tier in task file: opus (expected plan, build, or chore)")
+        assert result.stdout.startswith("SKIP\ta-001\tunknown tier in task file: gpt4 (expected plan, build, or chore)")
 
     def test_a_mapping_picks_the_harness_and_the_model(self, tmp_path: Path) -> None:
         repo = make_repo(tmp_path)
@@ -939,40 +939,6 @@ class TestLaneStartup:
 
         assert result.returncode == OK, result.stdout + result.stderr
         assert (tmp_path / "lanes" / "a-001").is_dir()
-
-    def test_no_session_carries_an_effort_option(self, tmp_path: Path) -> None:
-        """Reasoning effort is the harness's own setting, so the launcher passes none."""
-        for harness in ("claude", "copilot"):
-            origin_path = make_shared_origin(tmp_path / harness)
-            dev = clone_of(tmp_path / harness, origin_path, "devA")
-            log = tmp_path / harness / "agent.log"
-            bin_dir = fake_harness(tmp_path / harness, log)
-
-            launch_live(
-                dev,
-                [
-                    "--claim-script",
-                    str(CLAIM),
-                    "--worktree-root",
-                    str(tmp_path / harness / "lanes"),
-                    "--harness",
-                    harness,
-                    "a-001",
-                ],
-                bin_dir,
-                log,
-            )
-
-            wait_for(lambda log=log: log.read_text(encoding="utf-8").strip())
-            recorded = log.read_text(encoding="utf-8")
-            assert "effort" not in recorded, f"a {harness} lane was handed an effort option"
-
-    def test_the_effort_flag_is_gone(self, tmp_path: Path) -> None:
-        repo = make_repo(tmp_path)
-        add_task(repo, "a-001")
-        result = launch(repo, ["--dry-run", "--effort", "high", "a-001"])
-        assert result.returncode == USAGE_ERROR
-        assert "unknown option: --effort" in result.stderr
 
     def test_writes_a_session_log_for_the_lane(self, tmp_path: Path) -> None:
         origin_path = make_shared_origin(tmp_path)
