@@ -7,7 +7,6 @@ depends_on: []
 parallel: true
 conflicts_with: []
 tier: build
-effort: medium
 review: []
 ---
 

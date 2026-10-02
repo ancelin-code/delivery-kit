@@ -224,7 +224,7 @@ class TestLaunchAcrossRepositories:
         result = run(LAUNCH, ["--dry-run", "h-001", "a-001"], home, fake_gh(tmp_path))
 
         lanes = [line.split("\t") for line in result.stdout.splitlines() if line.startswith("WOULD-LAUNCH")]
-        assert [(lane[1], lane[6]) for lane in lanes] == [("h-001", "home"), ("a-001", "api")]
+        assert [(lane[1], lane[-1]) for lane in lanes] == [("h-001", "home"), ("a-001", "api")]
 
     @pytest.mark.parametrize("harness", ["claude", "copilot"])
     def test_a_lane_works_in_its_repository_and_reads_the_plan_here(

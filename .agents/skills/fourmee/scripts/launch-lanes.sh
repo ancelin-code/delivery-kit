@@ -41,9 +41,6 @@ Options:
                         harness the task's tier maps to in tiers.conf, then
                         $FOURMEE_HARNESS, then the first one installed. Naming
                         one forces every lane in the batch onto it.
-  --effort <level>      Override the effort of every task in this batch: low,
-                        medium, high, xhigh or max. Defaults to each task's own
-                        effort field, or medium where it has none.
   --tasks-dir <dir>     Directory holding <id>.md task files (default: delivery/tasks).
   --worktree-root <dir> Directory that receives one <task-id> worktree per lane.
                         Defaults to $FOURMEE_WORKTREE_ROOT when set, else to
@@ -74,12 +71,6 @@ max_lanes=3
 harnesses=(claude copilot)
 harness_flag=""
 env_harness="${FOURMEE_HARNESS:-}"
-# Reasoning effort is a second cost axis, independent of the model: the same
-# tier can think for longer. Left unset, each harness applies its own default,
-# so two lanes on the same tier cost differently for no stated reason. Each task
-# carries its own; this is the batch override, empty until asked for, so that a
-# task's own effort is not silently replaced by a default nobody chose.
-effort_override=""
 tasks_dir="delivery/tasks"
 # A developer's own choice, so read from the environment: set once, it reaches
 # every launch, including the ones follow.sh and the orchestrator start.
@@ -103,7 +94,6 @@ while (($# > 0)); do
   case "$1" in
     --max-lanes) [[ $# -ge 2 ]] || die "--max-lanes requires a value"; max_lanes="$2"; shift 2 ;;
     --harness) [[ $# -ge 2 ]] || die "--harness requires a value"; harness_flag="$2"; shift 2 ;;
-    --effort) [[ $# -ge 2 ]] || die "--effort requires a value"; effort_override="$2"; shift 2 ;;
     --tasks-dir) [[ $# -ge 2 ]] || die "--tasks-dir requires a value"; tasks_dir="$2"; shift 2 ;;
     --worktree-root) [[ $# -ge 2 ]] || die "--worktree-root requires a value"; worktree_root="$2"; shift 2 ;;
     --log-dir) [[ $# -ge 2 ]] || die "--log-dir requires a value"; log_dir="$2"; shift 2 ;;
@@ -128,17 +118,6 @@ is_harness() {
 [[ "$env_harness" != auto ]] || env_harness=""
 [[ -z "$harness_flag" ]] || is_harness "$harness_flag" || die "--harness must be claude, copilot, or auto"
 [[ -z "$env_harness" ]] || is_harness "$env_harness" || die "FOURMEE_HARNESS must be claude, copilot, or auto"
-# The portable set: Claude Code takes low..max, Copilot CLI also takes none and
-# minimal. Accepting only the intersection keeps a batch launchable on either
-# side, so a value chosen here never fails on one harness and not the other.
-valid_effort() {
-  case "$1" in
-    low | medium | high | xhigh | max) return 0 ;;
-    *) return 1 ;;
-  esac
-}
-[[ -z "$effort_override" ]] || valid_effort "$effort_override" ||
-  die "--effort must be low, medium, high, xhigh, or max"
 [[ -d "$tasks_dir" ]] || die "tasks directory not found: $tasks_dir"
 # Without a working claim, concurrent lanes would take the same task and report
 # LAUNCHED for every one of them. Refuse to start rather than run unlocked.
@@ -327,18 +306,6 @@ for task_id in "${task_ids[@]}"; do
   is_tier "$tier" ||
     { printf 'SKIP\t%s\tunknown tier in task file: %s (expected plan, build, or chore)\n' "$task_id" "$tier"; continue; }
 
-  # The task states the effort its work needs; --effort overrides the batch, the
-  # same way --harness overrides the harness a tier maps to.
-  effort="$effort_override"
-  if [[ -z "$effort" ]]; then
-    effort="$(field "$task_file" effort)"
-    [[ -n "$effort" ]] || effort="medium"
-  fi
-  # The validator rejects an unknown level, so reaching here means the task set
-  # was never validated. Skip the lane rather than pass a value one harness will
-  # refuse, which would fail after the claim and the worktree already exist.
-  valid_effort "$effort" ||
-    { printf 'SKIP\t%s\tunknown effort in task file: %s\n' "$task_id" "$effort"; continue; }
   # --harness is the operator's choice for the batch and wins; then the tier's
   # own mapping, then the developer's default. What is left is auto, decided at
   # launch from what is installed.
@@ -358,7 +325,7 @@ for task_id in "${task_ids[@]}"; do
 
   if ((dry_run == 1)); then
     model="$(model_for "$tier" "$use_harness")"
-    printf 'WOULD-LAUNCH\t%s\t%s\t%s\t%s\t%s\t%s\n' "$task_id" "$use_harness" "${model:-default}" "$effort" "$worktree" "$repo_name"
+    printf 'WOULD-LAUNCH\t%s\t%s\t%s\t%s\t%s\n' "$task_id" "$use_harness" "${model:-default}" "$worktree" "$repo_name"
     ! runs_alone "$task_id" || alone_started="$task_id"
     launched_ids["$task_id"]=1
     launched=$((launched + 1))
@@ -448,7 +415,6 @@ for task_id in "${task_ids[@]}"; do
     session=(claude -p "$prompt"
       "${extra[@]+"${extra[@]}"}"
       "${model_args[@]+"${model_args[@]}"}"
-      --effort "$effort"
       --permission-mode acceptEdits
       --allowedTools "${allowed[@]}"
       --disallowedTools "${denied[@]}")
@@ -458,7 +424,6 @@ for task_id in "${task_ids[@]}"; do
     session=(copilot -p "$prompt"
       "${extra[@]+"${extra[@]}"}"
       "${model_args[@]+"${model_args[@]}"}"
-      --reasoning-effort "$effort"
       --allow-all-tools
       --deny-tool 'shell(terraform apply)'
       --deny-tool 'shell(terraform destroy)')
@@ -475,7 +440,7 @@ for task_id in "${task_ids[@]}"; do
     "$publish_script" "$release_script" "$lane_report" "$task_path" "${session[@]}" \
     </dev/null >"$log_file" 2>&1 &) || true
 
-  printf 'LAUNCHED\t%s\t%s\t%s\t%s\t%s\t%s\n' "$task_id" "$use_harness" "${model:-default}" "$effort" "$worktree" "$repo_name"
+  printf 'LAUNCHED\t%s\t%s\t%s\t%s\t%s\n' "$task_id" "$use_harness" "${model:-default}" "$worktree" "$repo_name"
   ! runs_alone "$task_id" || alone_started="$task_id"
   launched_ids["$task_id"]=1
   launched=$((launched + 1))

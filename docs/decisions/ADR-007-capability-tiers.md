@@ -44,7 +44,16 @@ developer decides what that means.**
 - A malformed mapping stops the launch and names its file and line. A typo must
   not quietly fall back to the harness default.
 
-Effort stays a separate axis, as [ADR-002](ADR-002-reasoning-effort.md) decided.
+**Reasoning effort is removed**, the task field and the `--effort` flag both,
+which supersedes [ADR-002](ADR-002-reasoning-effort.md). That decision treated
+effort as an axis independent of the tier, and it is, but a level means
+something only for a particular model: the levels one harness accepts another
+refuses, and what `high` costs depends on the model behind it. Fourmee no longer
+chooses the model, so it cannot choose a level that fits it, and only the
+developer knows which model runs the lane. Effort belongs to the harness's own
+settings, where it is set once for the model in use. The validator rejects a
+leftover `effort` field and says so, so a stale value is never taken for one
+that is applied.
 
 ## Alternatives considered
 
@@ -57,6 +66,10 @@ Effort stays a separate axis, as [ADR-002](ADR-002-reasoning-effort.md) decided.
 - **Environment variables per tier** - Rejected. They cannot carry a harness
   beside a model, and several tiers would need several variables. A file reads
   better and can be shared as a project default.
+- **An effort column in `tiers.conf`** - Rejected. It would work, since a
+  mapping already names a harness and a model, but it makes the kit own a flag
+  per harness and keep the accepted levels current as they change. The harness
+  already has a setting for it, which is the better home.
 - **No required field, with `build` everywhere** - Rejected. Routing everything
   to one tier is how a budget disappears, and a required field is the one prompt
   that makes the decomposition say which tasks are worth more.
@@ -71,7 +84,14 @@ Effort stays a separate axis, as [ADR-002](ADR-002-reasoning-effort.md) decided.
 - The two-allowance routing is still possible, as a mapping that sends `chore`
   to one harness and `build` to another. It is a use of the mapping, not part of
   the kit.
-- The `model` field is rejected with a message that names the tiers, so a task
-  set written before this change fails at validation, not at launch.
+- The `model` field is rejected with a message that names the tiers, and the
+  `effort` field with one that says it was removed, so a task set written before
+  this change fails at validation, not at launch.
+- A lane's reasoning effort is whatever the harness is configured to use. Two
+  lanes on the same tier can think for different lengths of time if their
+  developers configured different defaults. That is the cost of not owning the
+  setting, and it follows from not owning the model.
+- The `LAUNCHED` and `WOULD-LAUNCH` rows lose their effort column, so the
+  worktree and repository fields move up by one.
 - Adding a harness is now one entry in the launcher's list, plus how to start
   it, not a row in a routing table.

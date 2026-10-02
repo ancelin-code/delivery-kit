@@ -76,11 +76,6 @@ done
 # Mirrors the tiers table in the delivery conventions, which is where a tier's
 # meaning is defined. A test parses that table and fails if the two drift apart.
 VALID_TIERS=" plan build chore "
-
-# The levels both harnesses accept. Copilot CLI also takes none and minimal,
-# which Claude Code rejects; a task carrying one of those would validate here
-# and then fail at launch on one side only.
-VALID_EFFORTS=" low medium high xhigh max "
 VALID_TYPES=" feat fix refactor perf test docs build ci chore "
 
 failures=0
@@ -163,7 +158,7 @@ for file in "${task_files[@]}"; do
   epic="$(field "$file" epic)"
   tier="$(field "$file" tier)"
   old_model="$(field "$file" model)"
-  effort="$(field "$file" effort)"
+  old_effort="$(field "$file" effort)"
   type="$(field "$file" type)"
   parallel="$(field "$file" parallel)"
   depends="$(field "$file" depends_on)"
@@ -199,9 +194,11 @@ for file in "${task_files[@]}"; do
     fail "$base" "missing required field: tier (plan, build, or chore)"
   fi
 
-  # Optional: a task with no effort runs at the launcher's default.
-  if [[ -n "$effort" && "$VALID_EFFORTS" != *" $effort "* ]]; then
-    fail "$base" "unknown effort: '$effort' (expected low, medium, high, xhigh, or max)"
+  # A level means something only for a particular model, and only the developer
+  # knows which one runs the lane. Say so, rather than let a stale field pass as
+  # if it were applied.
+  if [[ -n "$old_effort" ]]; then
+    fail "$base" "the effort field was removed: reasoning effort is the harness's own setting (found effort: $old_effort)"
   fi
 
   # Optional: the commit and pull request type, feat when absent.

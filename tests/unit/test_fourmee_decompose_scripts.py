@@ -12,7 +12,7 @@ from pathlib import Path
 
 import pytest
 
-from tests.unit.tiers import EFFORTS, TIERS
+from tests.unit.tiers import TIERS
 
 SKILLS = Path(__file__).resolve().parents[2] / ".agents" / "skills"
 SCRIPT = SKILLS / "fourmee-decompose" / "scripts" / "validate-tasks.sh"
@@ -33,7 +33,7 @@ def write_task(
     conflicts_with: str = "",
     tier: str | None = "build",
     legacy_model: str | None = None,
-    effort: str | None = None,
+    legacy_effort: str | None = None,
     task_type: str | None = None,
     parallel: str = "true",
     criteria: bool = True,
@@ -51,7 +51,7 @@ def write_task(
         f"conflicts_with: [{conflicts_with}]\n"
         f"{'' if tier is None else f'tier: {tier}\n'}"
         f"{'' if legacy_model is None else f'model: {legacy_model}\n'}"
-        f"{'' if effort is None else f'effort: {effort}\n'}"
+        f"{'' if legacy_effort is None else f'effort: {legacy_effort}\n'}"
         f"{'' if task_type is None else f'type: {task_type}\n'}"
         "---\n\n" + body,
         encoding="utf-8",
@@ -212,13 +212,6 @@ class TestRejectedTaskSets:
         result = validate(tasks)
         assert result.returncode == VALID, result.stdout
 
-    @pytest.mark.parametrize("level", EFFORTS)
-    def test_accepts_every_portable_effort(self, tmp_path: Path, level: str) -> None:
-        """The levels the launcher will pass to either harness."""
-        tasks = tmp_path / "tasks"
-        write_task(tasks, "ingestion-001", effort=level)
-        assert validate(tasks).returncode == VALID
-
     def test_rejects_an_unknown_type(self, tmp_path: Path) -> None:
         """The type prefixes the lane's commit, so a typo reaches the history."""
         tasks = tmp_path / "tasks"
@@ -231,24 +224,6 @@ class TestRejectedTaskSets:
         tasks = tmp_path / "tasks"
         write_task(tasks, "ingestion-001", task_type="fix")
         assert validate(tasks).returncode == VALID
-
-    def test_accepts_a_task_with_no_effort(self, tmp_path: Path) -> None:
-        """effort is optional; an absent one means medium at launch."""
-        tasks = tmp_path / "tasks"
-        write_task(tasks, "ingestion-001")
-        assert validate(tasks).returncode == VALID
-
-    def test_rejects_an_effort_only_one_harness_accepts(self, tmp_path: Path) -> None:
-        """Copilot CLI takes minimal and Claude Code does not.
-
-        Caught here the task set is still on disk; caught at launch it is a
-        lane that claimed a task and then died inside the harness.
-        """
-        tasks = tmp_path / "tasks"
-        write_task(tasks, "ingestion-001", effort="minimal")
-        result = validate(tasks)
-        assert result.returncode == INVALID
-        assert "unknown effort" in result.stdout
 
     @pytest.mark.parametrize("tier", ["gpt4", "opus", "luna", "Build"])
     def test_rejects_an_unknown_tier_and_names_the_real_ones(self, tmp_path: Path, tier: str) -> None:
@@ -265,6 +240,18 @@ class TestRejectedTaskSets:
         result = validate(tasks)
         assert result.returncode == INVALID
         assert "the model field is now tier: plan, build, or chore (found model: sonnet)" in result.stdout
+
+    @pytest.mark.parametrize("level", ["medium", "high", "minimal"])
+    def test_rejects_the_removed_effort_field_and_says_why(self, tmp_path: Path, level: str) -> None:
+        """A stale effort must not pass as if it were applied."""
+        tasks = tmp_path / "tasks"
+        write_task(tasks, "ingestion-001", legacy_effort=level)
+        result = validate(tasks)
+        assert result.returncode == INVALID
+        assert (
+            f"the effort field was removed: reasoning effort is the harness's own setting (found effort: {level})"
+            in result.stdout
+        )
 
     def test_rejects_a_task_with_no_tier(self, tmp_path: Path) -> None:
         tasks = tmp_path / "tasks"

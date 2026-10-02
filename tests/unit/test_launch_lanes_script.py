@@ -52,20 +52,15 @@ def add_task(
     *,
     conflicts_with: str = "",
     tier: str | None = "build",
-    effort: str | None = None,
     alone: bool = False,
 ) -> None:
     tasks = repo / "delivery" / "tasks"
     tasks.mkdir(parents=True, exist_ok=True)
-    # effort is optional in the schema, so None writes no line at all: that is
-    # the case the medium default has to cover.
-    effort_line = "" if effort is None else f"effort: {effort}\n"
     (tasks / f"{task_id}.md").write_text(
         "---\n"
         f"id: {task_id}\ntitle: Do {task_id}\nepic: a\ndepends_on: []\n"
         f"parallel: {str(not alone).lower()}\nconflicts_with: [{conflicts_with}]\n"
         f"{'' if tier is None else f'tier: {tier}\n'}"
-        f"{effort_line}"
         "---\n\n## Acceptance criteria\n- observable\n",
         encoding="utf-8",
     )
@@ -945,14 +940,9 @@ class TestLaneStartup:
         assert result.returncode == OK, result.stdout + result.stderr
         assert (tmp_path / "lanes" / "a-001").is_dir()
 
-    def test_pins_reasoning_effort_on_both_harnesses(self, tmp_path: Path) -> None:
-        """Effort is a cost axis the tier does not cover.
-
-        Unset, each harness applies its own default, so the cost of a lane stops
-        following from its task file. The flag is spelled differently per harness,
-        which is exactly the kind of difference that rots silently.
-        """
-        for harness, flag in (("claude", "--effort"), ("copilot", "--reasoning-effort")):
+    def test_no_session_carries_an_effort_option(self, tmp_path: Path) -> None:
+        """Reasoning effort is the harness's own setting, so the launcher passes none."""
+        for harness in ("claude", "copilot"):
             origin_path = make_shared_origin(tmp_path / harness)
             dev = clone_of(tmp_path / harness, origin_path, "devA")
             log = tmp_path / harness / "agent.log"
@@ -973,106 +963,16 @@ class TestLaneStartup:
                 log,
             )
 
+            wait_for(lambda log=log: log.read_text(encoding="utf-8").strip())
             recorded = log.read_text(encoding="utf-8")
-            assert f"{flag} medium" in recorded, f"{harness} lane ran at the harness default effort"
+            assert "effort" not in recorded, f"a {harness} lane was handed an effort option"
 
-    def test_effort_is_overridable_per_batch(self, tmp_path: Path) -> None:
-        """Medium is the default, not the only value.
-
-        A batch rerun after a round of medium-effort lanes stalled is the case
-        this exists for, and editing the script to get it would apply to every
-        future run on that machine.
-        """
-        for harness, flag in (("claude", "--effort"), ("copilot", "--reasoning-effort")):
-            origin_path = make_shared_origin(tmp_path / harness)
-            dev = clone_of(tmp_path / harness, origin_path, "devA")
-            log = tmp_path / harness / "agent.log"
-            bin_dir = fake_harness(tmp_path / harness, log)
-
-            launch_live(
-                dev,
-                [
-                    "--claim-script",
-                    str(CLAIM),
-                    "--worktree-root",
-                    str(tmp_path / harness / "lanes"),
-                    "--harness",
-                    harness,
-                    "--effort",
-                    "high",
-                    "a-001",
-                ],
-                bin_dir,
-                log,
-            )
-
-            recorded = log.read_text(encoding="utf-8")
-            assert f"{flag} high" in recorded, f"{harness} lane ignored --effort"
-            assert f"{flag} medium" not in recorded
-
-    @pytest.mark.parametrize("level", ["low", "medium", "high", "xhigh", "max"])
-    def test_accepts_every_portable_effort_level(self, tmp_path: Path, level: str) -> None:
-        """Both CLIs accept these five; Copilot also takes none and minimal.
-
-        Accepting only the intersection keeps a batch launchable on either side.
-        """
+    def test_the_effort_flag_is_gone(self, tmp_path: Path) -> None:
         repo = make_repo(tmp_path)
         add_task(repo, "a-001")
-        result = launch(repo, ["--dry-run", "--effort", level, "a-001"])
-        assert result.returncode == 0, result.stderr
-        assert result.stdout.split("\t")[4] == level
-
-    @pytest.mark.parametrize("level", ["low", "high", "xhigh", "max"])
-    def test_a_task_sets_its_own_effort(self, tmp_path: Path, level: str) -> None:
-        """The tier is the class of judgement; the effort is how much of it.
-
-        They are independent: a design-bearing task can want plan at high while
-        a planning task wants plan at medium.
-        """
-        repo = make_repo(tmp_path)
-        add_task(repo, "a-001", effort=level)
-        result = launch(repo, ["--dry-run", "a-001"])
-        assert result.stdout.split("\t")[4] == level
-
-    def test_a_task_without_an_effort_runs_at_medium(self, tmp_path: Path) -> None:
-        """effort is optional, so most task files will not carry one."""
-        repo = make_repo(tmp_path)
-        add_task(repo, "a-001")
-        result = launch(repo, ["--dry-run", "a-001"])
-        assert result.stdout.split("\t")[4] == "medium"
-
-    def test_the_batch_flag_overrides_every_task(self, tmp_path: Path) -> None:
-        """Mirrors --harness overriding the harness a tier maps to.
-
-        Holding a launch down when a budget is nearly spent has to beat what the
-        task files ask for, or the override is not one.
-        """
-        repo = make_repo(tmp_path)
-        add_task(repo, "a-001", effort="max")
-        add_task(repo, "a-002")
-        result = launch(repo, ["--dry-run", "--effort", "low", "a-001", "a-002"])
-        efforts = [row.split("\t")[4] for row in result.stdout.strip().splitlines() if row.startswith("WOULD-LAUNCH")]
-        assert efforts == ["low", "low"], result.stdout
-
-    def test_skips_a_task_whose_effort_no_harness_accepts(self, tmp_path: Path) -> None:
-        """Only an unvalidated task set reaches here.
-
-        Passing the value through would fail inside the harness, after the claim
-        and the worktree already exist, which is a lost task rather than a
-        skipped one.
-        """
-        repo = make_repo(tmp_path)
-        add_task(repo, "a-001", effort="minimal")
-        result = launch(repo, ["--dry-run", "a-001"])
-        assert result.stdout.startswith("SKIP\ta-001\tunknown effort")
-
-    def test_rejects_an_effort_level_one_harness_would_refuse(self, tmp_path: Path) -> None:
-        """minimal is valid for Copilot and not for Claude Code."""
-        repo = make_repo(tmp_path)
-        add_task(repo, "a-001")
-        result = launch(repo, ["--dry-run", "--effort", "minimal", "a-001"])
+        result = launch(repo, ["--dry-run", "--effort", "high", "a-001"])
         assert result.returncode == USAGE_ERROR
-        assert "--effort must be" in result.stderr
+        assert "unknown option: --effort" in result.stderr
 
     def test_writes_a_session_log_for_the_lane(self, tmp_path: Path) -> None:
         origin_path = make_shared_origin(tmp_path)

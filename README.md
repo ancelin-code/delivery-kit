@@ -473,12 +473,6 @@ pull requests it reports; it never merges, and it exits once every task is
 merged, or when the remaining tasks can never become ready. The orchestrator
 starts it for you after the first launch.
 
-Each task runs at the reasoning effort its file asks for, medium where it asks
-for nothing. `--effort high` overrides the whole batch, which is what to reach
-for when a round of lanes stalled on thinking rather than on a blocker, or
-`--effort low` to hold a launch down when a budget is nearly spent. Why it is
-both a field and a flag: [ADR-002](docs/decisions/ADR-002-reasoning-effort.md).
-
 ### 4. Watch a running lane
 
 Lanes run detached, one process per task, with no terminal attached. Each writes

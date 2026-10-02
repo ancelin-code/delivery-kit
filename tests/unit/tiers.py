@@ -1,4 +1,4 @@
-"""Read the tiers and effort levels out of the delivery conventions.
+"""Read the tiers out of the delivery conventions.
 
 The conventions are the single place a tier's meaning is written down. Two
 scripts must nevertheless agree with it in code: ``validate-tasks.sh`` accepts
@@ -38,7 +38,6 @@ def _first_cells(header: str) -> list[str]:
             if first == header:
                 in_table = True
             elif in_table and not first.startswith("---"):
-                # A cell can name two levels, so take every code span in it.
                 cells.extend(re.findall(r"`([a-z]+)`", first))
         else:
             in_table = False
@@ -49,4 +48,3 @@ def _first_cells(header: str) -> list[str]:
 
 
 TIERS = _first_cells("Tier")
-EFFORTS = _first_cells("Level")

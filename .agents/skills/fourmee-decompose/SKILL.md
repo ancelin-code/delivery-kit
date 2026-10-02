@@ -110,12 +110,6 @@ Set `type` to the Conventional Commits type of the change when it is not a
 feature: the lane's commit and pull request title are built from it and the
 title.
 
-Set `effort` from the same conventions when the task needs more or less
-deliberation than ordinary execution, and leave it at medium otherwise. The two
-are independent: a design-bearing task can need `plan` at high while a planning
-task needs `plan` at medium. Raising the effort on every task costs as much as
-raising the tier on every task.
-
 Set `repo` when the use case spans repositories and the task's change lands in
 another one than this: the directory name of its clone beside this repository,
 as the conventions' section on several repositories describes. One task changes

@@ -89,7 +89,6 @@ depends_on: [ingestion-001]
 parallel: true
 conflicts_with: [ingestion-004]
 tier: build
-effort: medium
 review: [security]
 ---
 ```
@@ -101,7 +100,6 @@ review: [security]
 | `parallel` | `false` makes the task run alone: it starts only when nothing else of the set is in flight, and nothing starts while it runs. For shared ground too wide for `conflicts_with`, such as a lockfile, a migration or a repository-wide rename. A set that serializes marks every task `false`. |
 | `conflicts_with` | Tasks touching the same files. Never run these concurrently, even when both are ready. |
 | `tier` | How much capability the work needs: `plan`, `build` or `chore`. Required. See [tiers](#tiers). |
-| `effort` | Reasoning effort for the lane. Optional; medium when absent. |
 | `review` | Review lenses the pull request needs beyond the general review, see [review lenses](#review-lenses). Optional. |
 | `repo` | The repository the change lands in, as the directory name of its clone, when it is not the one holding the plan. See [several repositories](#several-repositories). Optional. |
 
@@ -192,18 +190,9 @@ tier is mapped (below) the harness picks its own default.
 Route by what the work needs, not by preference. Putting every task on `plan`
 is how a budget disappears.
 
-Effort is a second axis, independent of the tier:
-
-| Level | When |
-|---|---|
-| `low` | Mechanical work with no judgement in it |
-| `medium` | The default. Ordinary execution against explicit criteria |
-| `high` | Interacting constraints, or a design the task has to get right |
-| `xhigh`, `max` | Rarely. A whole lane thinking this hard is expensive |
-
-Leave `effort` out for medium. A level above medium should be justified by what
-makes the task harder than the others. `--effort` on
-`<fourmee>/scripts/launch-lanes.sh` overrides a whole batch.
+Reasoning effort is not a field. A level means something only for a particular
+model, and only the developer knows which one runs the lane, so it belongs to
+the harness's own settings.
 
 ### Mapping a tier to a model
 

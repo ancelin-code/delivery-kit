@@ -17,7 +17,8 @@ First public release.
   git is the only state.
 - Tasks name a capability `tier` (`plan`, `build` or `chore`) instead of a
   vendor's model. A `tiers.conf` maps a tier to a harness and a model; with
-  none, the harness picks its own default.
+  none, the harness picks its own default. Reasoning effort is left to the
+  harness's own settings.
 - Multi-repository use cases planned once and landed where each change belongs.
 - A status snapshot that external tools can project into their own views.
 - Licensed under Apache-2.0.

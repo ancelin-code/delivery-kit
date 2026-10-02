@@ -81,13 +81,12 @@ still holds.
 **One task per lane.** A session that implements two tasks produces a diff that
 cannot be reviewed against either one's acceptance criteria.
 
-## Tier and effort
+## Tier
 
 The task's `tier` says how much capability the lane needs, and a `tiers.conf`
 maps it to a model when the developer has one; otherwise the harness picks its
-default. Its `effort` sets the reasoning effort. Both are defined in the
-[delivery conventions](conventions.md#tiers). `--harness` and `--effort`
-override a whole batch, for example to move a launch to a harness whose
+default, as the [delivery conventions](conventions.md#tiers) define. `--harness`
+overrides a whole batch, for example to move a launch to a harness whose
 allowance still has room.
 
 ## When a lane does not finish
