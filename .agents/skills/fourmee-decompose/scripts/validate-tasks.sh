@@ -73,15 +73,9 @@ done
 # whole cut, and a file inside tasks/ would be globbed as a task.
 [[ -n "$decomposition" ]] || decomposition="$(dirname "$tasks_dir")/decomposition.md"
 
-# Mirrors the model labels table in the delivery conventions, which is where a
-# label's meaning is defined. A test parses that table and fails if the two
-# drift apart.
-VALID_MODELS=" opus sonnet terra luna haiku "
-
-# The levels both harnesses accept. Copilot CLI also takes none and minimal,
-# which Claude Code rejects; a task carrying one of those would validate here
-# and then fail at launch on one side only.
-VALID_EFFORTS=" low medium high xhigh max "
+# Mirrors the tiers table in the delivery conventions, which is where a tier's
+# meaning is defined. A test parses that table and fails if the two drift apart.
+VALID_TIERS=" plan build chore "
 VALID_TYPES=" feat fix refactor perf test docs build ci chore "
 
 failures=0
@@ -162,8 +156,7 @@ for file in "${task_files[@]}"; do
   id="$(field "$file" id)"
   title="$(field "$file" title)"
   epic="$(field "$file" epic)"
-  model="$(field "$file" model)"
-  effort="$(field "$file" effort)"
+  tier="$(field "$file" tier)"
   type="$(field "$file" type)"
   parallel="$(field "$file" parallel)"
   depends="$(field "$file" depends_on)"
@@ -189,15 +182,10 @@ for file in "${task_files[@]}"; do
   fi
   seen_id["$id"]=1
 
-  if [[ -n "$model" && "$VALID_MODELS" != *" $model "* ]]; then
-    fail "$base" "unknown model label: '$model' (expected opus, sonnet, terra, luna, or haiku)"
+  if [[ -n "$tier" && "$VALID_TIERS" != *" $tier "* ]]; then
+    fail "$base" "unknown tier: '$tier' (expected plan, build, or chore)"
   fi
-  [[ -n "$model" ]] || fail "$base" "missing required field: model"
-
-  # Optional: a task with no effort runs at the launcher's default.
-  if [[ -n "$effort" && "$VALID_EFFORTS" != *" $effort "* ]]; then
-    fail "$base" "unknown effort: '$effort' (expected low, medium, high, xhigh, or max)"
-  fi
+  [[ -n "$tier" ]] || fail "$base" "missing required field: tier (plan, build, or chore)"
 
   # Optional: the commit and pull request type, feat when absent.
   if [[ -n "$type" && "$VALID_TYPES" != *" $type "* ]]; then

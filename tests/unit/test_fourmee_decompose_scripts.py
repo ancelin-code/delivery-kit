@@ -12,7 +12,7 @@ from pathlib import Path
 
 import pytest
 
-from tests.unit.model_labels import EFFORTS, LABELS
+from tests.unit.tiers import TIERS
 
 SKILLS = Path(__file__).resolve().parents[2] / ".agents" / "skills"
 SCRIPT = SKILLS / "fourmee-decompose" / "scripts" / "validate-tasks.sh"
@@ -31,8 +31,7 @@ def write_task(
     epic: str = "ingestion",
     depends_on: str = "",
     conflicts_with: str = "",
-    model: str = "sonnet",
-    effort: str | None = None,
+    tier: str | None = "build",
     task_type: str | None = None,
     parallel: str = "true",
     criteria: bool = True,
@@ -48,8 +47,7 @@ def write_task(
         f"depends_on: [{depends_on}]\n"
         f"parallel: {parallel}\n"
         f"conflicts_with: [{conflicts_with}]\n"
-        f"model: {model}\n"
-        f"{'' if effort is None else f'effort: {effort}\n'}"
+        f"{'' if tier is None else f'tier: {tier}\n'}"
         f"{'' if task_type is None else f'type: {task_type}\n'}"
         "---\n\n" + body,
         encoding="utf-8",
@@ -197,25 +195,18 @@ class TestRejectedTaskSets:
         assert result.returncode == INVALID
         assert "does not match the filename" in result.stdout
 
-    @pytest.mark.parametrize("label", LABELS)
-    def test_accepts_every_documented_model_label(self, tmp_path: Path, label: str) -> None:
+    @pytest.mark.parametrize("tier", TIERS)
+    def test_accepts_every_documented_tier(self, tmp_path: Path, tier: str) -> None:
         """The validator and the conventions table have to agree.
 
-        The labels come from the conventions, so adding one there without
+        The tiers come from the conventions, so adding one there without
         teaching the validator fails here rather than at decomposition, after
         the epic has already been written.
         """
         tasks = tmp_path / "tasks"
-        write_task(tasks, "ingestion-001", model=label)
+        write_task(tasks, "ingestion-001", tier=tier)
         result = validate(tasks)
         assert result.returncode == VALID, result.stdout
-
-    @pytest.mark.parametrize("level", EFFORTS)
-    def test_accepts_every_portable_effort(self, tmp_path: Path, level: str) -> None:
-        """The levels the launcher will pass to either harness."""
-        tasks = tmp_path / "tasks"
-        write_task(tasks, "ingestion-001", effort=level)
-        assert validate(tasks).returncode == VALID
 
     def test_rejects_an_unknown_type(self, tmp_path: Path) -> None:
         """The type prefixes the lane's commit, so a typo reaches the history."""
@@ -230,30 +221,20 @@ class TestRejectedTaskSets:
         write_task(tasks, "ingestion-001", task_type="fix")
         assert validate(tasks).returncode == VALID
 
-    def test_accepts_a_task_with_no_effort(self, tmp_path: Path) -> None:
-        """effort is optional; an absent one means medium at launch."""
+    @pytest.mark.parametrize("tier", ["gpt4", "Build"])
+    def test_rejects_an_unknown_tier(self, tmp_path: Path, tier: str) -> None:
         tasks = tmp_path / "tasks"
-        write_task(tasks, "ingestion-001")
-        assert validate(tasks).returncode == VALID
-
-    def test_rejects_an_effort_only_one_harness_accepts(self, tmp_path: Path) -> None:
-        """Copilot CLI takes minimal and Claude Code does not.
-
-        Caught here the task set is still on disk; caught at launch it is a
-        lane that claimed a task and then died inside the harness.
-        """
-        tasks = tmp_path / "tasks"
-        write_task(tasks, "ingestion-001", effort="minimal")
+        write_task(tasks, "ingestion-001", tier=tier)
         result = validate(tasks)
         assert result.returncode == INVALID
-        assert "unknown effort" in result.stdout
+        assert f"unknown tier: '{tier}' (expected plan, build, or chore)" in result.stdout
 
-    def test_rejects_an_unknown_model_label(self, tmp_path: Path) -> None:
+    def test_rejects_a_task_with_no_tier(self, tmp_path: Path) -> None:
         tasks = tmp_path / "tasks"
-        write_task(tasks, "ingestion-001", model="gpt4")
+        write_task(tasks, "ingestion-001", tier=None)
         result = validate(tasks)
         assert result.returncode == INVALID
-        assert "unknown model label" in result.stdout
+        assert "missing required field: tier" in result.stdout
 
     def test_rejects_a_task_without_acceptance_criteria(self, tmp_path: Path) -> None:
         """Without criteria there is nothing to check the work against."""

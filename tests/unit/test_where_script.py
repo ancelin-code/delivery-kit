@@ -60,7 +60,7 @@ def task(repo: Path, task_id: str, depends_on: str = "", review: str | None = No
         repo,
         f"delivery/tasks/{task_id}.md",
         f"---\nid: {task_id}\ntitle: Do {task_id}\nepic: a\ndepends_on: [{depends_on}]\n"
-        f"parallel: {str(not alone).lower()}\nconflicts_with: []\nmodel: sonnet\n{lenses}---\n\n"
+        f"parallel: {str(not alone).lower()}\nconflicts_with: []\ntier: build\n{lenses}---\n\n"
         "## Acceptance criteria\n- observable\n",
     )
 

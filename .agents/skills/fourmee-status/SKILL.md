@@ -40,7 +40,7 @@ out of date, or conflict on.
 - a developer or a lane launcher is about to start work on a task
 - something needs to know whether a task is already taken, and by whom
 
-The task file schema, branch naming and model labels are defined by the delivery
+The task file schema, branch naming and tiers are defined by the delivery
 conventions, `<fourmee>/references/conventions.md`. This skill does not require
 them: it reads the task id it is given, the task files in `delivery/tasks/`, and
 the git refs around it.

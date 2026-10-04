@@ -55,7 +55,7 @@ def recording_launcher(tmp_path: Path) -> Path:
     script.write_text(
         f'printf "ARGS %s\\n" "$*" >> "{record}"\n'
         f'while read -r id; do printf "IDS %s\\n" "$id" >> "{record}"; '
-        f'printf "LAUNCHED\\t%s\\tclaude\\tsonnet\\tmedium\\t../lanes/%s\\n" "$id" "$id"; done\n',
+        f'printf "LAUNCHED\\t%s\\tclaude\\tdefault\\t../lanes/%s\\n" "$id" "$id"; done\n',
         encoding="utf-8",
     )
     return script

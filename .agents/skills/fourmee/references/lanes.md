@@ -81,12 +81,13 @@ still holds.
 **One task per lane.** A session that implements two tasks produces a diff that
 cannot be reviewed against either one's acceptance criteria.
 
-## Model routing
+## Tier
 
-The task's `model` label picks the harness and model, and its `effort` the
-reasoning effort, as [delivery conventions](conventions.md#model-labels) define
-them. `--harness` and `--effort` override a whole batch, for example to move a
-launch to the side whose budget still has room.
+The task's `tier` says how much capability the lane needs, and a `tiers.conf`
+maps it to a model when the developer has one; otherwise the harness picks its
+default, as the [delivery conventions](conventions.md#tiers) define. `--harness`
+overrides a whole batch, for example to move a launch to a harness whose
+allowance still has room.
 
 ## When a lane does not finish
 

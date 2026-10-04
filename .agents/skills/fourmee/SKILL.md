@@ -71,7 +71,7 @@ requests here. Run the command it names once, and mention it in the answer.
 
 Read [delivery conventions](references/conventions.md) once per run. It defines
 what a use case, an epic and a task each are, plus the task schema, branch
-names, claims, model labels and pull request rules, and the other skills rely on
+names, claims, tiers and pull request rules, and the other skills rely on
 it rather than repeating those rules. It also fixes where every artifact below
 lives: all paths here are relative to the repository root, under `delivery/`.
 
@@ -126,7 +126,7 @@ and will reject a task trimmed for this path.
 Keep the task file. `fourmee-implement` halts without explicit acceptance
 criteria, and the file is what the diff is checked back against and what the
 pull request points at. Only `id` and `title` carry meaning here: the dependency
-and conflict fields order lanes, and `model` routes a launcher that never runs.
+and conflict fields order lanes, and `tier` routes a launcher that never runs.
 
 Commit and open the pull request as usual afterwards. Review is unchanged.
 

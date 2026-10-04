@@ -26,7 +26,7 @@ usage: bash follow.sh [options] [-- launcher options]
 
 Run from the repository root. Polls task state, prints events, and launches
 tasks as they become ready. Options after -- go to launch-lanes.sh, for example
--- --effort high --no-web.
+-- --no-web.
 
 Options:
   --interval <s>         Seconds between polls (default: 30).

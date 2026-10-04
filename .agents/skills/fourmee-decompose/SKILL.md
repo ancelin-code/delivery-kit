@@ -4,7 +4,7 @@ author: Ancelin Serre
 description: >-
   Part of Fourmee, invoked by fourmee. Break approved requirements
   and their design spine into task files that parallel lanes can execute independently,
-  with dependencies, file conflicts and model routing made explicit, then validate the set
+  with dependencies, file conflicts and tiers made explicit, then validate the set
   deterministically. Use when work has been approved and needs splitting into tasks, or
   when an existing task set needs checking before lanes start. Does not implement tasks or
   decide requirements.
@@ -100,20 +100,15 @@ Caps, because both cost and reviewability depend on them:
 - a task body of at most 30 lines
 - no restating the requirements document; link `delivery/prd.md`
 
-Route each task with a `model` label taken from the model labels table in
-`<fourmee>/references/conventions.md`. Match the label
-to the role the task plays; the table also decides which harness the lane runs
-in, so the choice spends one budget or the other.
+Give each task a `tier` from the tiers table in
+`<fourmee>/references/conventions.md`. Match it to what the task needs: `plan`
+where a wrong call costs the most, `build` for ordinary execution, `chore` for
+mechanical work. The tier only says how much capability the work needs, and the
+developer's own mapping decides which model that means.
 
 Set `type` to the Conventional Commits type of the change when it is not a
 feature: the lane's commit and pull request title are built from it and the
 title.
-
-Set `effort` from the same conventions when the task needs more or less
-deliberation than ordinary execution, and leave it at medium otherwise. The two
-are independent: a design-bearing task can need `opus` at high while a planning
-task needs `opus` at medium. Raising the effort on every task costs as much as
-raising the tier on every task.
 
 Set `repo` when the use case spans repositories and the task's change lands in
 another one than this: the directory name of its clone beside this repository,

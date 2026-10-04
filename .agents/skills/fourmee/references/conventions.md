@@ -1,7 +1,7 @@
 # Delivery conventions
 
-The shared contract for Fourmee. Task files, branches, claims, model
-labels and pull requests follow these rules. Skills reference this file rather
+The shared contract for Fourmee. Task files, branches, claims, tiers
+and pull requests follow these rules. Skills reference this file rather
 than restating it.
 
 ## Placeholders
@@ -88,8 +88,7 @@ epic: ingestion
 depends_on: [ingestion-001]
 parallel: true
 conflicts_with: [ingestion-004]
-model: sonnet
-effort: medium
+tier: build
 review: [security]
 ---
 ```
@@ -100,8 +99,7 @@ review: [security]
 | `depends_on` | Task ids that must be merged first. Empty list means ready at the start. |
 | `parallel` | `false` makes the task run alone: it starts only when nothing else of the set is in flight, and nothing starts while it runs. For shared ground too wide for `conflicts_with`, such as a lockfile, a migration or a repository-wide rename. A set that serializes marks every task `false`. |
 | `conflicts_with` | Tasks touching the same files. Never run these concurrently, even when both are ready. |
-| `model` | Routing label, see below. |
-| `effort` | Reasoning effort for the lane. Optional; medium when absent. |
+| `tier` | How much capability the work needs: `plan`, `build` or `chore`. Required. See [tiers](#tiers). |
 | `review` | Review lenses the pull request needs beyond the general review, see [review lenses](#review-lenses). Optional. |
 | `repo` | The repository the change lands in, as the directory name of its clone, when it is not the one holding the plan. See [several repositories](#several-repositories). Optional. |
 
@@ -177,35 +175,53 @@ Status is never stored. It is read from git:
 
 The holder and claim time come from `git log -1 task/<id>`.
 
-## Model labels
+## Tiers
 
-Route by role, not by preference. The label names a tier and picks the lane's
-default harness, which decides which budget pays.
+A task's `tier` says how much capability its work needs. It is a hint, not a
+model name: Fourmee cannot know which models an account may use, so unless a
+tier is mapped (below) the harness picks its own default.
 
-| Label | Role | Default harness |
+| Tier | For | Typically |
 |---|---|---|
-| `opus` | Requirements, design decisions, contracts, decomposition | Claude Code |
-| `sonnet` | Lane execution, review | Claude Code |
-| `terra` | Lane execution | Copilot CLI |
-| `luna` | Mechanical chores | Copilot CLI |
-| `haiku` | Mechanical chores, when the Copilot budget is spent | Claude Code |
+| `plan` | Work where a wrong call costs the most: design decisions, contracts, a task with interacting constraints | The most capable model |
+| `build` | Execution against explicit acceptance criteria. The default | A balanced model |
+| `chore` | Mechanical changes with no judgement in them | The fastest, cheapest model |
 
-`opus`, `sonnet` and `haiku` run on either harness, and a launch falls back to
-the installed one. `terra` and `luna` are Copilot-only. The two budgets do not
-pool: give chores `luna`, or `haiku` once the Copilot budget is spent.
+Route by what the work needs, not by preference. Putting every task on `plan`
+is how a budget disappears.
 
-Effort is a second axis, independent of the tier:
+### Mapping a tier to a model
 
-| Level | When |
-|---|---|
-| `low` | Mechanical work with no judgement in it |
-| `medium` | The default. Ordinary execution against explicit criteria |
-| `high` | Interacting constraints, or a design the task has to get right |
-| `xhigh`, `max` | Rarely. A whole lane thinking this hard is expensive |
+Which model a tier means depends on the licenses a developer holds, so the
+mapping is the developer's. `tiers.conf` names it in git's own config format,
+one section per tier, read with `git config`:
 
-Leave `effort` out for medium. A level above medium should be justified by what
-makes the task harder than the others. `--effort` on
-`<fourmee>/scripts/launch-lanes.sh` overrides a whole batch.
+```ini
+# Which model each tier means, for my licenses.
+[plan]
+    harness = claude
+    model = opus
+
+[chore]
+    harness = copilot
+    model = gpt-6-luna
+```
+
+`harness` and `model` are both optional: a missing `harness` means any, and a
+missing `model` means the harness's own default. A mapping applies only to the
+harness it names, so a model id never reaches a harness that would refuse it. A
+tier that no file names passes no model flag at all. Comments, quoting and
+syntax errors are git's.
+
+Two files are read, and the first to name a tier decides all of it:
+
+1. The developer's own: `$FOURMEE_TIERS`, else
+   `$XDG_CONFIG_HOME/fourmee/tiers.conf` (`~/.config/fourmee/tiers.conf`).
+   It lives outside every repository, so it is never committed by accident.
+2. The project's: `delivery/tiers.conf`, committed when a team agrees on one.
+
+A lane runs on the first of: `--harness`, the harness its tier maps to,
+`$FOURMEE_HARNESS`, then the first harness found installed.
 
 ## Review lenses
 

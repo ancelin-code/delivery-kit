@@ -61,7 +61,7 @@ def claimed_lane(tmp_path: Path, *, title: str = "Do a-001", task_type: str | No
     tasks.mkdir(parents=True)
     type_line = "" if task_type is None else f"type: {task_type}\n"
     (tasks / "a-001.md").write_text(
-        f"---\nid: a-001\ntitle: {title}\n{type_line}epic: a\ndepends_on: []\nmodel: sonnet\n---\n\n"
+        f"---\nid: a-001\ntitle: {title}\n{type_line}epic: a\ndepends_on: []\ntier: build\n---\n\n"
         "## Context\n\nWhy.\n\n## Acceptance criteria\n\n- the widget renders\n\n## Validation\n\nRun it.\n",
         encoding="utf-8",
     )

@@ -77,7 +77,7 @@ def task(home: Path, task_id: str, *, repo: str | None = None, depends_on: str =
     (tasks / f"{task_id}.md").write_text(
         "---\n"
         f"id: {task_id}\ntitle: Do {task_id}\nepic: a\ndepends_on: [{depends_on}]\n"
-        f"parallel: true\nconflicts_with: []\nmodel: sonnet\n"
+        f"parallel: true\nconflicts_with: []\ntier: build\n"
         f"{'' if repo is None else f'repo: {repo}\n'}"
         f"{'' if not review else f'review: [{review}]\n'}"
         "---\n\n## Acceptance criteria\n- observable\n",
@@ -224,7 +224,7 @@ class TestLaunchAcrossRepositories:
         result = run(LAUNCH, ["--dry-run", "h-001", "a-001"], home, fake_gh(tmp_path))
 
         lanes = [line.split("\t") for line in result.stdout.splitlines() if line.startswith("WOULD-LAUNCH")]
-        assert [(lane[1], lane[6]) for lane in lanes] == [("h-001", "home"), ("a-001", "api")]
+        assert [(lane[1], lane[-1]) for lane in lanes] == [("h-001", "home"), ("a-001", "api")]
 
     @pytest.mark.parametrize("harness", ["claude", "copilot"])
     def test_a_lane_works_in_its_repository_and_reads_the_plan_here(
