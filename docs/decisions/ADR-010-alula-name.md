@@ -3,6 +3,7 @@
 **Status:** accepted
 **Date:** 2026-10-04
 **Supersedes:** the name and metaphor in [ADR-006](ADR-006-fourmee-name-and-identifiers.md)
+**Partly superseded by:** [ADR-011](ADR-011-skill-names.md), for the skill names
 
 ## Context
 

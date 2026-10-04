@@ -15,7 +15,14 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
-CONVENTIONS = Path(__file__).resolve().parents[2] / ".agents" / "skills" / "alula" / "references" / "conventions.md"
+CONVENTIONS = (
+    Path(__file__).resolve().parents[2]
+    / ".agents"
+    / "skills"
+    / "delivery-orchestrator"
+    / "references"
+    / "conventions.md"
+)
 
 _ROW = re.compile(r"^\|\s*(?P<first>[^|]+?)\s*\|")
 

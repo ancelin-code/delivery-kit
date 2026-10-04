@@ -1,5 +1,5 @@
 ---
-name: alula
+name: delivery-orchestrator
 author: Ancelin Serre
 description: >-
   The project's delivery assistant and the entry point of Alula. Answers where
@@ -34,7 +34,7 @@ The entry point to Alula: it routes a use case from intent to merged
 work, deciding **what happens next** and **where a human must approve**. It does
 not do the work itself.
 
-The kit is the family of skills named `alula` and `alula-*`. They are one workflow, not a menu:
+The kit is the family of skills named `delivery-orchestrator` and `delivery-*`. They are one workflow, not a menu:
 each phase consumes the file the previous one wrote, so a phase cannot start
 before the phase ahead of it has written its artifact. Reach the other skills
 through this one.
@@ -81,10 +81,10 @@ fresh context, so a long session never has to stay alive to carry state.
 
 | Phase | Produces | Delegate to | Gate |
 |---|---|---|---|
-| Requirements | `delivery/prd.md` | `alula-spec` (stage A) | **Human approves** |
-| Design spine | decision records in `docs/adr/`, `docs/decisions/` or `delivery/decisions/`, and `delivery/contracts/<interface>.md` | `alula-spec` (stage B) | **Human approves** |
-| Decomposition | `delivery/decomposition.md`, plus `delivery/tasks/<id>.md` per task | `alula-decompose` | **Human approves** |
-| Lanes | a draft pull request per task | `alula-status`, then `alula-implement` | none, runs unattended |
+| Requirements | `delivery/prd.md` | `delivery-spec` (stage A) | **Human approves** |
+| Design spine | decision records in `docs/adr/`, `docs/decisions/` or `delivery/decisions/`, and `delivery/contracts/<interface>.md` | `delivery-spec` (stage B) | **Human approves** |
+| Decomposition | `delivery/decomposition.md`, plus `delivery/tasks/<id>.md` per task | `delivery-decompose` | **Human approves** |
+| Lanes | a draft pull request per task | `delivery-status`, then `delivery-implement` | none, runs unattended |
 | Review | findings on the pull request | the review skill each `REVIEW` row names, else the harness review | **Human approves the merge** |
 
 Approval gates sit on **artifacts**, not on steps. Once decomposition is
@@ -106,23 +106,23 @@ Choosing direct implement for genuinely parallel work produces conflicting code.
 Whether a full-route set runs in parallel is decomposition's finding, not a
 choice made here: tasks marked `parallel: false` run alone, and a set that
 serializes marks them all. The phases and gates are the same either way. When
-one person holds a serial set, skip the launcher and invoke `alula-implement`
+one person holds a serial set, skip the launcher and invoke `delivery-implement`
 per task in dependency order; the claim only earns its keep when several people
 pick from the same tasks.
 
 ### Direct implement
 
 Write one task file, `delivery/tasks/<id>.md`, from
-`<alula-decompose>/assets/task.template.md`, then invoke `alula-implement`
+`<delivery-decompose>/assets/task.template.md`, then invoke `delivery-implement`
 on it in the ordinary checkout. Nothing else in this skill applies.
 
-Skip the claim, the worktree, the launcher, `alula-status` and all three
+Skip the claim, the worktree, the launcher, `delivery-status` and all three
 approval gates. Those coordinate concurrent lanes and guard artifacts this path
 does not produce. Do not create an epic, and do not run
-`<alula-decompose>/scripts/validate-tasks.sh`: it enforces the full schema
+`<delivery-decompose>/scripts/validate-tasks.sh`: it enforces the full schema
 and will reject a task trimmed for this path.
 
-Keep the task file. `alula-implement` halts without explicit acceptance
+Keep the task file. `delivery-implement` halts without explicit acceptance
 criteria, and the file is what the diff is checked back against and what the
 pull request points at. Only `id` and `title` carry meaning here: the dependency
 and conflict fields order lanes, and `tier` routes a launcher that never runs.
@@ -141,7 +141,7 @@ Commit and open the pull request as usual afterwards. Review is unchanged.
 ## Lane policy
 
 - one task, one branch, one worktree, one pull request
-- claim before starting, by invoking the `alula-status` skill. A task reported
+- claim before starting, by invoking the `delivery-status` skill. A task reported
   as held is taken: choose another rather than retrying
 - at most three lanes at once, regardless of how many tasks are ready
 - never start two tasks that list each other in `conflicts_with`, even when both

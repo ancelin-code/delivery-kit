@@ -1,8 +1,8 @@
 ---
-name: alula-decompose
+name: delivery-decompose
 author: Ancelin Serre
 description: >-
-  Part of Alula, invoked by alula. Break approved requirements
+  Part of Alula, invoked by delivery-orchestrator. Break approved requirements
   and their design spine into task files that parallel lanes can execute independently,
   with dependencies, file conflicts and tiers made explicit, then validate the set
   deterministically. Use when work has been approved and needs splitting into tasks, or
@@ -46,12 +46,12 @@ it directly. Splitting a one-task change into an epic costs more than it saves.
 
 1. **Read the approved artifacts**: `delivery/prd.md`, `delivery/contracts/`,
    and the decision records in `docs/adr/`, `docs/decisions/` or
-   `delivery/decisions/`, whichever `alula-spec` wrote to. Read enough of
+   `delivery/decisions/`, whichever `delivery-spec` wrote to. Read enough of
    the codebase too to know what already exists, including the use case's other
    repositories when they are cloned beside this one. Decomposing from the
    requirements alone invents work that is already done.
 2. **Group work into epics**, as the delivery conventions,
-   `<alula>/references/conventions.md`, define them. A group
+   `<delivery-orchestrator>/references/conventions.md`, define them. A group
    past the cap below is two epics, not one large one.
 3. **Write one task file per unit of work**, from
    [the template](assets/task.template.md), into `delivery/tasks/<id>.md`.
@@ -100,7 +100,7 @@ Caps, because both cost and reviewability depend on them:
 - no restating the requirements document; link `delivery/prd.md`
 
 Give each task a `tier` from the tiers table in
-`<alula>/references/conventions.md`. Match it to what the task needs: `plan`
+`<delivery-orchestrator>/references/conventions.md`. Match it to what the task needs: `plan`
 where a wrong call costs the most, `build` for ordinary execution, `chore` for
 mechanical work. The tier only says how much capability the work needs, and the
 developer's own mapping decides which model that means.

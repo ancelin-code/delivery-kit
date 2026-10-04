@@ -11,7 +11,7 @@ from pathlib import Path
 from tests.conftest import SH
 
 SKILLS = Path(__file__).resolve().parents[2] / ".agents" / "skills"
-SCRIPT = SKILLS / "alula" / "scripts" / "follow.sh"
+SCRIPT = SKILLS / "delivery-orchestrator" / "scripts" / "follow.sh"
 
 COMPLETE = 0
 STUCK = 3

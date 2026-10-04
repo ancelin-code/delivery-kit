@@ -50,7 +50,7 @@ Options:
                         text the model may follow. Use --no-web when lanes
                         should build from the repository and its contracts
                         alone. The shell can still reach the network.
-  --claim-script <path> claim.sh from the alula-status skill. Defaults to the
+  --claim-script <path> claim.sh from the delivery-status skill. Defaults to the
                         copy installed beside this skill. A lane is never
                         started without a claim.
   --dry-run             Print what would happen; create nothing, launch nothing.
@@ -71,14 +71,14 @@ tasks_dir="delivery/tasks"
 # every launch, including the ones follow.sh and the orchestrator start.
 worktree_root="${ALULA_WORKTREE_ROOT:-}"
 log_dir=".lanes/logs"
-# The kit installs as a whole, so alula-status sits beside this skill. Kept as
+# The kit installs as a whole, so delivery-status sits beside this skill. Kept as
 # an option because a consuming repository may relocate the scripts; never
 # optional in effect, since a lane that cannot claim must not start.
 here="$(cd "$(dirname "$0")" && pwd)"
-claim_script="$here/../../alula-status/scripts/claim.sh"
+claim_script="$here/../../delivery-status/scripts/claim.sh"
 publish_script="$here/publish-lane.sh"
 release_script="$here/release-lane.sh"
-implement_skill="$here/../../alula-implement/SKILL.md"
+implement_skill="$here/../../delivery-implement/SKILL.md"
 harness_lib="$here/harness.sh"
 # Written by the lane inside its worktree, where an unattended session may write,
 # and published as the pull request body rather than committed.

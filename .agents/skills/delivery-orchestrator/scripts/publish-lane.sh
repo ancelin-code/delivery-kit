@@ -4,7 +4,7 @@ set -eu
 # Turn a finished lane into a draft pull request: commit, push, open.
 #
 # The launcher runs this in the lane worktree once the session exits cleanly.
-# alula-implement leaves its change uncommitted on purpose, so it stays free
+# delivery-implement leaves its change uncommitted on purpose, so it stays free
 # of git lifecycle; nothing here needs judgement, so it belongs in a script rather
 # than in the lane's prompt.
 

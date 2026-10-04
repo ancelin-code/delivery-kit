@@ -12,7 +12,7 @@ nobody can test every harness: a paid license is needed for most.
 
 ## Decision
 
-`alula/scripts/harness.sh` holds everything the launcher knows about a
+`delivery-orchestrator/scripts/harness.sh` holds everything the launcher knows about a
 harness, and is sourced by it. For each one it answers: the binary, how a prompt
 is given without a terminal, the flag that picks a model, the flag that grants
 access to the planning checkout, how an unattended session is allowed to act,

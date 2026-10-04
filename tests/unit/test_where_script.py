@@ -17,7 +17,7 @@ import pytest
 
 from tests.conftest import SH
 
-SCRIPTS = Path(__file__).resolve().parents[2] / ".agents" / "skills" / "alula" / "scripts"
+SCRIPTS = Path(__file__).resolve().parents[2] / ".agents" / "skills" / "delivery-orchestrator" / "scripts"
 WHERE = SCRIPTS / "where.sh"
 INSTALL = SCRIPTS / "install-routing.sh"
 
@@ -351,7 +351,7 @@ class TestRouting:
         repo = make_repo(tmp_path)
         result = subprocess.run([SH, str(INSTALL)], cwd=repo, capture_output=True, text=True, check=False)  # noqa: S603
         assert result.stdout == "ADDED\tAGENTS.md\nADDED\tdelivery/review-lenses.conf\n"
-        assert "alula" in (repo / "AGENTS.md").read_text(encoding="utf-8")
+        assert "delivery-orchestrator" in (repo / "AGENTS.md").read_text(encoding="utf-8")
         after = where(repo, fake_gh(tmp_path))
         assert rows(after.stdout, "ROUTING") == [["present"]]
         assert "install-routing" not in actions(after.stdout)

@@ -1,8 +1,8 @@
 ---
-name: alula-implement
+name: delivery-implement
 author: Ancelin Serre
 description: >-
-  Part of Alula, invoked by alula inside a lane. Turn one task
+  Part of Alula, invoked by delivery-orchestrator inside a lane. Turn one task
   into a validated change in the working tree: resolve its acceptance criteria, freeze the
   scope, implement, validate proportionally with the repository's own commands, check the
   diff back against the criteria, and hand off. Use when implementing a task file from a
@@ -41,7 +41,7 @@ belongs to the review step. Those boundaries are not restated here.
 A task file from a decomposed epic, containing acceptance criteria and the files
 in scope. A single change with explicit acceptance criteria works equally well.
 
-Invoked as `/alula-implement <path-to-task-file>`, read that file. Invoked with
+Invoked as `/delivery-implement <path-to-task-file>`, read that file. Invoked with
 a bare task id, the file is `delivery/tasks/<id>.md` under the repository root.
 The requirements it links are at `delivery/prd.md` and the contracts at
 `delivery/contracts/`; read them only when the task leaves a criterion unclear.
