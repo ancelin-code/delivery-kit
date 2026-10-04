@@ -11,8 +11,8 @@ tagging it.
 First public release.
 
 - Five skills that take a use case from requirements to draft pull requests:
-  `alula`, `alula-spec`, `alula-decompose`, `alula-implement` and
-  `alula-status`.
+  `delivery-orchestrator`, `delivery-spec`, `delivery-decompose`, `delivery-implement` and
+  `delivery-status`.
 - Parallel implementation lanes with claims made by create-only git pushes, so
   git is the only state.
 - Tasks name a capability `tier` (`plan`, `build` or `chore`) instead of a

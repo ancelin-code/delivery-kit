@@ -1,7 +1,7 @@
 #!/bin/sh
 set -eu
 
-# Add the block that routes a project's requests to alula to its
+# Add the block that routes a project's requests to delivery-orchestrator to its
 # AGENTS.md, which both Claude Code and Copilot CLI read on every request.
 # A skill description only fires when a request happens to match it; this is
 # what makes the kit the default for the project rather than one option.

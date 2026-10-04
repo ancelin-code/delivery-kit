@@ -1,4 +1,4 @@
-"""Behavioural tests for the alula-implement skill's bash helper script.
+"""Behavioural tests for the delivery-implement skill's bash helper script.
 
 ``detect-repo-contract.sh`` is driven end to end against a real throwaway git repository.
 """
@@ -13,11 +13,11 @@ import pytest
 
 from tests.conftest import SH
 
-SCRIPTS_DIR = Path(__file__).resolve().parents[2] / ".agents" / "skills" / "alula-implement" / "scripts"
+SCRIPTS_DIR = Path(__file__).resolve().parents[2] / ".agents" / "skills" / "delivery-implement" / "scripts"
 
 pytestmark = pytest.mark.skipif(
     shutil.which("jq") is None or shutil.which("git") is None,
-    reason="jq and git are required to exercise the alula-implement helper scripts",
+    reason="jq and git are required to exercise the delivery-implement helper scripts",
 )
 
 

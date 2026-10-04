@@ -26,7 +26,7 @@ from tests.unit.test_launch_lanes_script import (
 
 TASK_ARGS = "delivery/tasks/b-001.md --report .lane-report.md"
 READ_PROMPT = "Read {skill} and follow it as a skill, with the arguments: " + TASK_ARGS
-SLASH_PROMPT = "/alula-implement " + TASK_ARGS
+SLASH_PROMPT = "/delivery-implement " + TASK_ARGS
 DENY_TERRAFORM = {"terraform apply*": "deny", "terraform destroy*": "deny"}
 
 
@@ -97,7 +97,7 @@ def run_lane(
 def skill_path() -> str:
     from tests.unit.test_launch_lanes_script import SKILLS  # noqa: PLC0415
 
-    return str(SKILLS / "alula" / "scripts" / ".." / ".." / "alula-implement" / "SKILL.md")
+    return str(SKILLS / "delivery-orchestrator" / "scripts" / ".." / ".." / "delivery-implement" / "SKILL.md")
 
 
 class TestCommandLines:

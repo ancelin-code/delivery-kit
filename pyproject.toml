@@ -80,6 +80,6 @@ disable = [
 
 [tool.rumdl.per-file-ignores]
 # A section appended to a project's AGENTS.md, not a document of its own.
-".agents/skills/alula/assets/agents-routing.md" = ["MD041"]
+".agents/skills/delivery-orchestrator/assets/agents-routing.md" = ["MD041"]
 # GitHub shows this as the pre-filled description, which has no title.
 ".github/PULL_REQUEST_TEMPLATE.md" = ["MD041"]

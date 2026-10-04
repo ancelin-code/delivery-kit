@@ -18,8 +18,8 @@ from tests.conftest import SH
 from tests.unit.tiers import TIERS
 
 SKILLS = Path(__file__).resolve().parents[2] / ".agents" / "skills"
-SCRIPT = SKILLS / "alula" / "scripts" / "launch-lanes.sh"
-CLAIM = SKILLS / "alula-status" / "scripts" / "claim.sh"
+SCRIPT = SKILLS / "delivery-orchestrator" / "scripts" / "launch-lanes.sh"
+CLAIM = SKILLS / "delivery-status" / "scripts" / "claim.sh"
 
 OK = 0
 USAGE_ERROR = 1
@@ -731,7 +731,7 @@ class TestLaneStartup:
         )
 
         recorded = log.read_text(encoding="utf-8")
-        assert "/alula-implement " in recorded
+        assert "/delivery-implement " in recorded
         assert "a-001.md" in recorded, "the task file must reach the skill as its argument"
 
     def test_passes_the_deny_rules_to_the_session(self, tmp_path: Path) -> None:

@@ -16,8 +16,8 @@ import pytest
 from tests.conftest import SH
 
 SKILLS = Path(__file__).resolve().parents[2] / ".agents" / "skills"
-SCRIPT = SKILLS / "alula" / "scripts" / "publish-lane.sh"
-CLAIM = SKILLS / "alula-status" / "scripts" / "claim.sh"
+SCRIPT = SKILLS / "delivery-orchestrator" / "scripts" / "publish-lane.sh"
+CLAIM = SKILLS / "delivery-status" / "scripts" / "claim.sh"
 
 OK = 0
 USAGE_ERROR = 1

@@ -17,7 +17,7 @@ consumer. Install them together.
 The skills hold no harness-specific tool names. The lane launcher has adapters
 for Claude Code, GitHub Copilot CLI, Codex CLI, OpenCode and Pi, and a custom
 command for any other, so no single vendor's license is required. A task says how much capability it needs
-with a [tier](.agents/skills/alula/references/conventions.md#tiers), and the
+with a [tier](.agents/skills/delivery-orchestrator/references/conventions.md#tiers), and the
 harness, or your own mapping, decides which model that means.
 
 ## How the kit fits together
@@ -37,15 +37,15 @@ Every artifact lives under `delivery/` at the repository root, so no agent has
 to search for one.
 
 The definitions the agents apply are in
-[delivery conventions](.agents/skills/alula/references/conventions.md#use-cases-epics-and-tasks).
+[delivery conventions](.agents/skills/delivery-orchestrator/references/conventions.md#use-cases-epics-and-tasks).
 
 ```mermaid
 flowchart TD
-    H([Human]) -->|invokes, once per phase| O["/alula"]
+    H([Human]) -->|invokes, once per phase| O["/delivery-orchestrator"]
 
     subgraph UC["one repository = one use case"]
-        O -.->|routes to| SPEC["/alula-spec"]
-        O -.->|routes to| DEC["/alula-decompose"]
+        O -.->|routes to| SPEC["/delivery-spec"]
+        O -.->|routes to| DEC["/delivery-decompose"]
         O -.->|routes to| LAUNCH["launch-lanes.sh<br/>up to 3 lanes"]
 
         SPEC -->|delivery/prd.md<br/>decisions + contracts| G1{{Human approves}}
@@ -53,8 +53,8 @@ flowchart TD
         DEC -->|delivery/decomposition.md<br/>delivery/tasks/*.md| G2{{Human approves}}
         G2 --> LAUNCH
 
-        LAUNCH -->|claims via| ST["/alula-status"]
-        LAUNCH -->|one worktree per task| IMP["/alula-implement"]
+        LAUNCH -->|claims via| ST["/delivery-status"]
+        LAUNCH -->|one worktree per task| IMP["/delivery-implement"]
         IMP -->|draft pull request| G3{{Human approves the merge}}
     end
 
@@ -78,7 +78,7 @@ of the route to use:
 
 | Path | When | What runs |
 |---|---|---|
-| Direct implement | One well-understood change with obvious acceptance criteria | one task file, then `alula-implement` in the ordinary checkout; no claim, no worktree, only the merge gate |
+| Direct implement | One well-understood change with obvious acceptance criteria | one task file, then `delivery-implement` in the ordinary checkout; no claim, no worktree, only the merge gate |
 | Full route | Several tasks, contracts to keep parallel work consistent, or a decision worth recording | every phase and every gate, up to three lanes at once |
 
 How much of a full route runs in parallel is decomposition's finding, not a
@@ -88,16 +88,16 @@ choice made up front; see [Parallel or serial](#parallel-or-serial).
 
 | Skill | Owns | Produces | Runs as |
 |---|---|---|---|
-| `alula` | Where the project stands, the route, the gates, the lane policy | decisions about what happens next | a human's session |
-| `alula-spec` | Requirements (stage A), then decisions and contracts (stage B) | `delivery/prd.md`, decision records, `delivery/contracts/` | a human's session |
-| `alula-decompose` | Splitting approved work into epics and independent tasks | `delivery/decomposition.md` and `delivery/tasks/<id>.md`, validated | a human's session |
-| `alula-status` | Claims and run state, read from git | exit codes and tab-separated rows | `sh`, no model |
-| `alula-implement` | One task into one validated change | a working tree and a handoff report | an unattended lane |
+| `delivery-orchestrator` | Where the project stands, the route, the gates, the lane policy | decisions about what happens next | a human's session |
+| `delivery-spec` | Requirements (stage A), then decisions and contracts (stage B) | `delivery/prd.md`, decision records, `delivery/contracts/` | a human's session |
+| `delivery-decompose` | Splitting approved work into epics and independent tasks | `delivery/decomposition.md` and `delivery/tasks/<id>.md`, validated | a human's session |
+| `delivery-status` | Claims and run state, read from git | exit codes and tab-separated rows | `sh`, no model |
+| `delivery-implement` | One task into one validated change | a working tree and a handoff report | an unattended lane |
 
-Only `alula` is invoked by a human directly. The rest are reached
+Only `delivery-orchestrator` is invoked by a human directly. The rest are reached
 through it, or through `launch-lanes.sh`.
 
-`alula-spec` covers two stages rather than shipping as two skills: they are
+`delivery-spec` covers two stages rather than shipping as two skills: they are
 written in one sitting from the same source material, and the design spine is
 worthless without approved requirements to hang it on.
 
@@ -106,7 +106,7 @@ or install a review skill alongside the kit and compare it against the
 unassisted harness before adopting it. To have the orchestrator suggest which
 review skill a pull request needs, map concerns such as security or data to
 installed skills in `delivery/review-lenses.conf`; the format is in the
-[review lenses](.agents/skills/alula/references/conventions.md#review-lenses)
+[review lenses](.agents/skills/delivery-orchestrator/references/conventions.md#review-lenses)
 convention.
 
 ## Where the work happens
@@ -193,7 +193,7 @@ each merge to start the next task.
 A serial set still goes through every phase and every gate: the requirements,
 contracts and task files are what stop the work encoding guesses, whether or
 not it runs concurrently. What changes is who needs the lanes. When one person
-holds the whole set, skip the launcher and invoke `alula-implement` per task
+holds the whole set, skip the launcher and invoke `delivery-implement` per task
 in dependency order; the claim only earns its keep when several people pick
 from the same tasks.
 
@@ -230,7 +230,7 @@ in `.gitconfig`. Harness and model are both optional. A mapping applies only to
 the harness it names, so a model id never reaches a harness that would refuse
 it. A team that agrees on a mapping can commit it as `delivery/tiers.conf`; the
 developer's own file wins, tier by tier. The full rules are in the
-[conventions](.agents/skills/alula/references/conventions.md#mapping-a-tier-to-a-model).
+[conventions](.agents/skills/delivery-orchestrator/references/conventions.md#mapping-a-tier-to-a-model).
 
 A lane runs on the first of: `--harness`, the harness its tier maps to,
 `$ALULA_HARNESS`, then the first harness found installed. `--harness` moves a
@@ -421,11 +421,11 @@ need.
 Then make the kit the project's default assistant, and commit `AGENTS.md`:
 
 ```sh
-sh .agents/skills/alula/scripts/install-routing.sh
+sh .agents/skills/delivery-orchestrator/scripts/install-routing.sh
 ```
 
 It appends a short block to `AGENTS.md`, creating it if needed, that sends every
-request about the project to `alula`. Claude Code and Copilot
+request about the project to `delivery-orchestrator`. Claude Code and Copilot
 CLI both read that file on every request, so the kit is consulted even when a
 question matches no skill description. Without it, a plain *"what's the status
 of this project?"* reached no kit skill in either harness, and Copilot answered
@@ -449,7 +449,7 @@ security   security-review   */auth/* *secret* *.tf
 
 A task can also ask for a lens through its `review` field, and anyone can add
 one to a pull request with a `review:<lens>` label. The full format is in the
-[review lenses](.agents/skills/alula/references/conventions.md#review-lenses)
+[review lenses](.agents/skills/delivery-orchestrator/references/conventions.md#review-lenses)
 convention. The script never overwrites an existing file.
 
 Both directories matter: Copilot CLI reads `.agents/skills/`, while Claude Code
@@ -467,14 +467,14 @@ copilot skill list          # inspect Personal skills
 ls ~/.claude/skills         # and here
 ```
 
-Disable anything that collides with a `alula` name.
+Disable anything that collides with a `delivery` or `delivery-*` name.
 
 ### 3. Drive the route
 
 Tell the orchestrator what you want built:
 
 ```text
-/alula <what to build>
+/delivery-orchestrator <what to build>
 ```
 
 In a repository with no `delivery/prd.md` yet, that starts the requirements.
@@ -484,7 +484,7 @@ second one to start.
 
 Ask it where things stand at any time, in your own words: *"what's next?"*,
 *"what's the status?"*, *"who is on what?"*. The answer comes from
-`alula/scripts/where.sh`, which reads `delivery/` and git in one
+`delivery-orchestrator/scripts/where.sh`, which reads `delivery/` and git in one
 call and names the next action. For each pull request in review, it also
 names the review skills to run on it.
 
@@ -496,9 +496,9 @@ are from `delivery/`, so no session has to stay alive across a gate.
 To start lanes once tasks are approved:
 
 ```sh
-sh .agents/skills/alula-status/scripts/status.sh --ready \
+sh .agents/skills/delivery-status/scripts/status.sh --ready \
   | awk '$1=="TASK"{print $2}' \
-  | sh .agents/skills/alula/scripts/launch-lanes.sh --dry-run
+  | sh .agents/skills/delivery-orchestrator/scripts/launch-lanes.sh --dry-run
 ```
 
 Drop `--dry-run` to start real lanes. Each lane ends as a draft pull request:
@@ -524,7 +524,7 @@ it depends on land, and prints one line per event, so nobody has to ask what is
 next or refresh the forge:
 
 ```sh
-sh .agents/skills/alula/scripts/follow.sh -- --no-web
+sh .agents/skills/delivery-orchestrator/scripts/follow.sh -- --no-web
 ```
 
 Options after `--` go to the launcher. Your part is reviewing and merging the
@@ -604,7 +604,7 @@ worktree. When it is not, start a fresh session there and point it at the task
 file and the branch:
 
 ```sh
-cd "$lane" && claude "/alula-implement $home/delivery/tasks/a-001.md"
+cd "$lane" && claude "/delivery-implement $home/delivery/tasks/a-001.md"
 ```
 
 Claude Code can also run lanes as attachable background sessions
@@ -629,13 +629,13 @@ whole use case as JSON: epics and what each delivers, tasks with the state
 documents.
 
 ```sh
-sh .agents/skills/alula-status/scripts/snapshot.sh
+sh .agents/skills/delivery-status/scripts/snapshot.sh
 ```
 
 A connector reads that on stdin:
 
 ```sh
-sh .agents/skills/alula-status/scripts/snapshot.sh \
+sh .agents/skills/delivery-status/scripts/snapshot.sh \
   | alula-jira --config ~/jira/shop.toml --dry-run
 ```
 
@@ -690,7 +690,7 @@ loudly:
 - the `.claude/skills/` symlinks, which exist only because Claude Code did not
   register `.agents/skills/`. Harmless if that changes, but dead weight.
 - slash-command invocation of a skill. If a harness stops resolving
-  `/alula-implement <task-file>` as an invocation, every lane reverts to
+  `/delivery-implement <task-file>` as an invocation, every lane reverts to
   reading the skill as prose, which makes its boundaries advisory and leaves no
   trace in the lane log.
 
@@ -699,7 +699,7 @@ This is a maintainer's task, not part of a run. It is deliberately not in any
 
 ## Design
 
-The route, the gates and the lane policy live in the `alula`
+The route, the gates and the lane policy live in the `delivery-orchestrator`
 skill. Shared conventions - the use case, epic and task units, placeholders,
 task schema, branch names, the claim protocol, tiers, pull request rules -
 are in its `references/`, loaded on demand during a run.

@@ -35,7 +35,7 @@ The launcher takes task ids and does the rest. It reads ids from arguments or
 from standard input, so it composes with whatever decided they were ready:
 
 ```sh
-sh <alula-status>/scripts/status.sh --ready \
+sh <delivery-status>/scripts/status.sh --ready \
   | awk '$1 == "TASK" { print $2 }' \
   | sh <skill-root>/scripts/launch-lanes.sh
 ```
@@ -51,11 +51,11 @@ flight, which a single launch cannot see.
 Use `--dry-run` first when the task set is unfamiliar. It makes every decision
 and prints the outcome without creating a worktree or starting a session.
 
-`<alula-status>` and `<skill-root>` are two different skills' roots; see
+`<delivery-status>` and `<skill-root>` are two different skills' roots; see
 [placeholders](conventions.md#placeholders).
 
 The launcher claims every task before starting it, using
-`<alula-status>/scripts/claim.sh`. It finds that copy beside itself, so
+`<delivery-status>/scripts/claim.sh`. It finds that copy beside itself, so
 `--claim-script <path>` is only needed when a repository has relocated the
 scripts. It refuses a task whose claim it loses, removing the worktree it had
 created: losing a claim is routine, not an error. A claim that fails for any other reason stops that lane and says

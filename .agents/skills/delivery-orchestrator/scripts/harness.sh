@@ -28,7 +28,7 @@ is_harness() {
 #   harness_prompt <harness> <cross-repo: 0|1> <skill file> <arguments>
 harness_prompt() {
   case "$1:$2" in
-    claude:* | copilot:0) printf '/alula-implement %s' "$4" ;;
+    claude:* | copilot:0) printf '/delivery-implement %s' "$4" ;;
     *) printf 'Read %s and follow it as a skill, with the arguments: %s' "$3" "$4" ;;
   esac
 }

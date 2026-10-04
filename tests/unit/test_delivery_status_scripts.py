@@ -1,4 +1,4 @@
-"""Behavioural tests for the alula-status skill's bash helper scripts.
+"""Behavioural tests for the delivery-status skill's bash helper scripts.
 
 ``claim.sh`` is driven against real throwaway git repositories: a bare repository
 stands in for the shared remote and one clone per simulated developer. The claim
@@ -18,7 +18,7 @@ import pytest
 
 from tests.conftest import SH
 
-SCRIPTS_DIR = Path(__file__).resolve().parents[2] / ".agents" / "skills" / "alula-status" / "scripts"
+SCRIPTS_DIR = Path(__file__).resolve().parents[2] / ".agents" / "skills" / "delivery-status" / "scripts"
 
 # Exit codes of claim.sh; callers branch on these rather than on its output text.
 CLAIM_WON = 0
@@ -27,7 +27,7 @@ CLAIM_HELD = 2
 
 pytestmark = pytest.mark.skipif(
     shutil.which("git") is None,
-    reason="bash and git are required to exercise the alula-status helper scripts",
+    reason="bash and git are required to exercise the delivery-status helper scripts",
 )
 
 

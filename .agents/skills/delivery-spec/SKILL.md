@@ -1,8 +1,8 @@
 ---
-name: alula-spec
+name: delivery-spec
 author: Ancelin Serre
 description: >-
-  Part of Alula, invoked by alula. Turn an intent into a short
+  Part of Alula, invoked by delivery-orchestrator. Turn an intent into a short
   requirements document, then record the design decisions and interface contracts that let
   parallel lanes build compatible parts. Use when starting a use case, when an ask is too
   vague to decompose, or when parallel work needs an agreed interface to build against.
@@ -40,7 +40,7 @@ before stage A is approved.
 Three pages at most for the requirements. Length is not thoroughness: a long
 document hides the decisions that matter and costs tokens in every phase that
 loads it. The real test is that the requirements stay short enough for
-`alula-decompose` to cut into tasks without re-reading them.
+`delivery-decompose` to cut into tasks without re-reading them.
 
 Three is a budget, not a finding. Before exceeding it, check whether the excess
 is really design detail that belongs in stage B. If it is genuinely requirements
@@ -170,7 +170,7 @@ Read the requirements, decisions and contracts as a set, and confirm they do not
 contradict each other. A contradiction found here is cheap; found during
 integration it is not.
 
-Present them and stop. A human approves before `alula-decompose` runs.
+Present them and stop. A human approves before `delivery-decompose` runs.
 
 ## Boundaries
 
