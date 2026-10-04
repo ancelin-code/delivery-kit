@@ -85,7 +85,7 @@ type="$(field "$task_file" type)"
 [ -n "$type" ] || type="feat"
 # Task titles are sentence case; commit subjects are not. Leave an acronym alone.
 case "$title" in
-  [A-Z][a-z]*) title="$(printf '%s' "$title" | cut -c1 | tr '[:upper:]' '[:lower:]')${title#?}" ;;
+  [[:upper:]][[:lower:]]*) title="$(printf '%s' "$title" | cut -c1 | tr '[:upper:]' '[:lower:]')${title#?}" ;;
 esac
 subject="$type${epic:+($epic)}: $title"
 

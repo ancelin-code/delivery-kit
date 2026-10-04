@@ -84,7 +84,7 @@ fi
 # Task ids are epic-scoped slugs such as "ingestion-003". Rejecting anything
 # else keeps the id usable as a branch name and as a filename.
 case "$task_id" in
-  "" | -* | *- | *[!a-z0-9-]*)
+  "" | -* | *- | *[!-[:lower:][:digit:]]*)
     die "invalid task id: '$task_id' (expected a lowercase slug, e.g. ingestion-003)"
     ;;
 esac

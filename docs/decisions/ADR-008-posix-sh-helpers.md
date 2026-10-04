@@ -61,3 +61,6 @@ on a machine that has set the repository up, not on a consumer's machine.
 - Only POSIX awk is available, so `validate-tasks.sh` and the JSON escaping in
   `snapshot.sh` avoid gawk-only functions and `-v` assignments that read
   backslashes.
+- Ranges such as `[a-z]` in a `case` pattern follow the locale on macOS's `sh`
+  and also match capitals, so patterns use `[:lower:]`, `[:upper:]` and
+  `[:digit:]`. The macOS CI job found this; no other platform does.

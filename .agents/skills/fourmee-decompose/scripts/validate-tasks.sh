@@ -160,7 +160,7 @@ for file in "$tasks_dir"/*.md; do
 
   # The id is used as a branch name and a filename, so it must stay a slug.
   case "$id" in
-    -* | *- | *[!a-z0-9-]*) fail "$base" "id is not a lowercase slug: '$id'" ;;
+    -* | *- | *[!-[:lower:][:digit:]]*) fail "$base" "id is not a lowercase slug: '$id'" ;;
   esac
 
   # A mismatch silently breaks every lookup that goes through the filename.
@@ -195,7 +195,7 @@ for file in "$tasks_dir"/*.md; do
   # machine, so it is caught here.
   if [ -n "$repo" ]; then
     case "$repo" in
-      . | .. | *[!A-Za-z0-9._-]*)
+      . | .. | *[!-._[:alnum:]]*)
         fail "$base" "repo must be the directory name of a sibling clone, got '$repo'"
         ;;
       *)
