@@ -16,6 +16,7 @@ from pathlib import Path
 
 import pytest
 
+from tests.conftest import SH
 from tests.unit.test_fourmee_decompose_scripts import validate, write_summary
 
 SKILLS = Path(__file__).resolve().parents[2] / ".agents" / "skills"
@@ -32,8 +33,8 @@ ERROR = 1
 INVALID = 2
 
 pytestmark = pytest.mark.skipif(
-    shutil.which("bash") is None or shutil.which("git") is None,
-    reason="bash and git are required",
+    shutil.which("git") is None,
+    reason="git is required",
 )
 
 
@@ -133,7 +134,7 @@ def fake_gh(
 def run(script: Path, args: list[str], cwd: Path, bin_dir: Path, **env: str) -> subprocess.CompletedProcess[str]:
     full_env = {**os.environ, "PATH": f"{bin_dir}{os.pathsep}{os.environ['PATH']}", **env}
     return subprocess.run(  # noqa: S603
-        ["bash", str(script), *args],  # noqa: S607
+        [SH, str(script), *args],
         cwd=cwd,
         env=full_env,
         capture_output=True,

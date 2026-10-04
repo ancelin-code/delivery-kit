@@ -1,17 +1,11 @@
-#!/usr/bin/env bash
-set -euo pipefail
-
-# Fail early and clearly on an older bash, such as the 3.2 macOS ships.
-if ((BASH_VERSINFO[0] < 4 || (BASH_VERSINFO[0] == 4 && BASH_VERSINFO[1] < 4))); then
-  printf 'ERROR\tbash 4.4 or later is required, found %s\n' "$BASH_VERSION" >&2
-  exit 1
-fi
+#!/bin/sh
+set -eu
 
 # Turn a finished lane into a draft pull request: commit, push, open.
 #
 # The launcher runs this in the lane worktree once the session exits cleanly.
 # fourmee-implement leaves its change uncommitted on purpose, so it stays free
-# of git lifecycle; nothing here needs judgement, so it belongs in bash rather
+# of git lifecycle; nothing here needs judgement, so it belongs in a script rather
 # than in the lane's prompt.
 
 die() {
@@ -21,7 +15,7 @@ die() {
 
 usage() {
   cat <<'USAGE'
-usage: bash publish-lane.sh [options] <task-file>
+usage: sh publish-lane.sh [options] <task-file>
 
 Run from the root of the lane worktree, on branch task/<id>. Commits every
 change except the report, pushes the branch, and opens a draft pull request.
@@ -50,20 +44,20 @@ report=".lane-report.md"
 remote="origin"
 task_file=""
 
-while (($# > 0)); do
+while [ $# -gt 0 ]; do
   case "$1" in
-    --report) [[ $# -ge 2 ]] || die "--report requires a value"; report="$2"; shift 2 ;;
-    --remote) [[ $# -ge 2 ]] || die "--remote requires a value"; remote="$2"; shift 2 ;;
+    --report) [ $# -ge 2 ] || die "--report requires a value"; report="$2"; shift 2 ;;
+    --remote) [ $# -ge 2 ] || die "--remote requires a value"; remote="$2"; shift 2 ;;
     -h | --help) usage; exit 0 ;;
     -*) die "unknown option: $1" ;;
-    *) [[ -z "$task_file" ]] || die "one task file only"; task_file="$1"; shift ;;
+    *) [ -z "$task_file" ] || die "one task file only"; task_file="$1"; shift ;;
   esac
 done
 
-[[ -n "$task_file" ]] || die "no task file given"
-[[ -f "$task_file" ]] || die "task file not found: $task_file"
+[ -n "$task_file" ] || die "no task file given"
+[ -f "$task_file" ] || die "task file not found: $task_file"
 git rev-parse --is-inside-work-tree >/dev/null 2>&1 || die "not inside a git repository"
-[[ "$(git rev-parse --show-toplevel)" == "$(pwd -P)" ]] || die "run from the root of the lane worktree"
+[ "$(git rev-parse --show-toplevel)" = "$(pwd -P)" ] || die "run from the root of the lane worktree"
 
 field() {
   awk -v key="$2" '
@@ -82,15 +76,17 @@ field() {
 
 task_id="$(basename "$task_file" .md)"
 branch="task/$task_id"
-[[ "$(git symbolic-ref --short -q HEAD)" == "$branch" ]] || die "not on $branch"
+[ "$(git symbolic-ref --short -q HEAD)" = "$branch" ] || die "not on $branch"
 
 title="$(field "$task_file" title)"
 epic="$(field "$task_file" epic)"
 type="$(field "$task_file" type)"
-[[ -n "$title" ]] || die "task file has no title"
-[[ -n "$type" ]] || type="feat"
+[ -n "$title" ] || die "task file has no title"
+[ -n "$type" ] || type="feat"
 # Task titles are sentence case; commit subjects are not. Leave an acronym alone.
-[[ ! "$title" =~ ^[A-Z][a-z] ]] || title="${title,}"
+case "$title" in
+  [A-Z][a-z]*) title="$(printf '%s' "$title" | cut -c1 | tr '[:upper:]' '[:lower:]')${title#?}" ;;
+esac
 subject="$type${epic:+($epic)}: $title"
 
 # A task planned in another repository is named by a link to it there: its path
@@ -99,18 +95,24 @@ subject="$type${epic:+($epic)}: $title"
 task_md='`'"$task_file"'`'
 task_ref="$task_file"
 task_dir="$(cd "$(dirname "$task_file")" && pwd -P)"
-if [[ "$task_dir/" != "$(pwd -P)/"* ]] && home="$(git -C "$task_dir" rev-parse --show-toplevel 2>/dev/null)"; then
+outside=0
+case "$task_dir/" in "$(pwd -P)/"*) ;; *) outside=1 ;; esac
+if [ "$outside" -eq 1 ] && home="$(git -C "$task_dir" rev-parse --show-toplevel 2>/dev/null)"; then
   rel="$task_dir/$(basename "$task_file")"
   rel="${rel#"$home"/}"
   task_ref="$(basename "$home")/$rel"
   task_md='`'"$task_ref"'`'
   if home_url="$(git -C "$home" remote get-url "$remote" 2>/dev/null)"; then
     home_url="${home_url%.git}"
-    [[ "$home_url" != git@*:* ]] || { home_url="${home_url#git@}"; home_url="https://${home_url/://}"; }
-    if [[ "$home_url" == https://* ]]; then
-      task_ref="$home_url/blob/HEAD/$rel"
-      task_md="[$rel]($task_ref)"
-    fi
+    case "$home_url" in
+      git@*:*) home_url="${home_url#git@}"; home_url="https://${home_url%%:*}/${home_url#*:}" ;;
+    esac
+    case "$home_url" in
+      https://*)
+        task_ref="$home_url/blob/HEAD/$rel"
+        task_md="[$rel]($task_ref)"
+        ;;
+    esac
   fi
 fi
 
@@ -137,11 +139,10 @@ command -v gh >/dev/null 2>&1 || die "gh not found; $branch is pushed, open the 
 
 # The open pull request for the branch, if any. A closed one does not count: a
 # task released and relaunched after its pull request was closed needs a new one.
-open_pr() {
-  local state url
-  read -r state url < <(gh pr view "$branch" --json state,url --jq '.state + " " + .url' 2>/dev/null) || return 1
-  [[ "$state" == OPEN && -n "$url" ]] && printf '%s' "$url"
-}
+open_pr() (
+  view="$(gh pr view "$branch" --json state,url --jq '.state + " " + .url' 2>/dev/null)" || return 1
+  [ "${view%% *}" = OPEN ] && [ -n "${view#* }" ] && printf '%s' "${view#* }"
+)
 
 # A re-run after a fix only needs the push: the pull request tracks the branch.
 if url="$(open_pr)"; then
@@ -150,21 +151,23 @@ if url="$(open_pr)"; then
 fi
 
 # GitHub's locations for a pull request template, in any case, single or several.
-has_template() {
-  local dir
-  shopt -s nocaseglob nullglob
+has_template() (
   for dir in . .github docs; do
-    # Each name carries a bracket so it is a pattern: only patterns are matched
-    # case-insensitively, and only patterns vanish under nullglob when absent.
-    local found=("$dir"/pull_request_template[.]md "$dir"/pull_request_templat[e]/*.md)
-    ((${#found[@]} == 0)) || return 0
+    [ -d "$dir" ] || continue
+    entries="$(ls -1 "$dir")"
+    if printf '%s\n' "$entries" | grep -qi '^pull_request_template\.md$'; then return 0; fi
+    sub="$(printf '%s\n' "$entries" | grep -i '^pull_request_template$' | head -n 1)"
+    [ -n "$sub" ] || continue
+    for template in "$dir/$sub"/*.[mM][dD]; do
+      [ -e "$template" ] && return 0
+    done
   done
   return 1
-}
+)
 
 body="$(mktemp)"
 trap 'rm -f "$body"' EXIT
-if [[ -s "$report" ]] && has_template; then
+if [ -s "$report" ] && has_template; then
   # The lane wrote its report in the template's shape; it is the whole body.
   cp "$report" "$body"
 else
@@ -178,7 +181,7 @@ else
       on { print }
     ' "$task_file"
     printf '\n## Lane report\n\n'
-    if [[ -s "$report" ]]; then
+    if [ -s "$report" ]; then
       cat "$report"
     else
       printf 'The lane wrote no report. Its session log is `.lanes/logs/%s.log` on the machine that launched it.\n' "$task_id"
@@ -186,15 +189,17 @@ else
   } >"$body"
 fi
 
-create=(gh pr create --draft --head "$branch" --title "$subject" --body-file "$body")
-if ! url="$("${create[@]}" --label ai-assisted 2>/dev/null)"; then
+create_pr() {
+  gh pr create --draft --head "$branch" --title "$subject" --body-file "$body" "$@"
+}
+if ! url="$(create_pr --label ai-assisted 2>/dev/null)"; then
   # Usually a repository without the label. The pull request matters more than
   # the label, but the failed call may still have opened it, so look first
   # rather than open a second one.
   printf 'WARN\t%s\tthe ai-assisted label could not be applied\n' "$task_id" >&2
   url="$(open_pr)" ||
-    url="$("${create[@]}")" ||
+    url="$(create_pr)" ||
     die "gh pr create failed; $branch is pushed, open the pull request by hand"
 fi
 
-printf 'PUBLISHED\t%s\t%s\n' "$task_id" "${url##*$'\n'}"
+printf 'PUBLISHED\t%s\t%s\n' "$task_id" "$(printf '%s\n' "$url" | tail -n 1)"

@@ -11,11 +11,13 @@ from pathlib import Path
 
 import pytest
 
+from tests.conftest import SH
+
 SCRIPTS_DIR = Path(__file__).resolve().parents[2] / ".agents" / "skills" / "fourmee-implement" / "scripts"
 
 pytestmark = pytest.mark.skipif(
-    shutil.which("bash") is None or shutil.which("jq") is None or shutil.which("git") is None,
-    reason="bash, jq, and git are required to exercise the fourmee-implement helper scripts",
+    shutil.which("jq") is None or shutil.which("git") is None,
+    reason="jq and git are required to exercise the fourmee-implement helper scripts",
 )
 
 
@@ -36,7 +38,7 @@ def run_script(
     # S603/S607: a test harness deliberately invoking a repo script via `bash` with a stub
     # `jira` ahead of it on PATH where needed; every input is test-local.
     return subprocess.run(  # noqa: S603
-        ["bash", str(SCRIPTS_DIR / script), *args],  # noqa: S607
+        [SH, str(SCRIPTS_DIR / script), *args],
         capture_output=True,
         text=True,
         cwd=cwd,

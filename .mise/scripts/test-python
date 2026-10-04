@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# The kit's helpers are bash, exercised behaviourally by the pytest suite.
+# The kit's helpers are POSIX sh, exercised behaviourally by the pytest suite.
 # There is no Python source to measure, so no coverage gate is applied.
 
 python_version=$1

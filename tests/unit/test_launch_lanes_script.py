@@ -14,6 +14,7 @@ from pathlib import Path
 
 import pytest
 
+from tests.conftest import SH
 from tests.unit.tiers import TIERS
 
 SKILLS = Path(__file__).resolve().parents[2] / ".agents" / "skills"
@@ -25,8 +26,8 @@ USAGE_ERROR = 1
 NO_LANES = 3
 
 pytestmark = pytest.mark.skipif(
-    shutil.which("bash") is None or shutil.which("git") is None,
-    reason="bash and git are required",
+    shutil.which("git") is None,
+    reason="git is required",
 )
 
 
@@ -103,7 +104,7 @@ def launch(
         env["FOURMEE_WORKTREE_ROOT"] = worktree_root
     env.update(env_extra or {})
     return subprocess.run(  # noqa: S603
-        ["bash", str(SCRIPT), *args],  # noqa: S607
+        [SH, str(SCRIPT), *args],
         cwd=repo,
         env=env,
         input=stdin,
@@ -232,6 +233,7 @@ def fields(stdout: str) -> list[str]:
     return stdout.splitlines()[0].split("\t")
 
 
+ALL_HARNESSES = "claude copilot codex opencode pi"
 HARNESS, MODEL = 2, 3
 
 
@@ -366,7 +368,10 @@ class TestTiers:
         [
             ("[buidl]\nmodel = x\n", "t.conf: unknown tier 'buidl' (expected plan, build, or chore)"),
             ("[build]\nmodle = x\n", "t.conf: unknown key 'build.modle' (expected harness or model)"),
-            ("[build]\nharness = gemini\n", "t.conf: unknown harness 'gemini' (expected one of: claude copilot)"),
+            (
+                "[build]\nharness = gemini\n",
+                f"t.conf: unknown harness 'gemini' (expected one of: {ALL_HARNESSES} custom)",
+            ),
             ("[build]\nmodel = a\nmodel = b\n", "t.conf: build.model is set twice"),
             ("[build]\nmodel\n", "t.conf: 'build.model' has no value"),
             ('[build "x"]\nmodel = a\n', "t.conf: unexpected key 'build.x.model'"),
@@ -496,7 +501,7 @@ def fake_harness(
     for name in names:
         stub = bin_dir / name
         stub.write_text(
-            '#!/usr/bin/env bash\nprintf "%s\\n" "$PWD" >> "$FAKE_LOG"\nprintf "%s\\n" "$*" >> "$FAKE_LOG"\n'
+            '#!/bin/sh\nprintf "%s\\n" "$PWD" >> "$FAKE_LOG"\nprintf "%s\\n" "$*" >> "$FAKE_LOG"\n'
             + edit
             + ("exit 1\n" if fails else ""),
             encoding="utf-8",
@@ -504,8 +509,8 @@ def fake_harness(
         stub.chmod(0o755)
     gh = bin_dir / "gh"
     gh.write_text(
-        f'#!/usr/bin/env bash\nprintf "%s\\n" "$*" >> "{tmp_path / "gh.log"}"\n'
-        '[[ "$1 $2" == "pr view" ]] && exit 1\nprintf "https://example.test/pr/1\\n"\n',
+        f'#!/bin/sh\nprintf "%s\\n" "$*" >> "{tmp_path / "gh.log"}"\n'
+        '[ "$1 $2" = "pr view" ] && exit 1\nprintf "https://example.test/pr/1\\n"\n',
         encoding="utf-8",
     )
     gh.chmod(0o755)
@@ -530,19 +535,14 @@ def launch_live(
     # still be found further down it, and the test would start a real,
     # billed session instead of proving the fallback logic. Replacing PATH
     # with just the fake bin dir plus the system dirs the script itself
-    # needs (git, awk) closes that gap. bash is linked in from the one this
-    # suite runs on: on macOS the system dirs hold only bash 3.2, which the
-    # helpers rightly refuse.
+    # needs (git, awk, sh) closes that gap.
     if isolated:
-        bash_link = bin_dir / "bash"
-        if not bash_link.exists():
-            bash_link.symlink_to(shutil.which("bash") or "/bin/bash")
         env["PATH"] = f"{bin_dir}{os.pathsep}/usr/bin:/bin"
     else:
         env["PATH"] = f"{bin_dir}{os.pathsep}{env['PATH']}"
     env["FAKE_LOG"] = str(log)
     return subprocess.run(  # noqa: S603
-        ["bash", str(SCRIPT), *args],  # noqa: S607
+        [SH, str(SCRIPT), *args],
         cwd=repo,
         capture_output=True,
         text=True,
@@ -622,7 +622,7 @@ class TestLaneStartup:
 
         result = self.go(dev, tmp_path, bin_dir, log)
 
-        assert result.stdout.strip() == "SKIP\tb-001\tno supported harness on PATH (claude copilot)\nLANES\t0"
+        assert result.stdout.strip() == f"SKIP\tb-001\tno supported harness on PATH ({ALL_HARNESSES})\nLANES\t0"
 
     def test_a_harness_somebody_chose_is_never_swapped_for_another(self, tmp_path: Path) -> None:
         """A lane on a harness nobody asked for would spend an allowance nobody meant to spend."""
@@ -696,7 +696,7 @@ class TestLaneStartup:
         origin_path = make_shared_origin(tmp_path)
         dev = clone_of(tmp_path, origin_path, "devA")
         broken = tmp_path / "broken-claim.sh"
-        broken.write_text("#!/usr/bin/env bash\nexit 9\n", encoding="utf-8")
+        broken.write_text("#!/bin/sh\nexit 9\n", encoding="utf-8")
         log = tmp_path / "agent.log"
         bin_dir = fake_harness(tmp_path, log)
 

@@ -19,6 +19,11 @@ First public release.
   vendor's model. A `tiers.conf` maps a tier to a harness and a model; with
   none, the harness picks its own default. Reasoning effort is left to the
   harness's own settings.
+- The helpers are POSIX `sh`: no bash is required, and they run on dash, macOS's
+  own `sh` and BusyBox ([ADR-008](docs/decisions/ADR-008-posix-sh-helpers.md)).
+- Harness adapters for Claude Code, Copilot CLI, Codex, OpenCode and Pi, and a
+  `FOURMEE_LANE_CMD` template for any other
+  ([ADR-009](docs/decisions/ADR-009-harness-adapters.md)).
 - Multi-repository use cases planned once and landed where each change belongs.
 - A status snapshot that external tools can project into their own views.
 - Licensed under Apache-2.0.

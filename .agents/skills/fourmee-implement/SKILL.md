@@ -21,7 +21,6 @@ keywords:
 spec-version: "1.0"
 compatibility:
   - git@>=2.5
-  - bash@>=4.4
 metadata:
   category: development
   owner: ancelin-code
@@ -71,7 +70,7 @@ Read what governs the change before planning it. Prefer local evidence over
 generic defaults:
 
 ```sh
-bash <skill-root>/scripts/detect-repo-contract.sh
+sh <skill-root>/scripts/detect-repo-contract.sh
 ```
 
 This collects the instructions file, the task runner and its declared tasks, the

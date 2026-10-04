@@ -22,7 +22,6 @@ keywords:
 spec-version: "1.0"
 compatibility:
   - git@>=2.30
-  - bash@>=4.4
   - gh@>=2.0
 metadata:
   category: development
@@ -46,7 +45,7 @@ For "what's next", "what's the status", "who is on what", and before starting
 any phase, run this from the repository root and answer from its output:
 
 ```sh
-bash <skill-root>/scripts/where.sh
+sh <skill-root>/scripts/where.sh
 ```
 
 It prints each phase's artifact and whether it is approved, the task rows and
@@ -157,14 +156,14 @@ session and publishes its result as a draft pull request, and refuses a task
 whose claim it loses:
 
 ```sh
-bash <skill-root>/scripts/launch-lanes.sh --dry-run <task-id>...
+sh <skill-root>/scripts/launch-lanes.sh --dry-run <task-id>...
 ```
 
 Once the first lanes are launched, keep the set moving with the follow loop
 instead of polling `where.sh`:
 
 ```sh
-bash <skill-root>/scripts/follow.sh -- <the launcher options you used>
+sh <skill-root>/scripts/follow.sh -- <the launcher options you used>
 ```
 
 It launches each task as the merges it depends on land, within the same limits,

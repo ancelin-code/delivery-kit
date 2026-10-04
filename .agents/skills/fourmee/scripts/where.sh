@@ -1,11 +1,5 @@
-#!/usr/bin/env bash
-set -euo pipefail
-
-# Fail early and clearly on an older bash, such as the 3.2 macOS ships.
-if ((BASH_VERSINFO[0] < 4 || (BASH_VERSINFO[0] == 4 && BASH_VERSINFO[1] < 4))); then
-  printf 'ERROR\tbash 4.4 or later is required, found %s\n' "$BASH_VERSION" >&2
-  exit 1
-fi
+#!/bin/sh
+set -eu
 
 # Where the project stands and what comes next, in one call.
 #
@@ -21,7 +15,7 @@ die() {
 
 usage() {
   cat <<'USAGE'
-usage: bash where.sh [--remote <name>] [--no-fetch]
+usage: sh where.sh [--remote <name>] [--no-fetch]
 
 Run from the repository root. Prints, tab-separated:
 
@@ -45,24 +39,26 @@ Exit codes:
 USAGE
 }
 
-status_args=()
-while (($# > 0)); do
+# Check each option once and queue the accepted ones behind the rest, so that
+# what is left in "$@" is exactly what status.sh receives.
+remaining=$#
+while [ "$remaining" -gt 0 ]; do
   case "$1" in
-    --remote) [[ $# -ge 2 ]] || die "--remote requires a value"; status_args+=("$1" "$2"); shift 2 ;;
-    --no-fetch) status_args+=("$1"); shift ;;
+    --remote) [ "$remaining" -ge 2 ] || die "--remote requires a value"; set -- "$@" "$1" "$2"; shift 2; remaining=$((remaining - 2)) ;;
+    --no-fetch) set -- "$@" "$1"; shift; remaining=$((remaining - 1)) ;;
     -h | --help) usage; exit 0 ;;
     *) die "unknown option: $1" ;;
   esac
 done
 
 git rev-parse --is-inside-work-tree >/dev/null 2>&1 || die "not inside a git repository"
-[[ "$(git rev-parse --show-toplevel)" == "$(pwd -P)" ]] || die "run from the repository root"
+[ "$(git rev-parse --show-toplevel)" = "$(pwd -P)" ] || die "run from the repository root"
 
 # The kit installs as a whole, so fourmee-status sits beside this skill, the
 # same assumption launch-lanes.sh makes for claim.sh.
-here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+here="$(cd "$(dirname "$0")" && pwd)"
 status_script="$here/../../fourmee-status/scripts/status.sh"
-[[ -f "$status_script" ]] || die "fourmee-status is not installed beside fourmee"
+[ -f "$status_script" ] || die "fourmee-status is not installed beside fourmee"
 
 # The value of the "**Status:**" line, lowercased; empty when there is none.
 # An unfilled template reads "draft | approved", which is not approved.
@@ -86,9 +82,9 @@ else
 fi
 
 prd="delivery/prd.md"
-if [[ ! -f "$prd" ]]; then
+if [ ! -f "$prd" ]; then
   prd_state=missing
-elif [[ "$(status_of "$prd")" == approved ]]; then
+elif [ "$(status_of "$prd")" = approved ]; then
   prd_state=approved
 else
   prd_state=draft
@@ -98,30 +94,30 @@ printf 'PHASE\trequirements\t%s\t%s\n' "$prd_state" "$prd"
 # The spine is optional: a use case whose parts need no agreed interface has
 # none. It is pending while any contract is not agreed or any record the kit
 # may have written is still proposed.
-shopt -s nullglob
-contracts=(delivery/contracts/*.md)
-records=(delivery/decisions/*.md docs/adr/*.md docs/decisions/*.md)
-shopt -u nullglob
-pending=()
-for file in "${contracts[@]}"; do
-  [[ "$(status_of "$file")" == agreed ]] || pending+=("$file")
+pending=""
+contracts=0
+for file in delivery/contracts/*.md; do
+  [ -e "$file" ] || continue
+  contracts=$((contracts + 1))
+  [ "$(status_of "$file")" = agreed ] || pending="${pending:+$pending }$file"
 done
-for file in "${records[@]}"; do
-  [[ "$(status_of "$file")" != proposed ]] || pending+=("$file")
+for file in delivery/decisions/*.md docs/adr/*.md docs/decisions/*.md; do
+  [ -e "$file" ] || continue
+  [ "$(status_of "$file")" != proposed ] || pending="${pending:+$pending }$file"
 done
-if ((${#pending[@]} > 0)); then
+if [ -n "$pending" ]; then
   design_state=pending
-elif ((${#contracts[@]} > 0)); then
+elif [ "$contracts" -gt 0 ]; then
   design_state=approved
 else
   design_state=none
 fi
-printf 'PHASE\tdesign\t%s\t%s\n' "$design_state" "${pending[*]:-delivery/contracts/}"
+printf 'PHASE\tdesign\t%s\t%s\n' "$design_state" "${pending:-delivery/contracts/}"
 
 decomposition="delivery/decomposition.md"
-if [[ ! -f "$decomposition" ]]; then
+if [ ! -f "$decomposition" ]; then
   decomposition_state=missing
-elif [[ "$(status_of "$decomposition")" == approved ]]; then
+elif [ "$(status_of "$decomposition")" = approved ]; then
   decomposition_state=approved
 else
   decomposition_state=draft
@@ -130,43 +126,47 @@ printf 'PHASE\tdecomposition\t%s\t%s\n' "$decomposition_state" "$decomposition"
 
 # Scripts are named by a path runnable from the repository root, so an agent can
 # act on a NEXT line without looking for them.
-shown="$(realpath --relative-to=. "$here" 2>/dev/null || printf '%s' "$here")"
+root="$(pwd -P)"
+case "$here" in
+  "$root"/*) shown="${here#"$root"/}" ;;
+  *) shown="$here" ;;
+esac
 
 next() {
   printf 'NEXT\t%s\t%s\n' "$1" "$2"
 }
 
-[[ "$routing" == present ]] ||
-  next install-routing "route this project's requests to the kit: bash $shown/install-routing.sh"
+[ "$routing" = present ] ||
+  next install-routing "route this project's requests to the kit: sh $shown/install-routing.sh"
 
-if [[ "$prd_state" == missing ]]; then
+if [ "$prd_state" = missing ]; then
   next write-requirements "no delivery/prd.md: write it with fourmee-spec, stage A"
   exit 0
 fi
-if [[ "$prd_state" == draft ]]; then
+if [ "$prd_state" = draft ]; then
   next approve-requirements "delivery/prd.md awaits human approval"
   exit 0
 fi
-if [[ "$design_state" == pending ]]; then
-  next approve-design "awaiting approval: ${pending[*]}"
+if [ "$design_state" = pending ]; then
+  next approve-design "awaiting approval: $pending"
   exit 0
 fi
-if [[ "$decomposition_state" == missing ]]; then
-  if [[ "$design_state" == none ]]; then
+if [ "$decomposition_state" = missing ]; then
+  if [ "$design_state" = none ]; then
     next design-or-decompose "record the spine with fourmee-spec, stage B, if parts need an agreed interface; otherwise decompose with fourmee-decompose"
   else
     next decompose "decompose the approved requirements with fourmee-decompose"
   fi
   exit 0
 fi
-if [[ "$decomposition_state" == draft ]]; then
+if [ "$decomposition_state" = draft ]; then
   next approve-decomposition "delivery/decomposition.md and delivery/tasks/ await human approval"
   exit 0
 fi
 
 # Lanes. Task state is fourmee-status's to derive; it fails loudly when pull
 # request state cannot be read, and so does this.
-rows="$(bash "$status_script" "${status_args[@]+"${status_args[@]}"}")" ||
+rows="$(sh "$status_script" "$@")" ||
   die "task state could not be read; see the error above"
 printf '%s\n' "$rows"
 
@@ -184,19 +184,36 @@ in_flight="${in_progress}${in_progress:+${in_review:+ }}${in_review}"
 # reviews it and to the paths that bring it in. "general" applies to every pull
 # request. A lens also comes from the task's review field, set at decomposition,
 # and from a review:<lens> label a person adds to the pull request.
+store="$(mktemp -d)"
+trap 'rm -rf "$store"' EXIT
+tab="$(printf '\t')"
+
+# One line per lens: its name, the skill that reviews it, then its path patterns.
 lenses_file="delivery/review-lenses.conf"
-declare -A skill_of=() patterns_of=() why=()
-lens_order=()
-if [[ -f "$lenses_file" ]]; then
-  # read -a splits without globbing, so a pattern is kept as written.
-  while read -r -a words; do
-    ((${#words[@]} > 0)) || continue
-    [[ "${words[0]}" != \#* ]] || continue
-    lens_order+=("${words[0]}")
-    skill_of["${words[0]}"]="${words[1]:--}"
-    patterns_of["${words[0]}"]="${words[*]:2}"
-  done <"$lenses_file"
+lens_table=""
+if [ -f "$lenses_file" ]; then
+  lens_table="$(awk '$1 != "" && $1 !~ /^#/' "$lenses_file")"
 fi
+
+# skill_for <lens>: the skill mapped to it, empty when none is.
+skill_for() {
+  printf '%s\n' "$lens_table" | LENS="$1" awk '$1 == ENVIRON["LENS"] { print $2; exit }'
+}
+
+# first_match <patterns>: the first file, listed in $files, that a pattern
+# matches. A pattern is a shell glob, so globbing is off while they are read.
+first_match() (
+  set -f
+  for pattern in $1; do
+    while IFS= read -r file; do
+      # shellcheck disable=SC2254 # the pattern is meant to match, not compare
+      case "$file" in $pattern) printf '%s' "$file"; return 0 ;; esac
+    done <<EOF_FILES
+$files
+EOF_FILES
+  done
+  return 0
+)
 
 task_lenses() {
   awk '
@@ -217,9 +234,19 @@ task_repo() {
   ' "delivery/tasks/$1.md" 2>/dev/null || true
 }
 
+# The lenses of the pull request being read are lines of "<lens><TAB><reasons>"
+# in $found, in the order they were added; a lens named twice keeps both reasons.
+found="$store/found"
 add_lens() {
-  [[ -n "${why[$1]:-}" ]] || order+=("$1")
-  [[ ",${why[$1]:-}," == *",$2,"* ]] || why["$1"]="${why[$1]:+${why[$1]},}$2"
+  LENS="$1" WHY="$2" awk -F'\t' -v OFS='\t' '
+    $1 == ENVIRON["LENS"] {
+      seen = 1
+      if (index("," $2 ",", "," ENVIRON["WHY"] ",") == 0) $2 = $2 "," ENVIRON["WHY"]
+    }
+    { print }
+    END { if (!seen) print ENVIRON["LENS"], ENVIRON["WHY"] }
+  ' "$found" >"$found.new"
+  mv "$found.new" "$found"
 }
 
 for id in $in_review; do
@@ -228,65 +255,62 @@ for id in $in_review; do
     '"N\t\(.number)", (.labels[].name | "L\t\(.)"), (.files[].path | "F\t\(.)")' 2>/dev/null)" ||
     die "gh could not read the pull request for task/$id${repo:+ in $repo}"
   number="$(printf '%s\n' "$pr" | awk -F'\t' '$1 == "N" { print $2; exit }')"
-  mapfile -t files < <(printf '%s\n' "$pr" | awk -F'\t' '$1 == "F" { print $2 }')
+  files="$(printf '%s\n' "$pr" | awk -F'\t' '$1 == "F" { print $2 }')"
 
-  why=()
-  order=()
+  : >"$found"
   add_lens general default
-  read -r -a declared <<<"$(task_lenses "$id")"
-  for lens in "${declared[@]+"${declared[@]}"}"; do
+  for lens in $(task_lenses "$id"); do
     add_lens "$lens" task
   done
   while IFS= read -r label; do
-    [[ "$label" != review:* ]] || add_lens "${label#review:}" label
-  done < <(printf '%s\n' "$pr" | awk -F'\t' '$1 == "L" { print $2 }')
-  for lens in "${lens_order[@]+"${lens_order[@]}"}"; do
-    matched=""
-    read -r -a patterns <<<"${patterns_of[$lens]:-}"
-    for pattern in "${patterns[@]+"${patterns[@]}"}"; do
-      for file in "${files[@]+"${files[@]}"}"; do
-        # shellcheck disable=SC2053 # the pattern is meant to match, not compare
-        [[ "$file" == $pattern ]] && { matched="$file"; break 2; }
-      done
-    done
-    [[ -z "$matched" ]] || add_lens "$lens" "path:$matched"
-  done
+    case "$label" in review:*) add_lens "${label#review:}" label ;; esac
+  done <<EOF_LABELS
+$(printf '%s\n' "$pr" | awk -F'\t' '$1 == "L" { print $2 }')
+EOF_LABELS
+  while read -r lens _ patterns; do
+    [ -n "$lens" ] || continue
+    matched="$(first_match "$patterns")"
+    [ -z "$matched" ] || add_lens "$lens" "path:$matched"
+  done <<EOF_TABLE
+$lens_table
+EOF_TABLE
 
-  for lens in "${order[@]}"; do
-    printf 'REVIEW\t%s\t%s#%s\t%s\t%s\t%s\n' "$id" "$repo" "$number" "$lens" "${skill_of[$lens]:--}" "${why[$lens]}"
-  done
+  while IFS="$tab" read -r lens reasons; do
+    skill="$(skill_for "$lens")"
+    printf 'REVIEW\t%s\t%s#%s\t%s\t%s\t%s\n' "$id" "$repo" "$number" "$lens" "${skill:--}" "$reasons"
+  done <"$found"
 done
 
-[[ -z "$in_review" ]] || next review "pull requests await review, one pass per REVIEW row: $in_review"
+[ -z "$in_review" ] || next review "pull requests await review, one pass per REVIEW row: $in_review"
 
 # A task with "parallel: false" runs alone: nothing else of the set in flight
 # while it runs. A set that serializes is one where every task says so.
 runs_alone() {
-  [[ "$(awk '
+  [ "$(awk '
     NR == 1 && $0 != "---" { exit }
     NR > 1 && $0 == "---" { exit }
     /^parallel:/ { sub(/^parallel:[ \t]*/, ""); sub(/[ \t]+$/, ""); print; exit }
-  ' "delivery/tasks/$1.md" 2>/dev/null)" == false ]]
+  ' "delivery/tasks/$1.md" 2>/dev/null)" = false ]
 }
 
-if [[ -z "$ready$in_flight$blocked" ]]; then
+if [ -z "$ready$in_flight$blocked" ]; then
   next complete "every task is merged; new work starts by revising delivery/prd.md"
-elif [[ -n "$ready" ]]; then
+elif [ -n "$ready" ]; then
   alone_in_flight="" shared="" alone=""
   for id in $in_flight; do ! runs_alone "$id" || alone_in_flight="$id"; done
   for id in $ready; do
-    if runs_alone "$id"; then alone+="${alone:+ }$id"; else shared+="${shared:+ }$id"; fi
+    if runs_alone "$id"; then alone="$alone${alone:+ }$id"; else shared="$shared${shared:+ }$id"; fi
   done
-  if [[ -n "$alone_in_flight" ]]; then
+  if [ -n "$alone_in_flight" ]; then
     next wait "$alone_in_flight runs alone and is in flight; then $ready"
-  elif [[ -n "$shared" ]]; then
-    next start "launch lanes for: $shared (bash $shown/launch-lanes.sh)${alone:+; after they merge, alone: $alone}"
-  elif [[ -n "$in_flight" ]]; then
+  elif [ -n "$shared" ]; then
+    next start "launch lanes for: $shared (sh $shown/launch-lanes.sh)${alone:+; after they merge, alone: $alone}"
+  elif [ -n "$in_flight" ]; then
     next wait "$alone runs alone, after in-flight work merges: $in_flight"
   else
-    next start "alone, first of: $alone (bash $shown/launch-lanes.sh ${alone%% *})"
+    next start "alone, first of: $alone (sh $shown/launch-lanes.sh ${alone%% *})"
   fi
-elif [[ -n "$in_flight" ]]; then
+elif [ -n "$in_flight" ]; then
   next wait "nothing is ready until in-flight work merges: $in_flight"
 else
   next unblock "blocked with nothing in flight, so a dependency will never merge: $blocked"

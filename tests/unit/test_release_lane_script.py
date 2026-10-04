@@ -11,6 +11,7 @@ from pathlib import Path
 
 import pytest
 
+from tests.conftest import SH
 from tests.unit.test_publish_lane_script import claimed_lane, git
 
 SKILLS = Path(__file__).resolve().parents[2] / ".agents" / "skills"
@@ -21,14 +22,14 @@ USAGE_ERROR = 1
 KEPT = 3
 
 pytestmark = pytest.mark.skipif(
-    shutil.which("bash") is None or shutil.which("git") is None,
-    reason="bash and git are required",
+    shutil.which("git") is None,
+    reason="git is required",
 )
 
 
 def release(lane: Path) -> subprocess.CompletedProcess[str]:
     return subprocess.run(  # noqa: S603
-        ["bash", str(SCRIPT), "delivery/tasks/a-001.md"],  # noqa: S607
+        [SH, str(SCRIPT), "delivery/tasks/a-001.md"],
         cwd=lane,
         capture_output=True,
         text=True,

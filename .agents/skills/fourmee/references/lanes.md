@@ -16,7 +16,7 @@ them.
    environment or `--worktree-root <dir>` is given.
 4. A **session** runs in that worktree, unattended, to a validated working tree.
 5. When the session exits cleanly, the launcher runs
-   `bash <skill-root>/scripts/publish-lane.sh`, which commits the change, pushes
+   `sh <skill-root>/scripts/publish-lane.sh`, which commits the change, pushes
    it, and opens a **draft pull request** whose body is the lane's handoff
    report, in the repository's pull request template when it has one. A session
    that left no change publishes nothing.
@@ -35,16 +35,16 @@ The launcher takes task ids and does the rest. It reads ids from arguments or
 from standard input, so it composes with whatever decided they were ready:
 
 ```sh
-bash <fourmee-status>/scripts/status.sh --ready \
+sh <fourmee-status>/scripts/status.sh --ready \
   | awk '$1 == "TASK" { print $2 }' \
-  | bash <skill-root>/scripts/launch-lanes.sh
+  | sh <skill-root>/scripts/launch-lanes.sh
 ```
 
 Lanes can fetch and search the web unless the launcher is given `--no-web`.
 Web content is untrusted input to an unattended session with a shell, so that
 choice belongs to whoever launches.
 
-`bash <skill-root>/scripts/follow.sh` then keeps the set moving: it launches each
+`sh <skill-root>/scripts/follow.sh` then keeps the set moving: it launches each
 task once its dependencies merge, skipping any that conflicts with work in
 flight, which a single launch cannot see.
 
@@ -93,7 +93,7 @@ allowance still has room.
 
 - **The session failed.** An expired login or a model the account cannot use
   ends it at once. When it left no change and no commit past the claim, the
-  launcher runs `bash <skill-root>/scripts/release-lane.sh`, which gives the
+  launcher runs `sh <skill-root>/scripts/release-lane.sh`, which gives the
   task back and removes the worktree; the log ends with `RELEASED`. A failed
   session that left work behind is kept, claim and all, for a human to look at.
 - **Stalled on a real blocker.** The session stops and reports. Leave the
@@ -104,7 +104,7 @@ allowance still has room.
 - **Published, but not by the publisher.** A failed commit hook, push or `gh`
   call leaves the change in the worktree and an `ERROR` line at the end of the
   log. Fix the cause, then re-run the publisher from the worktree:
-  `bash <skill-root>/scripts/publish-lane.sh delivery/tasks/<id>.md`.
+  `sh <skill-root>/scripts/publish-lane.sh delivery/tasks/<id>.md`.
 - **Repeated failure.** After two repair attempts on the same failure, hand it
   to a human. A third automatic attempt rarely differs from the second.
 

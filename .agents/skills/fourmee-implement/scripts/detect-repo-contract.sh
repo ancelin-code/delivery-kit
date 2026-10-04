@@ -1,11 +1,5 @@
-#!/usr/bin/env bash
-set -euo pipefail
-
-# Fail early and clearly on an older bash, such as the 3.2 macOS ships.
-if ((BASH_VERSINFO[0] < 4 || (BASH_VERSINFO[0] == 4 && BASH_VERSINFO[1] < 4))); then
-  printf 'ERROR\tbash 4.4 or later is required, found %s\n' "$BASH_VERSION" >&2
-  exit 1
-fi
+#!/bin/sh
+set -eu
 
 die() {
   printf 'ERROR\t%s\n' "$*" >&2
@@ -19,7 +13,7 @@ cd "$repo_root"
 
 instruction_file=""
 for candidate in AGENTS.md CLAUDE.md .github/copilot-instructions.md; do
-  if [[ -f "$candidate" ]]; then
+  if [ -f "$candidate" ]; then
     instruction_file="$candidate"
     break
   fi
@@ -27,21 +21,21 @@ done
 printf 'INSTRUCTIONS\t%s\n' "${instruction_file:-none}"
 
 runner=""
-if [[ -f mise.toml ]]; then
+if [ -f mise.toml ]; then
   runner="mise"
-elif [[ -f noxfile.py ]]; then
+elif [ -f noxfile.py ]; then
   runner="nox"
-elif [[ -f Makefile ]]; then
+elif [ -f Makefile ]; then
   runner="make"
-elif [[ -f package.json ]]; then
+elif [ -f package.json ]; then
   runner="npm"
-elif [[ -f pyproject.toml ]]; then
+elif [ -f pyproject.toml ]; then
   runner="pyproject"
 fi
 printf 'RUNNER\t%s\n' "${runner:-none}"
 
 # Each branch collects into $tasks (newline-separated) without letting an empty match
-# abort the script under `set -e pipefail`.
+# abort the script under `set -e`.
 tasks=""
 case "$runner" in
   mise)
@@ -65,17 +59,17 @@ case "$runner" in
     fi
     ;;
 esac
-if [[ -n "$tasks" ]]; then
-  while IFS= read -r task; do
-    [[ -n "$task" ]] && printf 'TASK\t%s\n' "$task"
-  done <<<"$tasks"
+if [ -n "$tasks" ]; then
+  printf '%s\n' "$tasks" | while IFS= read -r task; do
+    [ -z "$task" ] || printf 'TASK\t%s\n' "$task"
+  done
 fi
 
-if [[ -f CODEOWNERS ]]; then
+if [ -f CODEOWNERS ]; then
   printf 'CODEOWNERS\t%s\n' "CODEOWNERS"
-elif [[ -f .github/CODEOWNERS ]]; then
+elif [ -f .github/CODEOWNERS ]; then
   printf 'CODEOWNERS\t%s\n' ".github/CODEOWNERS"
-elif [[ -f docs/CODEOWNERS ]]; then
+elif [ -f docs/CODEOWNERS ]; then
   printf 'CODEOWNERS\t%s\n' "docs/CODEOWNERS"
 else
   printf 'CODEOWNERS\tnone\n'
@@ -83,19 +77,19 @@ fi
 
 branch_samples="$(git for-each-ref --sort=-committerdate --format='%(refname:short)' refs/heads/ refs/remotes/origin/ 2>/dev/null \
   | { grep -v -E '^(origin/)?(HEAD|main|master|develop)$' || true; } | awk '!seen[$0]++' | head -8)"
-if [[ -n "$branch_samples" ]]; then
-  while IFS= read -r b; do
+if [ -n "$branch_samples" ]; then
+  printf '%s\n' "$branch_samples" | while IFS= read -r b; do
     printf 'BRANCH_SAMPLE\t%s\n' "$b"
-  done <<<"$branch_samples"
+  done
 else
   printf 'BRANCH_SAMPLE\tnone\n'
 fi
 
 commit_samples="$(git log --format='%s' -n 10 2>/dev/null || true)"
-if [[ -n "$commit_samples" ]]; then
-  while IFS= read -r c; do
+if [ -n "$commit_samples" ]; then
+  printf '%s\n' "$commit_samples" | while IFS= read -r c; do
     printf 'COMMIT_SAMPLE\t%s\n' "$c"
-  done <<<"$commit_samples"
+  done
 else
   printf 'COMMIT_SAMPLE\tnone\n'
 fi

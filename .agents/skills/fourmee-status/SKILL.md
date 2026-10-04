@@ -20,7 +20,6 @@ keywords:
 spec-version: "1.0"
 compatibility:
   - git@>=2.30
-  - bash@>=4.4
   - gh@>=2.0
 metadata:
   category: development
@@ -51,7 +50,7 @@ Claiming and starting work are the same act: the claim creates the task's remote
 branch. Git applies ref creation atomically, so the first push wins.
 
 ```sh
-bash <skill-root>/scripts/claim.sh ingestion-003
+sh <skill-root>/scripts/claim.sh ingestion-003
 ```
 
 Run it from a clone of the repository the task lands in: the one its `repo`
@@ -80,7 +79,7 @@ Pass `--remote <name>` when the shared remote is not `origin`, and
 ## Reading state
 
 ```sh
-bash <skill-root>/scripts/status.sh
+sh <skill-root>/scripts/status.sh
 ```
 
 One `TASK` row per task with its id, state, holder and title, then a summary
@@ -114,7 +113,7 @@ the script exits 1 rather than report merged work as ready.
 For a stand-up, the same data grouped for reading aloud:
 
 ```sh
-bash <skill-root>/scripts/standup.sh
+sh <skill-root>/scripts/standup.sh
 ```
 
 Run both from the repository root. Options common to both: `--tasks-dir <dir>`
@@ -127,7 +126,7 @@ as one JSON document, with each task's epic, repository, dependencies and pull
 request, what each epic delivers, and the use case's documents:
 
 ```sh
-bash <skill-root>/scripts/snapshot.sh
+sh <skill-root>/scripts/snapshot.sh
 ```
 
 It takes the same options and fails the same way, printing nothing, so a
