@@ -17,7 +17,7 @@ import pytest
 
 from tests.conftest import SH
 
-SCRIPTS = Path(__file__).resolve().parents[2] / ".agents" / "skills" / "fourmee" / "scripts"
+SCRIPTS = Path(__file__).resolve().parents[2] / ".agents" / "skills" / "alula" / "scripts"
 WHERE = SCRIPTS / "where.sh"
 INSTALL = SCRIPTS / "install-routing.sh"
 
@@ -351,7 +351,7 @@ class TestRouting:
         repo = make_repo(tmp_path)
         result = subprocess.run([SH, str(INSTALL)], cwd=repo, capture_output=True, text=True, check=False)  # noqa: S603
         assert result.stdout == "ADDED\tAGENTS.md\nADDED\tdelivery/review-lenses.conf\n"
-        assert "fourmee" in (repo / "AGENTS.md").read_text(encoding="utf-8")
+        assert "alula" in (repo / "AGENTS.md").read_text(encoding="utf-8")
         after = where(repo, fake_gh(tmp_path))
         assert rows(after.stdout, "ROUTING") == [["present"]]
         assert "install-routing" not in actions(after.stdout)
@@ -362,8 +362,8 @@ class TestRouting:
         for _ in range(2):
             subprocess.run([SH, str(INSTALL)], cwd=repo, capture_output=True, text=True, check=True)  # noqa: S603
         text = (repo / "AGENTS.md").read_text(encoding="utf-8")
-        assert text.startswith("# Rules\n\nKeep it tidy.\n\n<!-- fourmee:routing -->\n")
-        assert text.count("<!-- fourmee:routing -->") == 1
+        assert text.startswith("# Rules\n\nKeep it tidy.\n\n<!-- alula:routing -->\n")
+        assert text.count("<!-- alula:routing -->") == 1
 
     def test_install_seeds_review_lenses_that_where_reads(self, tmp_path: Path) -> None:
         repo = make_repo(tmp_path)

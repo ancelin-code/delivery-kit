@@ -1,9 +1,15 @@
-# Fourmee
+# Alula
 
 Agent Skills for AI-native delivery: requirements and design spine,
 decomposition, parallel implementation lanes, review.
 
-**This repository is the kit.** The five Fourmee skills are one workflow,
+*Boring on purpose.* The name is Latin for "little wing": the alula is the small
+feather group that keeps a bird's wing from stalling at low speed. Alula is the
+same kind of part for delivery, small and unglamorous, and there to keep parallel
+work from stalling. The reasoning is in
+[ADR-010](docs/decisions/ADR-010-alula-name.md).
+
+**This repository is the kit.** The five Alula skills are one workflow,
 not a catalogue you pick from. Each phase consumes the file the previous phase
 wrote, so a single skill installed alone is a phase with no input and no
 consumer. Install them together.
@@ -11,7 +17,7 @@ consumer. Install them together.
 The skills hold no harness-specific tool names. The lane launcher has adapters
 for Claude Code, GitHub Copilot CLI, Codex CLI, OpenCode and Pi, and a custom
 command for any other, so no single vendor's license is required. A task says how much capability it needs
-with a [tier](.agents/skills/fourmee/references/conventions.md#tiers), and the
+with a [tier](.agents/skills/alula/references/conventions.md#tiers), and the
 harness, or your own mapping, decides which model that means.
 
 ## How the kit fits together
@@ -31,15 +37,15 @@ Every artifact lives under `delivery/` at the repository root, so no agent has
 to search for one.
 
 The definitions the agents apply are in
-[delivery conventions](.agents/skills/fourmee/references/conventions.md#use-cases-epics-and-tasks).
+[delivery conventions](.agents/skills/alula/references/conventions.md#use-cases-epics-and-tasks).
 
 ```mermaid
 flowchart TD
-    H([Human]) -->|invokes, once per phase| O["/fourmee"]
+    H([Human]) -->|invokes, once per phase| O["/alula"]
 
     subgraph UC["one repository = one use case"]
-        O -.->|routes to| SPEC["/fourmee-spec"]
-        O -.->|routes to| DEC["/fourmee-decompose"]
+        O -.->|routes to| SPEC["/alula-spec"]
+        O -.->|routes to| DEC["/alula-decompose"]
         O -.->|routes to| LAUNCH["launch-lanes.sh<br/>up to 3 lanes"]
 
         SPEC -->|delivery/prd.md<br/>decisions + contracts| G1{{Human approves}}
@@ -47,8 +53,8 @@ flowchart TD
         DEC -->|delivery/decomposition.md<br/>delivery/tasks/*.md| G2{{Human approves}}
         G2 --> LAUNCH
 
-        LAUNCH -->|claims via| ST["/fourmee-status"]
-        LAUNCH -->|one worktree per task| IMP["/fourmee-implement"]
+        LAUNCH -->|claims via| ST["/alula-status"]
+        LAUNCH -->|one worktree per task| IMP["/alula-implement"]
         IMP -->|draft pull request| G3{{Human approves the merge}}
     end
 
@@ -72,7 +78,7 @@ of the route to use:
 
 | Path | When | What runs |
 |---|---|---|
-| Direct implement | One well-understood change with obvious acceptance criteria | one task file, then `fourmee-implement` in the ordinary checkout; no claim, no worktree, only the merge gate |
+| Direct implement | One well-understood change with obvious acceptance criteria | one task file, then `alula-implement` in the ordinary checkout; no claim, no worktree, only the merge gate |
 | Full route | Several tasks, contracts to keep parallel work consistent, or a decision worth recording | every phase and every gate, up to three lanes at once |
 
 How much of a full route runs in parallel is decomposition's finding, not a
@@ -82,16 +88,16 @@ choice made up front; see [Parallel or serial](#parallel-or-serial).
 
 | Skill | Owns | Produces | Runs as |
 |---|---|---|---|
-| `fourmee` | Where the project stands, the route, the gates, the lane policy | decisions about what happens next | a human's session |
-| `fourmee-spec` | Requirements (stage A), then decisions and contracts (stage B) | `delivery/prd.md`, decision records, `delivery/contracts/` | a human's session |
-| `fourmee-decompose` | Splitting approved work into epics and independent tasks | `delivery/decomposition.md` and `delivery/tasks/<id>.md`, validated | a human's session |
-| `fourmee-status` | Claims and run state, read from git | exit codes and tab-separated rows | `sh`, no model |
-| `fourmee-implement` | One task into one validated change | a working tree and a handoff report | an unattended lane |
+| `alula` | Where the project stands, the route, the gates, the lane policy | decisions about what happens next | a human's session |
+| `alula-spec` | Requirements (stage A), then decisions and contracts (stage B) | `delivery/prd.md`, decision records, `delivery/contracts/` | a human's session |
+| `alula-decompose` | Splitting approved work into epics and independent tasks | `delivery/decomposition.md` and `delivery/tasks/<id>.md`, validated | a human's session |
+| `alula-status` | Claims and run state, read from git | exit codes and tab-separated rows | `sh`, no model |
+| `alula-implement` | One task into one validated change | a working tree and a handoff report | an unattended lane |
 
-Only `fourmee` is invoked by a human directly. The rest are reached
+Only `alula` is invoked by a human directly. The rest are reached
 through it, or through `launch-lanes.sh`.
 
-`fourmee-spec` covers two stages rather than shipping as two skills: they are
+`alula-spec` covers two stages rather than shipping as two skills: they are
 written in one sitting from the same source material, and the design spine is
 worthless without approved requirements to hang it on.
 
@@ -100,7 +106,7 @@ or install a review skill alongside the kit and compare it against the
 unassisted harness before adopting it. To have the orchestrator suggest which
 review skill a pull request needs, map concerns such as security or data to
 installed skills in `delivery/review-lenses.conf`; the format is in the
-[review lenses](.agents/skills/fourmee/references/conventions.md#review-lenses)
+[review lenses](.agents/skills/alula/references/conventions.md#review-lenses)
 convention.
 
 ## Where the work happens
@@ -143,7 +149,7 @@ their `a-001` in `../lanes/a-001`. Nothing under `lanes/` is tracked by git:
 each directory is a `git worktree` registered with its own clone, holding that
 clone's task branch.
 
-To put lanes somewhere else, set `FOURMEE_WORKTREE_ROOT` to a directory. It
+To put lanes somewhere else, set `ALULA_WORKTREE_ROOT` to a directory. It
 replaces the whole default: task ids go directly under it, with no repository
 level added, so give each use case its own directory and never share one between
 two use cases. Where lanes live is each developer's choice rather than the
@@ -153,7 +159,7 @@ planning repository's root:
 
 ```toml
 [env]
-FOURMEE_WORKTREE_ROOT = "{{ env.HOME }}/lanes/shop"
+ALULA_WORKTREE_ROOT = "{{ env.HOME }}/lanes/shop"
 ```
 
 Every launch then uses it: `a-001` runs in `~/lanes/shop/a-001`, whether you
@@ -187,7 +193,7 @@ each merge to start the next task.
 A serial set still goes through every phase and every gate: the requirements,
 contracts and task files are what stop the work encoding guesses, whether or
 not it runs concurrently. What changes is who needs the lanes. When one person
-holds the whole set, skip the launcher and invoke `fourmee-implement` per task
+holds the whole set, skip the launcher and invoke `alula-implement` per task
 in dependency order; the claim only earns its keep when several people pick
 from the same tasks.
 
@@ -201,10 +207,10 @@ Each task's `tier` says how much capability its work needs:
 | `build` | Ordinary execution against explicit acceptance criteria. The default |
 | `chore` | Mechanical changes with no judgement in them |
 
-A tier is a hint, not a model name. Fourmee cannot know which models your
+A tier is a hint, not a model name. Alula cannot know which models your
 account may use, so by default it passes no model at all and the harness applies
 its own default. To say what a tier means for you, write a `tiers.conf` at
-`~/.config/fourmee/tiers.conf`. The names below are examples:
+`~/.config/alula/tiers.conf`. The names below are examples:
 
 ```ini
 [plan]
@@ -224,10 +230,10 @@ in `.gitconfig`. Harness and model are both optional. A mapping applies only to
 the harness it names, so a model id never reaches a harness that would refuse
 it. A team that agrees on a mapping can commit it as `delivery/tiers.conf`; the
 developer's own file wins, tier by tier. The full rules are in the
-[conventions](.agents/skills/fourmee/references/conventions.md#mapping-a-tier-to-a-model).
+[conventions](.agents/skills/alula/references/conventions.md#mapping-a-tier-to-a-model).
 
 A lane runs on the first of: `--harness`, the harness its tier maps to,
-`$FOURMEE_HARNESS`, then the first harness found installed. `--harness` moves a
+`$ALULA_HARNESS`, then the first harness found installed. `--harness` moves a
 whole launch on purpose, for example to the one whose allowance still has room.
 
 ### Harnesses
@@ -255,8 +261,8 @@ inside the worktree and has no network; **Pi has no permission system**, so run
 its lanes in a container or a throwaway machine. `--no-web` is honoured by all
 five.
 
-For a harness without an adapter, set `FOURMEE_LANE_CMD` and `--harness custom`
-(or `FOURMEE_HARNESS=custom`). The template is a shell command line, run in the
+For a harness without an adapter, set `ALULA_LANE_CMD` and `--harness custom`
+(or `ALULA_HARNESS=custom`). The template is a shell command line, run in the
 lane's worktree, and these placeholders become the lane's values:
 
 | Placeholder | Value |
@@ -267,7 +273,7 @@ lane's worktree, and these placeholders become the lane's values:
 | `{plan_dir}` | The checkout that holds the planning files |
 
 ```sh
-export FOURMEE_LANE_CMD='mycli run --model {model} --dir {worktree} {prompt}'
+export ALULA_LANE_CMD='mycli run --model {model} --dir {worktree} {prompt}'
 ```
 
 Placeholders are values, never pasted text, so quotes and `$(...)` in a path or
@@ -393,7 +399,7 @@ Use the `skills` CLI. It installs all five skills, writes each one to
 `skills-lock.json` so every developer restores the same version.
 
 ```sh
-npx skills add https://github.com/ancelin-code/fourmee.git \
+npx skills add https://github.com/ancelin-code/alula.git \
   --skill '*' -a claude-code -a github-copilot -y
 ```
 
@@ -415,11 +421,11 @@ need.
 Then make the kit the project's default assistant, and commit `AGENTS.md`:
 
 ```sh
-sh .agents/skills/fourmee/scripts/install-routing.sh
+sh .agents/skills/alula/scripts/install-routing.sh
 ```
 
 It appends a short block to `AGENTS.md`, creating it if needed, that sends every
-request about the project to `fourmee`. Claude Code and Copilot
+request about the project to `alula`. Claude Code and Copilot
 CLI both read that file on every request, so the kit is consulted even when a
 question matches no skill description. Without it, a plain *"what's the status
 of this project?"* reached no kit skill in either harness, and Copilot answered
@@ -443,7 +449,7 @@ security   security-review   */auth/* *secret* *.tf
 
 A task can also ask for a lens through its `review` field, and anyone can add
 one to a pull request with a `review:<lens>` label. The full format is in the
-[review lenses](.agents/skills/fourmee/references/conventions.md#review-lenses)
+[review lenses](.agents/skills/alula/references/conventions.md#review-lenses)
 convention. The script never overwrites an existing file.
 
 Both directories matter: Copilot CLI reads `.agents/skills/`, while Claude Code
@@ -461,14 +467,14 @@ copilot skill list          # inspect Personal skills
 ls ~/.claude/skills         # and here
 ```
 
-Disable anything that collides with a `fourmee` name.
+Disable anything that collides with a `alula` name.
 
 ### 3. Drive the route
 
 Tell the orchestrator what you want built:
 
 ```text
-/fourmee <what to build>
+/alula <what to build>
 ```
 
 In a repository with no `delivery/prd.md` yet, that starts the requirements.
@@ -478,7 +484,7 @@ second one to start.
 
 Ask it where things stand at any time, in your own words: *"what's next?"*,
 *"what's the status?"*, *"who is on what?"*. The answer comes from
-`fourmee/scripts/where.sh`, which reads `delivery/` and git in one
+`alula/scripts/where.sh`, which reads `delivery/` and git in one
 call and names the next action. For each pull request in review, it also
 names the review skills to run on it.
 
@@ -490,9 +496,9 @@ are from `delivery/`, so no session has to stay alive across a gate.
 To start lanes once tasks are approved:
 
 ```sh
-sh .agents/skills/fourmee-status/scripts/status.sh --ready \
+sh .agents/skills/alula-status/scripts/status.sh --ready \
   | awk '$1=="TASK"{print $2}' \
-  | sh .agents/skills/fourmee/scripts/launch-lanes.sh --dry-run
+  | sh .agents/skills/alula/scripts/launch-lanes.sh --dry-run
 ```
 
 Drop `--dry-run` to start real lanes. Each lane ends as a draft pull request:
@@ -518,7 +524,7 @@ it depends on land, and prints one line per event, so nobody has to ask what is
 next or refresh the forge:
 
 ```sh
-sh .agents/skills/fourmee/scripts/follow.sh -- --no-web
+sh .agents/skills/alula/scripts/follow.sh -- --no-web
 ```
 
 Options after `--` go to the launcher. Your part is reviewing and merging the
@@ -543,7 +549,7 @@ planning repository, wherever the launcher put it:
 
 ```sh
 home=$PWD
-lane=${FOURMEE_WORKTREE_ROOT:-../lanes/$(basename "$home")}/a-001
+lane=${ALULA_WORKTREE_ROOT:-../lanes/$(basename "$home")}/a-001
 git -C "$lane" status                  # what the lane has changed
 git -C "$lane" log --oneline           # what it has committed
 ```
@@ -598,7 +604,7 @@ worktree. When it is not, start a fresh session there and point it at the task
 file and the branch:
 
 ```sh
-cd "$lane" && claude "/fourmee-implement $home/delivery/tasks/a-001.md"
+cd "$lane" && claude "/alula-implement $home/delivery/tasks/a-001.md"
 ```
 
 Claude Code can also run lanes as attachable background sessions
@@ -623,14 +629,14 @@ whole use case as JSON: epics and what each delivers, tasks with the state
 documents.
 
 ```sh
-sh .agents/skills/fourmee-status/scripts/snapshot.sh
+sh .agents/skills/alula-status/scripts/snapshot.sh
 ```
 
 A connector reads that on stdin:
 
 ```sh
-sh .agents/skills/fourmee-status/scripts/snapshot.sh \
-  | fourmee-jira --config ~/jira/shop.toml --dry-run
+sh .agents/skills/alula-status/scripts/snapshot.sh \
+  | alula-jira --config ~/jira/shop.toml --dry-run
 ```
 
 Each run compares the whole snapshot with the tool and applies the difference,
@@ -640,7 +646,7 @@ non-zero, so no connector acts on a guess.
 
 | Connector | Tool | Repository |
 |---|---|---|
-| `fourmee-jira` | Jira Data Center | `fourmee-connector-jira` (not published yet) |
+| `alula-jira` | Jira Data Center | `alula-connector-jira` (not published yet) |
 
 What a connector must and must not do is the contract in
 [ADR-005](docs/decisions/ADR-005-external-tool-connectors.md). In short:
@@ -684,7 +690,7 @@ loudly:
 - the `.claude/skills/` symlinks, which exist only because Claude Code did not
   register `.agents/skills/`. Harmless if that changes, but dead weight.
 - slash-command invocation of a skill. If a harness stops resolving
-  `/fourmee-implement <task-file>` as an invocation, every lane reverts to
+  `/alula-implement <task-file>` as an invocation, every lane reverts to
   reading the skill as prose, which makes its boundaries advisory and leaves no
   trace in the lane log.
 
@@ -693,7 +699,7 @@ This is a maintainer's task, not part of a run. It is deliberately not in any
 
 ## Design
 
-The route, the gates and the lane policy live in the `fourmee`
+The route, the gates and the lane policy live in the `alula`
 skill. Shared conventions - the use case, epic and task units, placeholders,
 task schema, branch names, the claim protocol, tiers, pull request rules -
 are in its `references/`, loaded on demand during a run.

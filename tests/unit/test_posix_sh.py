@@ -28,7 +28,7 @@ def test_a_helper_declares_posix_sh(script) -> None:
 def test_the_adapters_are_linted_as_sh() -> None:
     """harness.sh is sourced, so it has no shebang to tell ShellCheck its dialect."""
     assert (
-        PROJECT_DIR.joinpath(".agents/skills/fourmee/scripts/harness.sh")
+        PROJECT_DIR.joinpath(".agents/skills/alula/scripts/harness.sh")
         .read_text()
         .startswith("# shellcheck shell=sh\n")
     )

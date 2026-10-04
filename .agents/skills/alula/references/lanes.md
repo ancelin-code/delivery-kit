@@ -12,7 +12,7 @@ them.
 3. A **worktree** is created on that branch, outside the main working tree:
    `../lanes/<repository>/<id>` from the repository root by default, where
    `<repository>` is the directory name of the checkout the launcher ran from,
-   or `<dir>/<id>` when `FOURMEE_WORKTREE_ROOT=<dir>` is set in the
+   or `<dir>/<id>` when `ALULA_WORKTREE_ROOT=<dir>` is set in the
    environment or `--worktree-root <dir>` is given.
 4. A **session** runs in that worktree, unattended, to a validated working tree.
 5. When the session exits cleanly, the launcher runs
@@ -35,7 +35,7 @@ The launcher takes task ids and does the rest. It reads ids from arguments or
 from standard input, so it composes with whatever decided they were ready:
 
 ```sh
-sh <fourmee-status>/scripts/status.sh --ready \
+sh <alula-status>/scripts/status.sh --ready \
   | awk '$1 == "TASK" { print $2 }' \
   | sh <skill-root>/scripts/launch-lanes.sh
 ```
@@ -51,11 +51,11 @@ flight, which a single launch cannot see.
 Use `--dry-run` first when the task set is unfamiliar. It makes every decision
 and prints the outcome without creating a worktree or starting a session.
 
-`<fourmee-status>` and `<skill-root>` are two different skills' roots; see
+`<alula-status>` and `<skill-root>` are two different skills' roots; see
 [placeholders](conventions.md#placeholders).
 
 The launcher claims every task before starting it, using
-`<fourmee-status>/scripts/claim.sh`. It finds that copy beside itself, so
+`<alula-status>/scripts/claim.sh`. It finds that copy beside itself, so
 `--claim-script <path>` is only needed when a repository has relocated the
 scripts. It refuses a task whose claim it loses, removing the worktree it had
 created: losing a claim is routine, not an error. A claim that fails for any other reason stops that lane and says

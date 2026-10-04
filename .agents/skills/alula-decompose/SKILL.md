@@ -1,16 +1,16 @@
 ---
-name: fourmee-decompose
+name: alula-decompose
 author: Ancelin Serre
 description: >-
-  Part of Fourmee, invoked by fourmee. Break approved requirements
+  Part of Alula, invoked by alula. Break approved requirements
   and their design spine into task files that parallel lanes can execute independently,
   with dependencies, file conflicts and tiers made explicit, then validate the set
   deterministically. Use when work has been approved and needs splitting into tasks, or
   when an existing task set needs checking before lanes start. Does not implement tasks or
   decide requirements.
 license: Apache-2.0
-repository: https://github.com/ancelin-code/fourmee.git
-product-version: fourmee@v0
+repository: https://github.com/ancelin-code/alula.git
+product-version: alula@v0
 version: "0.1.0"
 keywords:
   - decompose
@@ -46,12 +46,12 @@ it directly. Splitting a one-task change into an epic costs more than it saves.
 
 1. **Read the approved artifacts**: `delivery/prd.md`, `delivery/contracts/`,
    and the decision records in `docs/adr/`, `docs/decisions/` or
-   `delivery/decisions/`, whichever `fourmee-spec` wrote to. Read enough of
+   `delivery/decisions/`, whichever `alula-spec` wrote to. Read enough of
    the codebase too to know what already exists, including the use case's other
    repositories when they are cloned beside this one. Decomposing from the
    requirements alone invents work that is already done.
 2. **Group work into epics**, as the delivery conventions,
-   `<fourmee>/references/conventions.md`, define them. A group
+   `<alula>/references/conventions.md`, define them. A group
    past the cap below is two epics, not one large one.
 3. **Write one task file per unit of work**, from
    [the template](assets/task.template.md), into `delivery/tasks/<id>.md`.
@@ -100,7 +100,7 @@ Caps, because both cost and reviewability depend on them:
 - no restating the requirements document; link `delivery/prd.md`
 
 Give each task a `tier` from the tiers table in
-`<fourmee>/references/conventions.md`. Match it to what the task needs: `plan`
+`<alula>/references/conventions.md`. Match it to what the task needs: `plan`
 where a wrong call costs the most, `build` for ordinary execution, `chore` for
 mechanical work. The tier only says how much capability the work needs, and the
 developer's own mapping decides which model that means.

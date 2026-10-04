@@ -33,14 +33,14 @@ Options:
   --max-lanes <n>       Most lanes to run at once (default: 3).
   --harness <name>      claude, copilot, codex, opencode, pi, custom, or auto
                         (default: auto). auto uses the harness the task's tier
-                        maps to in tiers.conf, then $FOURMEE_HARNESS, then the
+                        maps to in tiers.conf, then $ALULA_HARNESS, then the
                         first one installed. Naming one forces every lane in the
-                        batch onto it. custom runs $FOURMEE_LANE_CMD, a command
+                        batch onto it. custom runs $ALULA_LANE_CMD, a command
                         line with {prompt}, {model}, {worktree} and {plan_dir}
                         in it, for a harness this launcher does not know.
   --tasks-dir <dir>     Directory holding <id>.md task files (default: delivery/tasks).
   --worktree-root <dir> Directory that receives one <task-id> worktree per lane.
-                        Defaults to $FOURMEE_WORKTREE_ROOT when set, else to
+                        Defaults to $ALULA_WORKTREE_ROOT when set, else to
                         ../lanes/<name of this repository>.
   --log-dir <dir>       Where session logs are written (default: .lanes/logs).
   --no-web              Take web fetch and web search away from the lanes.
@@ -50,7 +50,7 @@ Options:
                         text the model may follow. Use --no-web when lanes
                         should build from the repository and its contracts
                         alone. The shell can still reach the network.
-  --claim-script <path> claim.sh from the fourmee-status skill. Defaults to the
+  --claim-script <path> claim.sh from the alula-status skill. Defaults to the
                         copy installed beside this skill. A lane is never
                         started without a claim.
   --dry-run             Print what would happen; create nothing, launch nothing.
@@ -65,20 +65,20 @@ USAGE
 
 max_lanes=3
 harness_flag=""
-env_harness="${FOURMEE_HARNESS:-}"
+env_harness="${ALULA_HARNESS:-}"
 tasks_dir="delivery/tasks"
 # A developer's own choice, so read from the environment: set once, it reaches
 # every launch, including the ones follow.sh and the orchestrator start.
-worktree_root="${FOURMEE_WORKTREE_ROOT:-}"
+worktree_root="${ALULA_WORKTREE_ROOT:-}"
 log_dir=".lanes/logs"
-# The kit installs as a whole, so fourmee-status sits beside this skill. Kept as
+# The kit installs as a whole, so alula-status sits beside this skill. Kept as
 # an option because a consuming repository may relocate the scripts; never
 # optional in effect, since a lane that cannot claim must not start.
 here="$(cd "$(dirname "$0")" && pwd)"
-claim_script="$here/../../fourmee-status/scripts/claim.sh"
+claim_script="$here/../../alula-status/scripts/claim.sh"
 publish_script="$here/publish-lane.sh"
 release_script="$here/release-lane.sh"
-implement_skill="$here/../../fourmee-implement/SKILL.md"
+implement_skill="$here/../../alula-implement/SKILL.md"
 harness_lib="$here/harness.sh"
 # Written by the lane inside its worktree, where an unattended session may write,
 # and published as the pull request body rather than committed.
@@ -115,7 +115,7 @@ case "$max_lanes" in "" | 0* | *[!0-9]*) die "--max-lanes must be a positive num
 [ "$harness_flag" != auto ] || harness_flag=""
 [ "$env_harness" != auto ] || env_harness=""
 [ -z "$harness_flag" ] || is_harness "$harness_flag" || die "--harness must be one of: $HARNESSES custom auto"
-[ -z "$env_harness" ] || is_harness "$env_harness" || die "FOURMEE_HARNESS must be one of: $HARNESSES custom auto"
+[ -z "$env_harness" ] || is_harness "$env_harness" || die "ALULA_HARNESS must be one of: $HARNESSES custom auto"
 [ -d "$tasks_dir" ] || die "tasks directory not found: $tasks_dir"
 # Without a working claim, concurrent lanes would take the same task and report
 # LAUNCHED for every one of them. Refuse to start rather than run unlocked.
@@ -180,11 +180,11 @@ is_tier() {
 # of the two. The result is the tier_harness and tier_model maps, where "-"
 # means a tier the file names without that key.
 load_tiers() {
-  user_conf="${XDG_CONFIG_HOME:-${HOME:-}/.config}/fourmee/tiers.conf"
+  user_conf="${XDG_CONFIG_HOME:-${HOME:-}/.config}/alula/tiers.conf"
   files=""
-  if [ -n "${FOURMEE_TIERS:-}" ]; then
-    [ -f "$FOURMEE_TIERS" ] || die "FOURMEE_TIERS names a missing file: $FOURMEE_TIERS"
-    files="$FOURMEE_TIERS
+  if [ -n "${ALULA_TIERS:-}" ]; then
+    [ -f "$ALULA_TIERS" ] || die "ALULA_TIERS names a missing file: $ALULA_TIERS"
+    files="$ALULA_TIERS
 "
   elif [ -f "$user_conf" ]; then
     files="$user_conf
@@ -397,8 +397,8 @@ while IFS= read -r task_id <&3; do
     [ "$use_harness" != "auto" ] ||
       { printf 'SKIP\t%s\tno supported harness on PATH (%s)\n' "$task_id" "$HARNESSES"; continue; }
   elif [ "$use_harness" = custom ]; then
-    [ -n "${FOURMEE_LANE_CMD:-}" ] ||
-      { printf 'SKIP\t%s\tcustom needs FOURMEE_LANE_CMD to be set\n' "$task_id"; continue; }
+    [ -n "${ALULA_LANE_CMD:-}" ] ||
+      { printf 'SKIP\t%s\tcustom needs ALULA_LANE_CMD to be set\n' "$task_id"; continue; }
   elif ! command -v "$use_harness" >/dev/null 2>&1; then
     # A harness somebody chose is never swapped for another: a lane on a harness
     # nobody asked for would spend an allowance nobody meant to spend.

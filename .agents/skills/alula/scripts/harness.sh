@@ -13,7 +13,7 @@
 
 # The harnesses the launcher can drive, in the order "auto" tries them. The
 # binary of each is named like the harness. "custom" is not in the list: it is
-# chosen on purpose, with FOURMEE_LANE_CMD.
+# chosen on purpose, with ALULA_LANE_CMD.
 HARNESSES="claude copilot codex opencode pi"
 
 is_harness() {
@@ -28,7 +28,7 @@ is_harness() {
 #   harness_prompt <harness> <cross-repo: 0|1> <skill file> <arguments>
 harness_prompt() {
   case "$1:$2" in
-    claude:* | copilot:0) printf '/fourmee-implement %s' "$4" ;;
+    claude:* | copilot:0) printf '/alula-implement %s' "$4" ;;
     *) printf 'Read %s and follow it as a skill, with the arguments: %s' "$3" "$4" ;;
   esac
 }
@@ -94,19 +94,19 @@ harness_run() {
       [ -z "$model" ] || set -- "$@" --model "$model"
       ;;
     custom)
-      # FOURMEE_LANE_CMD is a shell command line. Its placeholders become
+      # ALULA_LANE_CMD is a shell command line. Its placeholders become
       # references to environment variables, never pasted text, so a prompt
       # holding quotes or $(...) cannot change the command.
-      [ -n "${FOURMEE_LANE_CMD:-}" ] || { printf 'ERROR\tFOURMEE_LANE_CMD is not set\n' >&2; return 1; }
-      FOURMEE_PROMPT="$prompt" FOURMEE_MODEL="$model" FOURMEE_WORKTREE="$PWD" \
-        FOURMEE_PLAN_DIR="$plan_dir" FOURMEE_WEB="$web"
-      export FOURMEE_PROMPT FOURMEE_MODEL FOURMEE_WORKTREE FOURMEE_PLAN_DIR FOURMEE_WEB
+      [ -n "${ALULA_LANE_CMD:-}" ] || { printf 'ERROR\tALULA_LANE_CMD is not set\n' >&2; return 1; }
+      ALULA_PROMPT="$prompt" ALULA_MODEL="$model" ALULA_WORKTREE="$PWD" \
+        ALULA_PLAN_DIR="$plan_dir" ALULA_WEB="$web"
+      export ALULA_PROMPT ALULA_MODEL ALULA_WORKTREE ALULA_PLAN_DIR ALULA_WEB
       # shellcheck disable=SC2016 # the $ is for the command's shell, not this one
-      set -- sh -c "$(printf '%s' "$FOURMEE_LANE_CMD" | sed \
-        -e 's/{prompt}/"$FOURMEE_PROMPT"/g' \
-        -e 's/{model}/"$FOURMEE_MODEL"/g' \
-        -e 's/{worktree}/"$FOURMEE_WORKTREE"/g' \
-        -e 's/{plan_dir}/"$FOURMEE_PLAN_DIR"/g')"
+      set -- sh -c "$(printf '%s' "$ALULA_LANE_CMD" | sed \
+        -e 's/{prompt}/"$ALULA_PROMPT"/g' \
+        -e 's/{model}/"$ALULA_MODEL"/g' \
+        -e 's/{worktree}/"$ALULA_WORKTREE"/g' \
+        -e 's/{plan_dir}/"$ALULA_PLAN_DIR"/g')"
       ;;
     *)
       printf 'ERROR\tunknown harness: %s\n' "$harness" >&2

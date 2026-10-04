@@ -93,5 +93,5 @@ jobs:
               git config --global init.defaultBranch main
               git config --global --add safe.directory "*"
               cp -r /src /work && cd /work
-              FOURMEE_TEST_SH=/bin/sh python3 -m pytest -q -p no:cacheprovider tests/unit
+              ALULA_TEST_SH=/bin/sh python3 -m pytest -q -p no:cacheprovider tests/unit
             '

@@ -1,16 +1,16 @@
 ---
-name: fourmee-implement
+name: alula-implement
 author: Ancelin Serre
 description: >-
-  Part of Fourmee, invoked by fourmee inside a lane. Turn one task
+  Part of Alula, invoked by alula inside a lane. Turn one task
   into a validated change in the working tree: resolve its acceptance criteria, freeze the
   scope, implement, validate proportionally with the repository's own commands, check the
   diff back against the criteria, and hand off. Use when implementing a task file from a
   decomposed epic, or a single change with explicit acceptance criteria. Does not decide
   what to build, commit, push, or open a pull request.
 license: Apache-2.0
-repository: https://github.com/ancelin-code/fourmee.git
-product-version: fourmee@v0
+repository: https://github.com/ancelin-code/alula.git
+product-version: alula@v0
 version: "0.1.0"
 keywords:
   - implement
@@ -41,7 +41,7 @@ belongs to the review step. Those boundaries are not restated here.
 A task file from a decomposed epic, containing acceptance criteria and the files
 in scope. A single change with explicit acceptance criteria works equally well.
 
-Invoked as `/fourmee-implement <path-to-task-file>`, read that file. Invoked with
+Invoked as `/alula-implement <path-to-task-file>`, read that file. Invoked with
 a bare task id, the file is `delivery/tasks/<id>.md` under the repository root.
 The requirements it links are at `delivery/prd.md` and the contracts at
 `delivery/contracts/`; read them only when the task leaves a criterion unclear.

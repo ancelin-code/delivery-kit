@@ -2,9 +2,9 @@
 # Core project metadata
 # -----------------------------------------------
 [project]
-name = "fourmee"
+name = "alula"
 version = "0.1.0"
-description = "Fourmee: Agent Skills that take a use case from requirements to parallel lanes to draft pull requests"
+description = "Alula: Agent Skills that take a use case from requirements to parallel lanes to draft pull requests"
 license = "Apache-2.0"
 license-files = ["LICENSE"]
 requires-python = ">=3.12,<3.13"
@@ -80,6 +80,6 @@ disable = [
 
 [tool.rumdl.per-file-ignores]
 # A section appended to a project's AGENTS.md, not a document of its own.
-".agents/skills/fourmee/assets/agents-routing.md" = ["MD041"]
+".agents/skills/alula/assets/agents-routing.md" = ["MD041"]
 # GitHub shows this as the pre-filled description, which has no title.
 ".github/PULL_REQUEST_TEMPLATE.md" = ["MD041"]

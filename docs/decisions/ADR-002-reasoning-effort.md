@@ -52,7 +52,7 @@ cannot validate and then fail at launch on one side only.
 
 ## Consequences
 
-`fourmee-decompose` now sets a second cost knob, and the failure mode is
+`alula-decompose` now sets a second cost knob, and the failure mode is
 one-directional: marking every task `high` looks like diligence and spends real
 budget, while being less visible than raising the tier. The conventions carry a
 level-by-level table and the instruction to leave it absent unless the task is
