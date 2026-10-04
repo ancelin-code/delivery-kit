@@ -30,7 +30,7 @@ and belong to whoever wrote them.
 
 ### The snapshot is the interface
 
-`fourmee-status` gains `scripts/snapshot.sh`, which prints the state of the use
+`alula-status` gains `scripts/snapshot.sh`, which prints the state of the use
 case as one JSON document on stdout. It reads what `status.sh` already reads,
 plus the task frontmatter and the epics of `delivery/decomposition.md`, and
 writes nothing. It fails as `status.sh` does, printing nothing, rather than
@@ -122,11 +122,11 @@ requires from its configuration.
 kit epics to an existing Jira epic, several to one if needed. The connector
 creates tasks under it and adds a remote link to the requirements, and never
 edits the epic's own summary or description. An unmapped kit epic gets a new
-Jira epic. A vague existing epic is input to `fourmee-spec`, which is where
+Jira epic. A vague existing epic is input to `alula-spec`, which is where
 its clarified form ends up.
 
 **Jira is intake, never state.** A ticket can start work, as a request to
-`fourmee`. From then on the work lives in git, and the connector
+`alula`. From then on the work lives in git, and the connector
 reports back to that ticket.
 
 ## Alternatives considered

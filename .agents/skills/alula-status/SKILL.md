@@ -1,19 +1,19 @@
 ---
-name: fourmee-status
+name: alula-status
 author: Ancelin Serre
 description: >-
-  Part of Fourmee, used by fourmee and by developers directly.
+  Part of Alula, used by alula and by developers directly.
   Claim a delivery task and read run state directly from git, with no shared status file
   and no model reasoning. Use when a developer picks up a task from a decomposed epic, when
   a launcher needs to know whether a task is free before starting a lane, or when asked who
   holds a task. Scripts only: it does not implement tasks or open pull requests.
 license: Apache-2.0
-repository: https://github.com/ancelin-code/fourmee.git
-product-version: fourmee@v0
+repository: https://github.com/ancelin-code/alula.git
+product-version: alula@v0
 version: "0.1.0"
 keywords:
   - claim-task
-  - fourmee-status
+  - alula-status
   - task-lock
   - parallel-lanes
   - who-holds
@@ -40,7 +40,7 @@ out of date, or conflict on.
 - something needs to know whether a task is already taken, and by whom
 
 The task file schema, branch naming and tiers are defined by the delivery
-conventions, `<fourmee>/references/conventions.md`. This skill does not require
+conventions, `<alula>/references/conventions.md`. This skill does not require
 them: it reads the task id it is given, the task files in `delivery/tasks/`, and
 the git refs around it.
 

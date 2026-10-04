@@ -26,7 +26,7 @@ from tests.unit.test_launch_lanes_script import (
 
 TASK_ARGS = "delivery/tasks/b-001.md --report .lane-report.md"
 READ_PROMPT = "Read {skill} and follow it as a skill, with the arguments: " + TASK_ARGS
-SLASH_PROMPT = "/fourmee-implement " + TASK_ARGS
+SLASH_PROMPT = "/alula-implement " + TASK_ARGS
 DENY_TERRAFORM = {"terraform apply*": "deny", "terraform destroy*": "deny"}
 
 
@@ -64,7 +64,7 @@ def run_lane(
     env = dict(env or {})
     if model is not None:
         mapping = write_tiers(tmp_path / "t.conf", f"[build]\n\tharness = {harness}\n\tmodel = {model}\n")
-        env["FOURMEE_TIERS"] = str(mapping)
+        env["ALULA_TIERS"] = str(mapping)
     result = launch_live(
         dev,
         [
@@ -97,7 +97,7 @@ def run_lane(
 def skill_path() -> str:
     from tests.unit.test_launch_lanes_script import SKILLS  # noqa: PLC0415
 
-    return str(SKILLS / "fourmee" / "scripts" / ".." / ".." / "fourmee-implement" / "SKILL.md")
+    return str(SKILLS / "alula" / "scripts" / ".." / ".." / "alula-implement" / "SKILL.md")
 
 
 class TestCommandLines:
@@ -165,7 +165,7 @@ class TestWebAccess:
 class TestCustomCommand:
     def test_placeholders_become_the_lanes_values(self, tmp_path: Path) -> None:
         template = 'for v in {model} {worktree} {plan_dir}; do printf "VALUE %s\\n" "$v" >> "$FAKE_LOG"; done'
-        run_lane(tmp_path, "custom", env={"FOURMEE_LANE_CMD": template})
+        run_lane(tmp_path, "custom", env={"ALULA_LANE_CMD": template})
         wait_for(lambda: (tmp_path / "agent.log").read_text(encoding="utf-8").count("VALUE ") >= 3)  # noqa: PLR2004
         log = (tmp_path / "agent.log").read_text(encoding="utf-8").splitlines()
         values = [line.removeprefix("VALUE ") for line in log if line.startswith("VALUE ")]
@@ -185,7 +185,7 @@ class TestCustomCommand:
             bin_dir,
             log,
             isolated=True,
-            env_extra={"FOURMEE_LANE_CMD": template},
+            env_extra={"ALULA_LANE_CMD": template},
         )
         assert "LAUNCHED\ta-001\tcustom" in result.stdout, result.stdout + result.stderr
         wait_for(lambda: "VALUE" in log.read_text(encoding="utf-8"))
@@ -204,4 +204,4 @@ class TestCustomCommand:
             log,
             isolated=True,
         )
-        assert "SKIP\ta-001\tcustom needs FOURMEE_LANE_CMD to be set" in result.stdout
+        assert "SKIP\ta-001\tcustom needs ALULA_LANE_CMD to be set" in result.stdout

@@ -33,7 +33,7 @@ lens to a review skill, and optionally to path patterns, in
 to run. `general` applies to every pull request.
 
 The review still runs where it did before: in a fresh session a human starts,
-not inside `fourmee-implement`. The lane does not add labels itself, because
+not inside `alula-implement`. The lane does not add labels itself, because
 `gh pr create --label` fails when the label does not exist in the repository.
 
 ## Consequences

@@ -15,7 +15,7 @@ from tests.conftest import SH
 from tests.unit.test_publish_lane_script import claimed_lane, git
 
 SKILLS = Path(__file__).resolve().parents[2] / ".agents" / "skills"
-SCRIPT = SKILLS / "fourmee" / "scripts" / "release-lane.sh"
+SCRIPT = SKILLS / "alula" / "scripts" / "release-lane.sh"
 
 RELEASED = 0
 USAGE_ERROR = 1

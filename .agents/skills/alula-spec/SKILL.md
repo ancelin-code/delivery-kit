@@ -1,15 +1,15 @@
 ---
-name: fourmee-spec
+name: alula-spec
 author: Ancelin Serre
 description: >-
-  Part of Fourmee, invoked by fourmee. Turn an intent into a short
+  Part of Alula, invoked by alula. Turn an intent into a short
   requirements document, then record the design decisions and interface contracts that let
   parallel lanes build compatible parts. Use when starting a use case, when an ask is too
   vague to decompose, or when parallel work needs an agreed interface to build against.
   Does not break work into tasks or implement anything.
 license: Apache-2.0
-repository: https://github.com/ancelin-code/fourmee.git
-product-version: fourmee@v0
+repository: https://github.com/ancelin-code/alula.git
+product-version: alula@v0
 version: "0.1.0"
 keywords:
   - requirements
@@ -40,7 +40,7 @@ before stage A is approved.
 Three pages at most for the requirements. Length is not thoroughness: a long
 document hides the decisions that matter and costs tokens in every phase that
 loads it. The real test is that the requirements stay short enough for
-`fourmee-decompose` to cut into tasks without re-reading them.
+`alula-decompose` to cut into tasks without re-reading them.
 
 Three is a budget, not a finding. Before exceeding it, check whether the excess
 is really design detail that belongs in stage B. If it is genuinely requirements
@@ -170,7 +170,7 @@ Read the requirements, decisions and contracts as a set, and confirm they do not
 contradict each other. A contradiction found here is cheap; found during
 integration it is not.
 
-Present them and stop. A human approves before `fourmee-decompose` runs.
+Present them and stop. A human approves before `alula-decompose` runs.
 
 ## Boundaries
 

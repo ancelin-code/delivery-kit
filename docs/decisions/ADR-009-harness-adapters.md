@@ -12,7 +12,7 @@ nobody can test every harness: a paid license is needed for most.
 
 ## Decision
 
-`fourmee/scripts/harness.sh` holds everything the launcher knows about a
+`alula/scripts/harness.sh` holds everything the launcher knows about a
 harness, and is sourced by it. For each one it answers: the binary, how a prompt
 is given without a terminal, the flag that picks a model, the flag that grants
 access to the planning checkout, how an unattended session is allowed to act,
@@ -20,7 +20,7 @@ and what `--no-web` turns off. The launcher resolves *which* harness runs a
 lane, and the adapter decides *what* the command line is.
 
 Five adapters ship: `claude`, `copilot`, `codex`, `opencode` and `pi`. `auto`
-tries them in that order. A sixth name, `custom`, runs `FOURMEE_LANE_CMD`, a
+tries them in that order. A sixth name, `custom`, runs `ALULA_LANE_CMD`, a
 shell command line with `{prompt}`, `{model}`, `{worktree}` and `{plan_dir}` in
 it, so a harness nobody has written an adapter for works on the first day.
 Placeholders become references to environment variables and never pasted text,

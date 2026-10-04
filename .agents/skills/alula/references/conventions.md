@@ -1,6 +1,6 @@
 # Delivery conventions
 
-The shared contract for Fourmee. Task files, branches, claims, tiers
+The shared contract for Alula. Task files, branches, claims, tiers
 and pull requests follow these rules. Skills reference this file rather
 than restating it.
 
@@ -9,7 +9,7 @@ than restating it.
 `<skill-root>` names the root of whichever skill the instruction using it
 belongs to, never another one: the same token means a different directory in
 each skill's own files. A command spanning two skills names the other one as
-`<its-name>` instead, for example `<fourmee-status>`, resolved to that
+`<its-name>` instead, for example `<alula-status>`, resolved to that
 skill's own installed directory the same way `<skill-root>` is. Neither is a
 path assumed relative to the skill doing the naming; the kit does not require
 one skill to sit at a fixed offset from another.
@@ -27,7 +27,7 @@ Three nested units. Every artifact the kit produces belongs to one of them.
 A use case has exactly one requirements document. New work on the same use case
 revises that document and becomes new epics; it does not start a second one.
 
-`fourmee-decompose` sets the cap on how many tasks an epic may hold.
+`alula-decompose` sets the cap on how many tasks an epic may hold.
 
 ## Where artifacts live
 
@@ -37,11 +37,11 @@ for: when a file is not at its path below, it does not exist yet.
 
 | Artifact | Path | Written by |
 |---|---|---|
-| Requirements | `delivery/prd.md` | `fourmee-spec`, stage A |
-| Decision records | the repository's existing decision record directory, else `delivery/decisions/ADR-<nnn>-<slug>.md` | `fourmee-spec`, stage B |
-| Contracts | `delivery/contracts/<interface>.md` | `fourmee-spec`, stage B |
-| Decomposition summary | `delivery/decomposition.md` | `fourmee-decompose` |
-| Task files | `delivery/tasks/<id>.md` | `fourmee-decompose`, or the orchestrator on the direct path |
+| Requirements | `delivery/prd.md` | `alula-spec`, stage A |
+| Decision records | the repository's existing decision record directory, else `delivery/decisions/ADR-<nnn>-<slug>.md` | `alula-spec`, stage B |
+| Contracts | `delivery/contracts/<interface>.md` | `alula-spec`, stage B |
+| Decomposition summary | `delivery/decomposition.md` | `alula-decompose` |
+| Task files | `delivery/tasks/<id>.md` | `alula-decompose`, or the orchestrator on the direct path |
 | Review lenses | `delivery/review-lenses.conf` | `install-routing.sh` seeds it; the project's maintainers edit it |
 
 An existing decision record directory is one already holding ADR files, such as
@@ -53,7 +53,7 @@ The kit's scripts default to `delivery/tasks` and run from the repository root,
 so none of them needs a path argument.
 
 Files shipped with a skill are named from that skill's root, for example
-`<fourmee>/references/conventions.md` for this file, as
+`<alula>/references/conventions.md` for this file, as
 [placeholders](#placeholders) defines.
 
 ## Task identity
@@ -110,8 +110,8 @@ and what is explicitly out of scope.
 time.
 
 Caps keep a run affordable and reviewable, and each one is stated by the skill
-that enforces it: `fourmee-spec` for the requirements document, and
-`fourmee-decompose` for epic and task size. Read the number there rather than
+that enforces it: `alula-spec` for the requirements document, and
+`alula-decompose` for epic and task size. Read the number there rather than
 restating it here, so raising a cap takes one edit and cannot leave a stale copy
 behind.
 
@@ -149,7 +149,7 @@ status file.
 type. Change type is carried by Conventional Commits and the pull request title.
 
 ```sh
-sh <fourmee-status>/scripts/claim.sh ingestion-003
+sh <alula-status>/scripts/claim.sh ingestion-003
 ```
 
 Run it from a clone of the repository the task lands in.
@@ -178,7 +178,7 @@ The holder and claim time come from `git log -1 task/<id>`.
 ## Tiers
 
 A task's `tier` says how much capability its work needs. It is a hint, not a
-model name: Fourmee cannot know which models an account may use, so unless a
+model name: Alula cannot know which models an account may use, so unless a
 tier is mapped (below) the harness picks its own default.
 
 | Tier | For | Typically |
@@ -215,13 +215,13 @@ syntax errors are git's.
 
 Two files are read, and the first to name a tier decides all of it:
 
-1. The developer's own: `$FOURMEE_TIERS`, else
-   `$XDG_CONFIG_HOME/fourmee/tiers.conf` (`~/.config/fourmee/tiers.conf`).
+1. The developer's own: `$ALULA_TIERS`, else
+   `$XDG_CONFIG_HOME/alula/tiers.conf` (`~/.config/alula/tiers.conf`).
    It lives outside every repository, so it is never committed by accident.
 2. The project's: `delivery/tiers.conf`, committed when a team agrees on one.
 
 A lane runs on the first of: `--harness`, the harness its tier maps to,
-`$FOURMEE_HARNESS`, then the first harness found installed.
+`$ALULA_HARNESS`, then the first harness found installed.
 
 ## Review lenses
 
@@ -253,7 +253,7 @@ the file, only the general review is suggested, and it is the harness's own.
 ## Commits and pull requests
 
 A lane does not commit. When its session exits cleanly,
-`<fourmee>/scripts/publish-lane.sh` commits the worktree as
+`<alula>/scripts/publish-lane.sh` commits the worktree as
 `<type>(<epic>): <title>`, pushes it, and opens the draft pull request. The body
 is the lane's handoff report, written in the repository's pull request template
 when there is one, else the task's acceptance criteria followed by the report.

@@ -1,6 +1,8 @@
 # ADR-006: The kit is named Fourmee, and only the brand changes
 
-**Status:** accepted
+**Status:** partly superseded by [ADR-010](ADR-010-alula-name.md). The name and
+its metaphor were replaced; the identifier scheme and the kept `delivery/`
+directory still stand, with `fourmee` read as `alula`.
 **Date:** 2026-10-02
 
 ## Context

@@ -409,7 +409,7 @@ wheels = [
 ]
 
 [[package]]
-name = "fourmee"
+name = "alula"
 version = "0.1.0"
 source = { virtual = "." }
 

@@ -1,6 +1,6 @@
-# Agent Instructions for the fourmee repository
+# Agent Instructions for the alula repository
 
-This repository holds the AI-native **Fourmee**: a family of Agent Skills
+This repository holds the AI-native **Alula**: a family of Agent Skills
 that route a use case from requirements through parallel implementation lanes to
 draft pull requests.
 
@@ -9,7 +9,7 @@ The kit is exploratory. Prefer deleting a rule over defending it.
 ## Project overview
 
 - Skills live in `.agents/skills/<skill-name>/SKILL.md`
-- Shared conventions live in `.agents/skills/fourmee/references/conventions.md`
+- Shared conventions live in `.agents/skills/alula/references/conventions.md`
 - Validated harness assumptions live in `docs/harness-validation.md`, a
   maintainer record that ships with the repository and not with the skills
 - Keep skills small, reviewable, and focused on one reusable capability
@@ -40,19 +40,19 @@ Concretely:
 - deterministic, non-reasoning steps belong in POSIX `sh`, not in prose
 - no harness-specific tool names in a skill: the kit must work in any harness
   that reads Agent Skills. What one harness needs lives in
-  `fourmee/scripts/harness.sh`, nowhere else
+  `alula/scripts/harness.sh`, nowhere else
 
 ## Authoring rules
 
 - `SKILL.md` stays at or below 500 lines and 5,000 tokens; references load on demand
 - Keep helper scripts non-executable and invoke them as `sh <skill-root>/scripts/...`
-- The Fourmee skills (`fourmee` and `fourmee-*`) are one workflow installed whole, not independent
+- The Alula skills (`alula` and `alula-*`) are one workflow installed whole, not independent
   units: a phase consumes the file the previous phase wrote. Still never
   reference a sibling skill by file path, only by name, so each stays
   individually evaluable and relocatable
 - The placeholder convention this implies (`<skill-root>` vs. naming a sibling
   skill) is defined once, in the shipped
-  [delivery conventions](.agents/skills/fourmee/references/conventions.md#placeholders),
+  [delivery conventions](.agents/skills/alula/references/conventions.md#placeholders),
   since this file does not install with the kit. Point new skill content at
   that definition rather than restating it here or anywhere else
 - Every skill is mirrored as a relative symlink under `.claude/skills/`. Adding a

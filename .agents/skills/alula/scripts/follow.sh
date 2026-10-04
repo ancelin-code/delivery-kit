@@ -29,7 +29,7 @@ Options:
   --no-launch            Report only; never start a lane.
   --max-polls <n>        Stop after n polls (default: no limit).
   --log-dir <dir>        Lane logs (default: .lanes/logs).
-  --status-script <path> status.sh from fourmee-status (default: beside this skill).
+  --status-script <path> status.sh from alula-status (default: beside this skill).
   --launcher <path>      launch-lanes.sh (default: beside this script).
   -h, --help             Print this help.
 
@@ -58,7 +58,7 @@ max_lanes=3
 launch=1
 max_polls=0
 log_dir=".lanes/logs"
-status_script="$here/../../fourmee-status/scripts/status.sh"
+status_script="$here/../../alula-status/scripts/status.sh"
 launcher="$here/launch-lanes.sh"
 
 while [ $# -gt 0 ]; do

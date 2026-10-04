@@ -1,4 +1,4 @@
-"""Behavioural tests for the fourmee-decompose skill's validator.
+"""Behavioural tests for the alula-decompose skill's validator.
 
 ``validate-tasks.sh`` is the gate between an approved decomposition and the
 lanes that build on it, so the tests focus on the task sets it must reject: the
@@ -15,7 +15,7 @@ from tests.conftest import SH
 from tests.unit.tiers import TIERS
 
 SKILLS = Path(__file__).resolve().parents[2] / ".agents" / "skills"
-SCRIPT = SKILLS / "fourmee-decompose" / "scripts" / "validate-tasks.sh"
+SCRIPT = SKILLS / "alula-decompose" / "scripts" / "validate-tasks.sh"
 
 VALID = 0
 USAGE_ERROR = 1

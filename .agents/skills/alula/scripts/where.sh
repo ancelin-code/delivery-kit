@@ -21,8 +21,8 @@ Run from the repository root. Prints, tab-separated:
 
   ROUTING  present | missing          the AGENTS.md block that routes requests here
   PHASE    <phase> <state> <path>     requirements, design, decomposition
-  TASK     ...                        one row per task, as fourmee-status prints it
-  SUMMARY  ...                        task counts, as fourmee-status prints it
+  TASK     ...                        one row per task, as alula-status prints it
+  SUMMARY  ...                        task counts, as alula-status prints it
   REVIEW   <id> <pr> <lens> <skill> <why>
                                       per task in review, one row per lens; skill
                                       is - when no skill is mapped to the lens
@@ -54,11 +54,11 @@ done
 git rev-parse --is-inside-work-tree >/dev/null 2>&1 || die "not inside a git repository"
 [ "$(git rev-parse --show-toplevel)" = "$(pwd -P)" ] || die "run from the repository root"
 
-# The kit installs as a whole, so fourmee-status sits beside this skill, the
+# The kit installs as a whole, so alula-status sits beside this skill, the
 # same assumption launch-lanes.sh makes for claim.sh.
 here="$(cd "$(dirname "$0")" && pwd)"
-status_script="$here/../../fourmee-status/scripts/status.sh"
-[ -f "$status_script" ] || die "fourmee-status is not installed beside fourmee"
+status_script="$here/../../alula-status/scripts/status.sh"
+[ -f "$status_script" ] || die "alula-status is not installed beside alula"
 
 # The value of the "**Status:**" line, lowercased; empty when there is none.
 # An unfilled template reads "draft | approved", which is not approved.
@@ -73,7 +73,7 @@ status_of() {
   ' "$1"
 }
 
-if grep -qs 'fourmee:routing' AGENTS.md; then
+if grep -qs 'alula:routing' AGENTS.md; then
   printf 'ROUTING\tpresent\n'
   routing=present
 else
@@ -140,7 +140,7 @@ next() {
   next install-routing "route this project's requests to the kit: sh $shown/install-routing.sh"
 
 if [ "$prd_state" = missing ]; then
-  next write-requirements "no delivery/prd.md: write it with fourmee-spec, stage A"
+  next write-requirements "no delivery/prd.md: write it with alula-spec, stage A"
   exit 0
 fi
 if [ "$prd_state" = draft ]; then
@@ -153,9 +153,9 @@ if [ "$design_state" = pending ]; then
 fi
 if [ "$decomposition_state" = missing ]; then
   if [ "$design_state" = none ]; then
-    next design-or-decompose "record the spine with fourmee-spec, stage B, if parts need an agreed interface; otherwise decompose with fourmee-decompose"
+    next design-or-decompose "record the spine with alula-spec, stage B, if parts need an agreed interface; otherwise decompose with alula-decompose"
   else
-    next decompose "decompose the approved requirements with fourmee-decompose"
+    next decompose "decompose the approved requirements with alula-decompose"
   fi
   exit 0
 fi
@@ -164,7 +164,7 @@ if [ "$decomposition_state" = draft ]; then
   exit 0
 fi
 
-# Lanes. Task state is fourmee-status's to derive; it fails loudly when pull
+# Lanes. Task state is alula-status's to derive; it fails loudly when pull
 # request state cannot be read, and so does this.
 rows="$(sh "$status_script" "$@")" ||
   die "task state could not be read; see the error above"

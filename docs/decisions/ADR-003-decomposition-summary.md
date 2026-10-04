@@ -26,7 +26,7 @@ even though integration is exactly where parallel lanes fail.
 
 ## Decision
 
-`fourmee-decompose` writes `decomposition.md` beside the task directory, from
+`alula-decompose` writes `decomposition.md` beside the task directory, from
 a template that ships with the skill. It records the source artifacts the cut
 was made from, one section per epic naming what that slice delivers and which
 tasks belong to it, where the set serializes and what forces it, and the
