@@ -8,9 +8,9 @@ not a catalogue you pick from. Each phase consumes the file the previous phase
 wrote, so a single skill installed alone is a phase with no input and no
 consumer. Install them together.
 
-The skills hold no harness-specific tool names. The lane launcher drives Claude
-Code and GitHub Copilot CLI today and runs on whichever is installed, so no
-single vendor's license is required. A task says how much capability it needs
+The skills hold no harness-specific tool names. The lane launcher has adapters
+for Claude Code, GitHub Copilot CLI, Codex CLI, OpenCode and Pi, and a custom
+command for any other, so no single vendor's license is required. A task says how much capability it needs
 with a [tier](.agents/skills/fourmee/references/conventions.md#tiers), and the
 harness, or your own mapping, decides which model that means.
 
@@ -85,7 +85,7 @@ choice made up front; see [Parallel or serial](#parallel-or-serial).
 | `fourmee` | Where the project stands, the route, the gates, the lane policy | decisions about what happens next | a human's session |
 | `fourmee-spec` | Requirements (stage A), then decisions and contracts (stage B) | `delivery/prd.md`, decision records, `delivery/contracts/` | a human's session |
 | `fourmee-decompose` | Splitting approved work into epics and independent tasks | `delivery/decomposition.md` and `delivery/tasks/<id>.md`, validated | a human's session |
-| `fourmee-status` | Claims and run state, read from git | exit codes and tab-separated rows | bash, no model |
+| `fourmee-status` | Claims and run state, read from git | exit codes and tab-separated rows | `sh`, no model |
 | `fourmee-implement` | One task into one validated change | a working tree and a handoff report | an unattended lane |
 
 Only `fourmee` is invoked by a human directly. The rest are reached
@@ -230,6 +230,50 @@ A lane runs on the first of: `--harness`, the harness its tier maps to,
 `$FOURMEE_HARNESS`, then the first harness found installed. `--harness` moves a
 whole launch on purpose, for example to the one whose allowance still has room.
 
+### Harnesses
+
+| Harness | Name | Status |
+|---|---|---|
+| Claude Code | `claude` | Validated |
+| GitHub Copilot CLI | `copilot` | Validated |
+| Codex CLI | `codex` | Adapter only |
+| OpenCode | `opencode` | Adapter only |
+| Pi | `pi` | Adapter only |
+| Anything else | `custom` | Your command |
+
+*Validated* means a lane ran on the real CLI and the result is recorded in
+[harness validation](docs/harness-validation.md). *Adapter only* means the
+command line follows the harness's documentation and a test proves the launcher
+passes it, but nobody has run a real lane there yet. If you have the license,
+running the checks and sending the result is the most useful contribution you
+can make.
+
+Safety is not the same on every harness. Claude Code and Copilot CLI deny
+`terraform apply` and `terraform destroy`; OpenCode denies them through the
+permission config the launcher passes; Codex relies on its sandbox, which writes
+inside the worktree and has no network; **Pi has no permission system**, so run
+its lanes in a container or a throwaway machine. `--no-web` is honoured by all
+five.
+
+For a harness without an adapter, set `FOURMEE_LANE_CMD` and `--harness custom`
+(or `FOURMEE_HARNESS=custom`). The template is a shell command line, run in the
+lane's worktree, and these placeholders become the lane's values:
+
+| Placeholder | Value |
+|---|---|
+| `{prompt}` | What the session is told to do |
+| `{model}` | The model the tier maps to, empty when there is none |
+| `{worktree}` | The lane's worktree, also the current directory |
+| `{plan_dir}` | The checkout that holds the planning files |
+
+```sh
+export FOURMEE_LANE_CMD='mycli run --model {model} --dir {worktree} {prompt}'
+```
+
+Placeholders are values, never pasted text, so quotes and `$(...)` in a path or
+prompt do nothing. The command's exit status decides the rest: zero publishes a
+draft pull request, non-zero gives the claim back if the lane left no work.
+
 Putting every task on `plan` is how a budget disappears, so review the tiers when
 you approve a decomposition.
 
@@ -332,15 +376,15 @@ and name it, rather than guess at the state of that repository's tasks.
 
 ## Getting started
 
-Each developer machine needs `git`, `bash` 4.4 or later, and `gh` 2.0 or later,
+Each developer machine needs `git`, a POSIX `sh`, and `gh` 2.0 or later,
 authenticated with `gh auth login` against the repository's forge. `gh` is not
 optional: task branches are deleted on merge, so merged pull requests are the
 only record of which tasks are done, and `status.sh` refuses to run without
 them.
 
-macOS ships bash 3.2, so install a current one with `brew install bash`. A
-helper run under the old bash stops at once and says so, instead of failing
-halfway through.
+The helpers are POSIX `sh` and POSIX `awk`, so nothing else is installed: they
+run on the `sh` of Linux, macOS and Alpine as they come, and CI runs them on
+dash, BusyBox ash and macOS's own `sh`.
 
 ### 1. Install the kit into a target repository
 
@@ -352,6 +396,9 @@ Use the `skills` CLI. It installs all five skills, writes each one to
 npx skills add https://github.com/ancelin-code/fourmee.git \
   --skill '*' -a claude-code -a github-copilot -y
 ```
+
+Add an `-a <agent>` for each other harness your team uses; `npx skills add
+--help` lists the names it knows.
 
 Then commit what it produced, including `skills-lock.json` and the symlinks. Git
 stores symlinks natively, so **lanes running in worktrees get the kit without a
@@ -368,7 +415,7 @@ need.
 Then make the kit the project's default assistant, and commit `AGENTS.md`:
 
 ```sh
-bash .agents/skills/fourmee/scripts/install-routing.sh
+sh .agents/skills/fourmee/scripts/install-routing.sh
 ```
 
 It appends a short block to `AGENTS.md`, creating it if needed, that sends every
@@ -443,9 +490,9 @@ are from `delivery/`, so no session has to stay alive across a gate.
 To start lanes once tasks are approved:
 
 ```sh
-bash .agents/skills/fourmee-status/scripts/status.sh --ready \
+sh .agents/skills/fourmee-status/scripts/status.sh --ready \
   | awk '$1=="TASK"{print $2}' \
-  | bash .agents/skills/fourmee/scripts/launch-lanes.sh --dry-run
+  | sh .agents/skills/fourmee/scripts/launch-lanes.sh --dry-run
 ```
 
 Drop `--dry-run` to start real lanes. Each lane ends as a draft pull request:
@@ -471,7 +518,7 @@ it depends on land, and prints one line per event, so nobody has to ask what is
 next or refresh the forge:
 
 ```sh
-bash .agents/skills/fourmee/scripts/follow.sh -- --no-web
+sh .agents/skills/fourmee/scripts/follow.sh -- --no-web
 ```
 
 Options after `--` go to the launcher. Your part is reviewing and merging the
@@ -576,13 +623,13 @@ whole use case as JSON: epics and what each delivers, tasks with the state
 documents.
 
 ```sh
-bash .agents/skills/fourmee-status/scripts/snapshot.sh
+sh .agents/skills/fourmee-status/scripts/snapshot.sh
 ```
 
 A connector reads that on stdin:
 
 ```sh
-bash .agents/skills/fourmee-status/scripts/snapshot.sh \
+sh .agents/skills/fourmee-status/scripts/snapshot.sh \
   | fourmee-jira --config ~/jira/shop.toml --dry-run
 ```
 

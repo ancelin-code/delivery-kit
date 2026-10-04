@@ -20,7 +20,6 @@ keywords:
   - parallel-work
 spec-version: "1.0"
 compatibility:
-  - bash@>=4.4
 metadata:
   category: development
   owner: ancelin-code
@@ -74,7 +73,7 @@ it directly. Splitting a one-task change into an epic costs more than it saves.
 7. **Validate the set** before anyone starts:
 
    ```sh
-   bash <skill-root>/scripts/validate-tasks.sh
+   sh <skill-root>/scripts/validate-tasks.sh
    ```
 
    Run it from the repository root; it reads `delivery/tasks/` and

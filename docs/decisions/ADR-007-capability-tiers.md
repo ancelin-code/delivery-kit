@@ -72,8 +72,8 @@ settings, where it is set once for the model in use.
   `-` placeholder, parsed by hand. It needed its own parser and error handling,
   and a new field meant a new column. Rejected for the git config format, which
   git is already required to read.
-- **JSON, TOML or CSV** - Rejected. The launcher is bash and a consumer needs
-  only git, bash and gh. JSON has no comments and needs `jq`. Bash has no TOML
+- **JSON, TOML or CSV** - Rejected. The launcher is sh and a consumer needs
+  only git, sh and gh. JSON has no comments and needs `jq`. A shell has no TOML
   parser, so a hand-written subset would look like TOML and not be. CSV has no
   comment syntax and is awkward to edit by hand. Git's format has comments,
   quoting and errors, and nothing to install.

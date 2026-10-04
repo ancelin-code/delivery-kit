@@ -16,6 +16,8 @@ from pathlib import Path
 
 import pytest
 
+from tests.conftest import SH
+
 SCRIPTS_DIR = Path(__file__).resolve().parents[2] / ".agents" / "skills" / "fourmee-status" / "scripts"
 
 # Exit codes of claim.sh; callers branch on these rather than on its output text.
@@ -24,7 +26,7 @@ CLAIM_ERROR = 1
 CLAIM_HELD = 2
 
 pytestmark = pytest.mark.skipif(
-    shutil.which("bash") is None or shutil.which("git") is None,
+    shutil.which("git") is None,
     reason="bash and git are required to exercise the fourmee-status helper scripts",
 )
 
@@ -52,7 +54,7 @@ def run_claim(
     # S603/S607: a test harness deliberately invoking a repo script via `bash`;
     # every input is test-local.
     return subprocess.run(  # noqa: S603
-        ["bash", str(SCRIPTS_DIR / "claim.sh"), *args],  # noqa: S607
+        [SH, str(SCRIPTS_DIR / "claim.sh"), *args],
         capture_output=True,
         text=True,
         cwd=cwd,
@@ -278,7 +280,7 @@ def run_status(
     else:
         env["PATH"] = f"{bin_dir or fake_gh(cwd.parent)}{os.pathsep}{env['PATH']}"
     return subprocess.run(  # noqa: S603
-        ["bash", str(SCRIPTS_DIR / "status.sh"), *args],  # noqa: S607
+        [SH, str(SCRIPTS_DIR / "status.sh"), *args],
         capture_output=True,
         text=True,
         cwd=cwd,
@@ -504,7 +506,7 @@ def run_snapshot(args: list[str], *, cwd: Path, bin_dir: Path | None = None) -> 
     env = os.environ.copy()
     env["PATH"] = f"{bin_dir or fake_gh(cwd.parent)}{os.pathsep}{env['PATH']}"
     return subprocess.run(  # noqa: S603
-        ["bash", str(SCRIPTS_DIR / "snapshot.sh"), *args],  # noqa: S607
+        [SH, str(SCRIPTS_DIR / "snapshot.sh"), *args],
         capture_output=True,
         text=True,
         cwd=cwd,

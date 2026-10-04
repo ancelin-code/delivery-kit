@@ -5,19 +5,16 @@ launches what each merge makes ready. The tests replay a scripted sequence of
 task states, one per poll, and record what the loop asked the launcher to start.
 """
 
-import shutil
 import subprocess
 from pathlib import Path
 
-import pytest
+from tests.conftest import SH
 
 SKILLS = Path(__file__).resolve().parents[2] / ".agents" / "skills"
 SCRIPT = SKILLS / "fourmee" / "scripts" / "follow.sh"
 
 COMPLETE = 0
 STUCK = 3
-
-pytestmark = pytest.mark.skipif(shutil.which("bash") is None, reason="bash is required")
 
 
 def repo_with(tmp_path: Path, tasks: dict[str, str]) -> Path:
@@ -41,7 +38,7 @@ def scripted_status(tmp_path: Path, polls: list[dict[str, str]]) -> Path:
     script = tmp_path / "status.sh"
     script.write_text(
         f'n=$(( $(cat "{folder}/count" 2>/dev/null || echo 0) + 1 )); echo "$n" > "{folder}/count"\n'
-        f'last=$(ls "{folder}"/*.tsv | wc -l); (( n <= last )) || n=$last\n'
+        f'last=$(ls "{folder}"/*.tsv | wc -l); [ "$n" -le "$last" ] || n=$last\n'
         f'cat "{folder}/$n.tsv"\n',
         encoding="utf-8",
     )
@@ -63,8 +60,8 @@ def recording_launcher(tmp_path: Path) -> Path:
 
 def follow(repo: Path, status: Path, launcher: Path, *args: str) -> subprocess.CompletedProcess[str]:
     return subprocess.run(  # noqa: S603
-        [  # noqa: S607
-            "bash",
+        [
+            SH,
             str(SCRIPT),
             "--interval",
             "0",

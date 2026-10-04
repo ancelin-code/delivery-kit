@@ -6,12 +6,12 @@ ones whose cost is paid later by several developers at once.
 """
 
 import re
-import shutil
 import subprocess
 from pathlib import Path
 
 import pytest
 
+from tests.conftest import SH
 from tests.unit.tiers import TIERS
 
 SKILLS = Path(__file__).resolve().parents[2] / ".agents" / "skills"
@@ -20,8 +20,6 @@ SCRIPT = SKILLS / "fourmee-decompose" / "scripts" / "validate-tasks.sh"
 VALID = 0
 USAGE_ERROR = 1
 INVALID = 2
-
-pytestmark = pytest.mark.skipif(shutil.which("bash") is None, reason="bash is required")
 
 
 def write_task(
@@ -90,7 +88,7 @@ def validate(tasks_dir: Path, *args: str) -> subprocess.CompletedProcess[str]:
     if not (tasks_dir.parent / "decomposition.md").exists():
         write_summary(tasks_dir)
     return subprocess.run(  # noqa: S603
-        ["bash", str(SCRIPT), "--tasks-dir", str(tasks_dir), *args],  # noqa: S607
+        [SH, str(SCRIPT), "--tasks-dir", str(tasks_dir), *args],
         capture_output=True,
         text=True,
         check=False,

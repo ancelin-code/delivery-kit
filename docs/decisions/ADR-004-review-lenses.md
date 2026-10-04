@@ -28,7 +28,7 @@ lens to a review skill, and optionally to path patterns, in
 - the diff touches a path matching one of the lens's patterns, which catches
   what decomposition missed
 
-`where.sh` resolves this in bash for every task in review and prints one
+`where.sh` resolves this in sh for every task in review and prints one
 `REVIEW` row per lens, so "what's next" and "what's the status" name the skill
 to run. `general` applies to every pull request.
 

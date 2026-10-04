@@ -22,6 +22,38 @@ Environment at time of testing (2026-09-21, test 4 on 2026-09-22, tests 5 to
 | GitHub Copilot CLI | 1.0.86 (1.0.87 for test 4, 1.0.88 for test 5) |
 | git | 2.34.1 |
 
+## Support matrix
+
+One column per harness, one row per assumption the launcher makes. A cell says
+what was done and when. **Run** means observed on the real CLI. **Help** means
+read from the installed CLI's own `--help` or `debug` output. **Docs** means
+read from the vendor's documentation and not run, because there is no license to
+run it. Only *Run* cells justify calling a harness validated.
+
+| Assumption | Claude Code | Copilot CLI | Codex CLI | OpenCode 1.18.18 | Pi |
+|---|---|---|---|---|---|
+| Takes a prompt with no terminal | Run, 2026-09 | Run, 2026-09 | Docs, 2026-10-04: `codex exec` | Help, 2026-10-04: `opencode run` | Docs, 2026-10-04: `-p` |
+| Model flag | Run, 2026-09 | Run, 2026-09 | Docs: `--model` | Help: `--model provider/model` | Docs: `--model` |
+| Access to the planning checkout | Run, 2026-09: `--add-dir` | Run, 2026-09: `--add-dir` | Docs: `--add-dir` | None; `--auto` is expected to cover it | Not needed, no sandbox |
+| Acts with nobody to approve | Run, 2026-09: `acceptEdits` and `--allowedTools Bash` | Run, 2026-09: `--allow-all-tools` | Docs: `--sandbox workspace-write` | Help: `--auto`, which approves what the config does not deny | Docs: asks nothing |
+| Denies `terraform apply` and `destroy` | Run, 2026-09 | Run, 2026-09 | Not denied; the sandbox has no network | Help, 2026-10-04: inline config is read (`opencode debug config`); denial not run | Cannot |
+| `--no-web` | Run, 2026-09 | Run, 2026-09 | Nothing to take away | Help, 2026-10-04: `webfetch` deny reaches the resolved config; not run | No web tool |
+| Resolves `/<skill>` in a prompt | Run, 2026-09 | Run, 2026-09, in the skills repository only | Not used | Not used | Not used |
+| Lists the kit's skills in a worktree | Run, 2026-09 | Run, 2026-09 | Unknown | **Observed 2026-10-04: 0 of 5 listed** by `opencode debug skill` on the symlinked layout | Docs: reads `.agents/skills` |
+| A real lane opens a draft pull request | Run, 2026-09 | Run, 2026-09 | Not run | Not run | Not run |
+
+The launcher does not depend on a harness listing the skills: it tells every
+harness except Claude Code, and Copilot CLI in the skills repository, to read
+the skill file by path. That is what OpenCode's row led to.
+
+Cursor CLI was considered for the fifth place. Its headless mode is `agent -p`
+with `--force`, but its documentation does not say whether it reads `AGENTS.md`
+or Agent Skills, and nothing could be run, so Pi was taken instead.
+
+Sources read on 2026-10-04: the Codex non-interactive documentation, the Pi
+package page and field guides, the Cursor headless documentation, and OpenCode's
+skills documentation.
+
 ## Summary
 
 | # | Assumption under test | Result |

@@ -18,7 +18,7 @@ mkdir -p "$(dirname "$report_file")"
 
 if [[ "${GITHUB_ACTIONS:-}" == "true" ]]; then
   set +e
-  output=$(shellcheck --format=json1 "${shell_files[@]}")
+  output=$(shellcheck -x --format=json1 "${shell_files[@]}")
   result=$?
   set -e
   if ((result > 1)); then
@@ -31,11 +31,11 @@ if [[ "${GITHUB_ACTIONS:-}" == "true" ]]; then
     .comments[]
     | "::error file=\(.file | property),line=\(.line),col=\(.column),title=ShellCheck SC\(.code)::\(.message | data)"
   ' <<< "$output"
-  shellcheck --format=gcc "${shell_files[@]}" > "$report_file" 2>&1 || true
+  shellcheck -x --format=gcc "${shell_files[@]}" > "$report_file" 2>&1 || true
   exit "$result"
 fi
 
-if output=$(shellcheck "${shell_files[@]}" 2>&1); then
+if output=$(shellcheck -x "${shell_files[@]}" 2>&1); then
   result=0
 else
   result=$?

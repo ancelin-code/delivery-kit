@@ -1,11 +1,5 @@
-#!/usr/bin/env bash
-set -euo pipefail
-
-# Fail early and clearly on an older bash, such as the 3.2 macOS ships.
-if ((BASH_VERSINFO[0] < 4 || (BASH_VERSINFO[0] == 4 && BASH_VERSINFO[1] < 4))); then
-  printf 'ERROR\tbash 4.4 or later is required, found %s\n' "$BASH_VERSION" >&2
-  exit 1
-fi
+#!/bin/sh
+set -eu
 
 # Print the state of the use case as one JSON document, for connectors that
 # project it into an external tool such as Jira or Confluence. The contract
@@ -21,7 +15,7 @@ die() {
 
 usage() {
   cat <<'USAGE'
-usage: bash snapshot.sh [options]
+usage: sh snapshot.sh [options]
 
 Prints the use case, its epics, its tasks with their derived state and pull
 request, and its documents, as one JSON document (schema 1) on stdout.
@@ -38,13 +32,19 @@ USAGE
 # new state value. Adding a field does not need it.
 schema=1
 tasks_dir="delivery/tasks"
-status_args=()
 
-while (($# > 0)); do
+# Check each option once and queue the accepted ones behind the rest, so that
+# what is left in "$@" is exactly what status.sh receives.
+remaining=$#
+while [ "$remaining" -gt 0 ]; do
   case "$1" in
-    --tasks-dir) [[ $# -ge 2 ]] || die "--tasks-dir requires a value"; tasks_dir="$2"; status_args+=("$1" "$2"); shift 2 ;;
-    --remote) [[ $# -ge 2 ]] || die "--remote requires a value"; status_args+=("$1" "$2"); shift 2 ;;
-    --no-fetch) status_args+=("$1"); shift ;;
+    --tasks-dir)
+      [ "$remaining" -ge 2 ] || die "--tasks-dir requires a value"
+      tasks_dir="$2"; set -- "$@" "$1" "$2"; shift 2; remaining=$((remaining - 2)) ;;
+    --remote)
+      [ "$remaining" -ge 2 ] || die "--remote requires a value"
+      set -- "$@" "$1" "$2"; shift 2; remaining=$((remaining - 2)) ;;
+    --no-fetch) set -- "$@" "$1"; shift; remaining=$((remaining - 1)) ;;
     -h | --help) usage; exit 0 ;;
     *) die "unknown option: $1" ;;
   esac
@@ -53,13 +53,34 @@ done
 git rev-parse --is-inside-work-tree >/dev/null 2>&1 || die "not inside a git repository"
 home="$(git rev-parse --show-toplevel)"
 delivery="$(dirname "$tasks_dir")"
+tab="$(printf '\t')"
 
 # status.sh already refuses to guess, so its failure is this script's failure.
-status_out="$(bash "$(dirname "${BASH_SOURCE[0]}")/status.sh" "${status_args[@]+"${status_args[@]}"}")" ||
+status_out="$(sh "$(dirname "$0")/status.sh" "$@")" ||
   exit $?
 
-field() {
-  awk -v key="$2" '
+# Lists of JSON items are files, one item per entry, and "file_of" is a
+# directory with one file per task id: POSIX sh has no arrays to hold them.
+store="$(mktemp -d)"
+trap 'rm -rf "$store"' EXIT
+mkdir "$store/file_of"
+
+# add <list> <json>: append one item to a list, comma-separated.
+add() {
+  [ ! -s "$store/$1" ] || printf ',\n' >>"$store/$1"
+  printf '%s' "$2" >>"$store/$1"
+}
+
+# print_list <list>: the items of a list, one per line, commas between them.
+print_list() {
+  [ ! -s "$store/$1" ] || { cat "$store/$1"; printf '\n'; }
+}
+
+# The frontmatter value of one key. field() splits a list on commas and spaces;
+# scalar() keeps the value as written, so a title keeps its commas, and removes
+# surrounding YAML quotes.
+frontmatter() {
+  awk -v key="$2" -v mode="$3" '
     NR == 1 && $0 != "---" { exit }
     NR > 1 && $0 == "---" { exit }
     {
@@ -70,81 +91,58 @@ field() {
       if (k != key) next
       v = substr($0, pos + 1)
       gsub(/^[ \t]+|[ \t]+$/, "", v)
-      gsub(/^\[|\]$/, "", v); gsub(/,/, " ", v)
-      gsub(/^[ \t]+|[ \t]+$/, "", v)
+      if (mode == "list") {
+        gsub(/^\[|\]$/, "", v); gsub(/,/, " ", v)
+        gsub(/^[ \t]+|[ \t]+$/, "", v)
+      } else if (v ~ /^".*"$/ || v ~ /^\047.*\047$/) {
+        v = substr(v, 2, length(v) - 2)
+      }
       print v; exit
     }
   ' "$1"
 }
-
-# One scalar frontmatter value as written: field() splits lists on commas, which
-# would mangle a title. Surrounding YAML quotes are removed.
-scalar() {
-  local v
-  v="$(awk -v key="$2" '
-    NR == 1 && $0 != "---" { exit }
-    NR > 1 && $0 == "---" { exit }
-    {
-      pos = index($0, ":")
-      if (pos == 0) next
-      k = substr($0, 1, pos - 1)
-      gsub(/^[ \t]+|[ \t]+$/, "", k)
-      if (k != key) next
-      v = substr($0, pos + 1)
-      gsub(/^[ \t]+|[ \t]+$/, "", v)
-      print v; exit
-    }
-  ' "$1")"
-  if [[ "$v" =~ ^\"(.*)\"$ || "$v" =~ ^\'(.*)\'$ ]]; then v="${BASH_REMATCH[1]}"; fi
-  printf '%s' "$v"
-}
+field() { frontmatter "$1" "$2" list; }
+scalar() { frontmatter "$1" "$2" scalar; }
 
 # A JSON string, quotes included. Control characters other than tab and newline
-# carry nothing a connector needs, so they are dropped rather than escaped.
+# carry nothing a connector needs, so they are dropped rather than escaped. The
+# value travels in the environment because awk -v would read its backslashes.
 json_str() {
-  local s="$1"
-  s="${s//\\/\\\\}"
-  s="${s//\"/\\\"}"
-  s="${s//$'\t'/\\t}"
-  s="${s//$'\n'/\\n}"
-  s="${s//[$'\001'-$'\037']/}"
-  printf '"%s"' "$s"
+  S="$1" awk 'BEGIN {
+    s = ENVIRON["S"]; out = ""
+    for (i = 1; i <= length(s); i++) {
+      c = substr(s, i, 1)
+      if (c == "\\") out = out "\\\\"
+      else if (c == "\"") out = out "\\\""
+      else if (c == "\t") out = out "\\t"
+      else if (c == "\n") out = out "\\n"
+      else if (c >= " ") out = out c
+    }
+    printf "\"%s\"", out
+  }'
 }
 
 json_or_null() {
-  if [[ -n "$1" ]]; then json_str "$1"; else printf 'null'; fi
+  if [ -n "$1" ]; then json_str "$1"; else printf 'null'; fi
 }
 
 # A space-separated list as a JSON array of strings.
-json_list() {
-  local item sep=""
+json_list() (
+  sep=""
   printf '['
   for item in $1; do
     printf '%s' "$sep"; json_str "$item"; sep=", "
   done
   printf ']'
-}
-
-join_by_comma() {
-  local first=1 item
-  for item in "$@"; do
-    ((first == 1)) || printf ',\n'
-    printf '%s' "$item"; first=0
-  done
-  ((first == 1)) || printf '\n'
-}
+)
 
 # What each epic delivers, from the Epics section of the decomposition summary:
-# the prose under each "### <epic>" heading, up to its task list.
-declare -A delivers_of=()
-epic_order=()
+# the prose under each "### <epic>" heading, up to its task list. The epics file
+# holds one "<epic><TAB><delivers>" line per epic, in the order they are printed.
 decomposition="$delivery/decomposition.md"
-if [[ -f "$decomposition" ]]; then
-  while IFS=$'\t' read -r epic text; do
-    [[ -n "$epic" ]] || continue
-    epic_order+=("$epic")
-    delivers_of["$epic"]="$text"
-  done < <(awk '
+: >"$store/epics"
+if [ -f "$decomposition" ]; then
+  awk '
     function flush() { if (epic != "") { gsub(/^ +| +$/, "", text); printf "%s\t%s\n", epic, text } }
     /^##[[:space:]]/ && !/^###/ { flush(); epic = ""; in_epics = ($0 ~ /^##[[:space:]]+Epics[[:space:]]*$/); next }
     !in_epics { next }
@@ -157,8 +155,16 @@ if [[ -f "$decomposition" ]]; then
     /^-[[:space:]]/ { listing = 1; next }
     !listing && NF { gsub(/\t/, " "); text = text " " $0 }
     END { flush() }
-  ' "$decomposition")
+  ' "$decomposition" >"$store/epics"
 fi
+
+# epic_delivers <epic>: the text, empty when there is none. epic_known <epic>.
+epic_delivers() {
+  K="$1" awk -F'\t' '$1 == ENVIRON["K"] { print substr($0, length($1) + 2); exit }' "$store/epics"
+}
+epic_known() {
+  K="$1" awk -F'\t' '$1 == ENVIRON["K"] { found = 1 } END { exit !found }' "$store/epics"
+}
 
 # Pull request of one task, whatever its state: the latest one on its branch.
 pr_url() {
@@ -167,67 +173,63 @@ pr_url() {
 }
 
 # status.sh reports the id a task file declares, which need not be its file name.
-declare -A file_of=()
-shopt -s nullglob
 for file in "$tasks_dir"/*.md; do
+  [ -e "$file" ] || continue
   id="$(field "$file" id)"
-  [[ -z "$id" ]] || file_of["$id"]="$file"
+  [ -z "$id" ] || printf '%s' "$file" >"$store/file_of/$id"
 done
-shopt -u nullglob
 
-declare -A seen_epic=()
-tasks_json=()
-while IFS=$'\t' read -r kind id state holder _title; do
-  [[ "$kind" == TASK ]] || continue
-  file="${file_of[$id]}"
+while IFS="$tab" read -r kind id state holder _title; do
+  [ "$kind" = TASK ] || continue
+  file="$(cat "$store/file_of/$id")"
   epic="$(scalar "$file" epic)"
   repo="$(scalar "$file" repo)"
   repo_dir="$home"
-  [[ -z "$repo" ]] || repo_dir="$(dirname "$home")/$repo"
+  [ -z "$repo" ] || repo_dir="$(dirname "$home")/$repo"
   url=""
   case "$state" in in-progress | in-review | done) url="$(pr_url "$repo_dir" "$id")" ;; esac
-  [[ "$holder" != "-" ]] || holder=""
-  if [[ -n "$epic" && -z "${seen_epic[$epic]:-}" ]]; then
-    seen_epic["$epic"]=1
-    [[ -n "${delivers_of[$epic]+set}" ]] || epic_order+=("$epic")
+  [ "$holder" != "-" ] || holder=""
+  if [ -n "$epic" ] && ! epic_known "$epic"; then
+    printf '%s\t\n' "$epic" >>"$store/epics"
   fi
-  tasks_json+=("$(
+  add tasks_json "$(
     printf '    {"id": %s, "title": %s, "type": %s, "epic": %s, "repo": %s,\n' \
       "$(json_str "$id")" "$(json_str "$(scalar "$file" title)")" "$(json_or_null "$(scalar "$file" type)")" \
       "$(json_or_null "$epic")" "$(json_str "$(basename "$repo_dir")")"
     printf '     "state": %s, "holder": %s, "depends_on": %s,\n' \
       "$(json_str "$state")" "$(json_or_null "$holder")" "$(json_list "$(field "$file" depends_on)")"
     printf '     "pull_request": %s, "file": %s}' "$(json_or_null "$url")" "$(json_str "$file")"
-  )")
-done <<<"$status_out"
+  )"
+done <<EOF_STATUS
+$status_out
+EOF_STATUS
 
-epics_json=()
-for epic in "${epic_order[@]+"${epic_order[@]}"}"; do
-  epics_json+=("$(printf '    {"id": %s, "delivers": %s}' "$(json_str "$epic")" "$(json_or_null "${delivers_of[$epic]:-}")")")
-done
+while IFS="$tab" read -r epic _; do
+  add epics_json "$(printf '    {"id": %s, "delivers": %s}' "$(json_str "$epic")" "$(json_or_null "$(epic_delivers "$epic")")")"
+done <"$store/epics"
 
 # The documents a reader outside git would want, with the title of each, so a
 # connector can publish them without parsing markdown itself.
-doc_json() {
-  local title
+add_doc() {
   title="$(awk '/^#[[:space:]]/ { sub(/^#[[:space:]]+/, ""); print; exit }' "$2")"
-  printf '    {"kind": %s, "path": %s, "title": %s}' "$(json_str "$1")" "$(json_str "$2")" "$(json_or_null "$title")"
+  add docs_json "$(printf '    {"kind": %s, "path": %s, "title": %s}' "$(json_str "$1")" "$(json_str "$2")" "$(json_or_null "$title")")"
 }
-docs_json=()
-shopt -s nullglob
-[[ ! -f "$delivery/prd.md" ]] || docs_json+=("$(doc_json requirements "$delivery/prd.md")")
-[[ ! -f "$decomposition" ]] || docs_json+=("$(doc_json decomposition "$decomposition")")
+[ ! -f "$delivery/prd.md" ] || add_doc requirements "$delivery/prd.md"
+[ ! -f "$decomposition" ] || add_doc decomposition "$decomposition"
 for dir in "$delivery/decisions" docs/adr docs/decisions; do
-  for doc in "$dir"/ADR-*.md; do docs_json+=("$(doc_json decision "$doc")"); done
+  for doc in "$dir"/ADR-*.md; do
+    [ ! -e "$doc" ] || add_doc decision "$doc"
+  done
 done
-for doc in "$delivery/contracts"/*.md; do docs_json+=("$(doc_json contract "$doc")"); done
-shopt -u nullglob
+for doc in "$delivery/contracts"/*.md; do
+  [ ! -e "$doc" ] || add_doc contract "$doc"
+done
 
 printf '{\n'
 printf '  "schema": %s,\n' "$schema"
 printf '  "use_case": {"repo": %s, "commit": %s},\n' \
   "$(json_str "$(basename "$home")")" "$(json_str "$(git rev-parse HEAD)")"
-printf '  "epics": [\n'; join_by_comma "${epics_json[@]+"${epics_json[@]}"}"; printf '  ],\n'
-printf '  "tasks": [\n'; join_by_comma "${tasks_json[@]+"${tasks_json[@]}"}"; printf '  ],\n'
-printf '  "documents": [\n'; join_by_comma "${docs_json[@]+"${docs_json[@]}"}"; printf '  ]\n'
+printf '  "epics": [\n'; print_list epics_json; printf '  ],\n'
+printf '  "tasks": [\n'; print_list tasks_json; printf '  ],\n'
+printf '  "documents": [\n'; print_list docs_json; printf '  ]\n'
 printf '}\n'

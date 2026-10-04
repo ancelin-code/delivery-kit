@@ -13,6 +13,8 @@ from pathlib import Path
 
 import pytest
 
+from tests.conftest import SH
+
 SKILLS = Path(__file__).resolve().parents[2] / ".agents" / "skills"
 SCRIPT = SKILLS / "fourmee" / "scripts" / "publish-lane.sh"
 CLAIM = SKILLS / "fourmee-status" / "scripts" / "claim.sh"
@@ -23,8 +25,8 @@ NOTHING = 3
 URL = "https://example.test/pr/7"
 
 pytestmark = pytest.mark.skipif(
-    shutil.which("bash") is None or shutil.which("git") is None,
-    reason="bash and git are required",
+    shutil.which("git") is None,
+    reason="git is required",
 )
 
 FAKE_GH = """#!/usr/bin/env bash
@@ -71,7 +73,7 @@ def claimed_lane(tmp_path: Path, *, title: str = "Do a-001", task_type: str | No
     git(dev, "push", "-q", "origin", "HEAD:refs/heads/main")
     lane = tmp_path / "lanes" / "a-001"
     git(dev, "worktree", "add", "-q", "-b", "task/a-001", str(lane))
-    subprocess.run(["bash", str(CLAIM), "a-001"], cwd=lane, capture_output=True, check=True)  # noqa: S603, S607
+    subprocess.run([SH, str(CLAIM), "a-001"], cwd=lane, capture_output=True, check=True)  # noqa: S603
     return lane
 
 
@@ -91,7 +93,7 @@ def publish(lane: Path, tmp_path: Path, **env_extra: str) -> subprocess.Complete
     )
     (tmp_path / "gh.log").touch()
     return subprocess.run(  # noqa: S603
-        ["bash", str(SCRIPT), "delivery/tasks/a-001.md"],  # noqa: S607
+        [SH, str(SCRIPT), "delivery/tasks/a-001.md"],
         cwd=lane,
         capture_output=True,
         text=True,

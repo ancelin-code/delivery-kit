@@ -15,6 +15,8 @@ from typing import NamedTuple
 
 import pytest
 
+from tests.conftest import SH
+
 SCRIPTS = Path(__file__).resolve().parents[2] / ".agents" / "skills" / "fourmee" / "scripts"
 WHERE = SCRIPTS / "where.sh"
 INSTALL = SCRIPTS / "install-routing.sh"
@@ -23,8 +25,8 @@ OK = 0
 ERROR = 1
 
 pytestmark = pytest.mark.skipif(
-    shutil.which("bash") is None or shutil.which("git") is None,
-    reason="bash and git are required",
+    shutil.which("git") is None,
+    reason="git is required",
 )
 
 
@@ -122,7 +124,7 @@ def where(repo: Path, bin_dir: Path, cwd: Path | None = None) -> subprocess.Comp
     env = os.environ.copy()
     env["PATH"] = f"{bin_dir}{os.pathsep}{env['PATH']}"
     return subprocess.run(  # noqa: S603
-        ["bash", str(WHERE), "--no-fetch"],  # noqa: S607
+        [SH, str(WHERE), "--no-fetch"],
         cwd=cwd or repo,
         env=env,
         capture_output=True,
@@ -222,7 +224,7 @@ class TestLanes:
         result = where(repo, fake_gh(tmp_path))
         action, detail = rows(result.stdout, "NEXT")[-1]
         assert action == "start"
-        assert detail.startswith("alone, first of: a-001 a-002 (bash ")
+        assert detail.startswith("alone, first of: a-001 a-002 (sh ")
         assert detail.endswith("launch-lanes.sh a-001)")
 
     def test_a_task_that_runs_alone_waits_for_work_in_flight(self, tmp_path: Path) -> None:
@@ -242,7 +244,7 @@ class TestLanes:
         result = where(repo, fake_gh(tmp_path))
         action, detail = rows(result.stdout, "NEXT")[-1]
         assert action == "start"
-        assert detail.startswith("launch lanes for: a-001 (bash ")
+        assert detail.startswith("launch lanes for: a-001 (sh ")
         assert detail.endswith("; after they merge, alone: a-002")
 
     def test_a_merged_task_with_its_branch_deleted_is_not_offered_again(self, tmp_path: Path) -> None:
@@ -253,7 +255,7 @@ class TestLanes:
         result = where(repo, fake_gh(tmp_path, merged=["a-001"]))
         action, detail = rows(result.stdout, "NEXT")[-1]
         assert action == "start"
-        assert detail.startswith("launch lanes for: a-002 (bash ")
+        assert detail.startswith("launch lanes for: a-002 (sh ")
 
     def test_every_task_merged_is_complete(self, tmp_path: Path) -> None:
         repo = make_repo(tmp_path)
@@ -347,7 +349,7 @@ class TestRouting:
 
     def test_install_creates_agents_md_and_where_then_sees_it(self, tmp_path: Path) -> None:
         repo = make_repo(tmp_path)
-        result = subprocess.run(["bash", str(INSTALL)], cwd=repo, capture_output=True, text=True, check=False)  # noqa: S603, S607
+        result = subprocess.run([SH, str(INSTALL)], cwd=repo, capture_output=True, text=True, check=False)  # noqa: S603
         assert result.stdout == "ADDED\tAGENTS.md\nADDED\tdelivery/review-lenses.conf\n"
         assert "fourmee" in (repo / "AGENTS.md").read_text(encoding="utf-8")
         after = where(repo, fake_gh(tmp_path))
@@ -358,14 +360,14 @@ class TestRouting:
         repo = make_repo(tmp_path)
         (repo / "AGENTS.md").write_text("# Rules\n\nKeep it tidy.", encoding="utf-8")
         for _ in range(2):
-            subprocess.run(["bash", str(INSTALL)], cwd=repo, capture_output=True, text=True, check=True)  # noqa: S603, S607
+            subprocess.run([SH, str(INSTALL)], cwd=repo, capture_output=True, text=True, check=True)  # noqa: S603
         text = (repo / "AGENTS.md").read_text(encoding="utf-8")
         assert text.startswith("# Rules\n\nKeep it tidy.\n\n<!-- fourmee:routing -->\n")
         assert text.count("<!-- fourmee:routing -->") == 1
 
     def test_install_seeds_review_lenses_that_where_reads(self, tmp_path: Path) -> None:
         repo = make_repo(tmp_path)
-        subprocess.run(["bash", str(INSTALL)], cwd=repo, capture_output=True, text=True, check=True)  # noqa: S603, S607
+        subprocess.run([SH, str(INSTALL)], cwd=repo, capture_output=True, text=True, check=True)  # noqa: S603
         approved_plan(repo)
         task(repo, "a-001")
         result = where(repo, fake_gh(tmp_path, in_review={"a-001": PullRequest(7, ["src/auth/login.py"])}))
@@ -374,7 +376,7 @@ class TestRouting:
     def test_install_leaves_an_edited_lens_file_alone(self, tmp_path: Path) -> None:
         repo = make_repo(tmp_path)
         write(repo, "delivery/review-lenses.conf", LENSES)
-        result = subprocess.run(["bash", str(INSTALL)], cwd=repo, capture_output=True, text=True, check=True)  # noqa: S603, S607
+        result = subprocess.run([SH, str(INSTALL)], cwd=repo, capture_output=True, text=True, check=True)  # noqa: S603
         assert "PRESENT\tdelivery/review-lenses.conf" in result.stdout
         assert (repo / "delivery/review-lenses.conf").read_text(encoding="utf-8") == LENSES
 
@@ -385,7 +387,7 @@ class TestRouting:
         env = os.environ.copy()
         env["PATH"] = f"{fake_gh(tmp_path)}{os.pathsep}{env['PATH']}"
         result = subprocess.run(  # noqa: S603
-            ["bash", str(script)],  # noqa: S607
+            [SH, str(script)],
             cwd=repo / "src",
             env=env,
             capture_output=True,

@@ -1,11 +1,5 @@
-#!/usr/bin/env bash
-set -euo pipefail
-
-# Fail early and clearly on an older bash, such as the 3.2 macOS ships.
-if ((BASH_VERSINFO[0] < 4 || (BASH_VERSINFO[0] == 4 && BASH_VERSINFO[1] < 4))); then
-  printf 'ERROR\tbash 4.4 or later is required, found %s\n' "$BASH_VERSION" >&2
-  exit 1
-fi
+#!/bin/sh
+set -eu
 
 # Add the block that routes a project's requests to fourmee to its
 # AGENTS.md, which both Claude Code and Copilot CLI read on every request.
@@ -22,7 +16,7 @@ die() {
 
 usage() {
   cat <<'USAGE'
-usage: bash install-routing.sh
+usage: sh install-routing.sh
 
 Run from the repository root. Appends the routing block to AGENTS.md, creating
 the file when there is none, and writes a starter delivery/review-lenses.conf
@@ -39,21 +33,21 @@ case "${1:-}" in
 esac
 
 git rev-parse --is-inside-work-tree >/dev/null 2>&1 || die "not inside a git repository"
-[[ "$(git rev-parse --show-toplevel)" == "$(pwd -P)" ]] || die "run from the repository root"
+[ "$(git rev-parse --show-toplevel)" = "$(pwd -P)" ] || die "run from the repository root"
 
-here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+here="$(cd "$(dirname "$0")" && pwd)"
 block="$here/../assets/agents-routing.md"
 lenses="$here/../assets/review-lenses.conf"
-[[ -f "$block" ]] || die "routing block not found: $block"
-[[ -f "$lenses" ]] || die "review lenses starter not found: $lenses"
+[ -f "$block" ] || die "routing block not found: $block"
+[ -f "$lenses" ] || die "review lenses starter not found: $lenses"
 
 if grep -qs 'fourmee:routing' AGENTS.md; then
   printf 'PRESENT\tAGENTS.md\n'
 else
   # Separate the block from existing content by one blank line, whatever the
   # file ended with.
-  if [[ -s AGENTS.md ]]; then
-    [[ -z "$(tail -c1 AGENTS.md)" ]] || printf '\n' >>AGENTS.md
+  if [ -s AGENTS.md ]; then
+    [ -z "$(tail -c1 AGENTS.md)" ] || printf '\n' >>AGENTS.md
     printf '\n' >>AGENTS.md
   fi
   cat "$block" >>AGENTS.md
@@ -62,7 +56,7 @@ fi
 
 # The project owns this file once it exists, so an edited one is never touched.
 target="delivery/review-lenses.conf"
-if [[ -e "$target" ]]; then
+if [ -e "$target" ]; then
   printf 'PRESENT\t%s\n' "$target"
 else
   mkdir -p delivery

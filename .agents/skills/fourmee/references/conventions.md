@@ -149,7 +149,7 @@ status file.
 type. Change type is carried by Conventional Commits and the pull request title.
 
 ```sh
-bash <fourmee-status>/scripts/claim.sh ingestion-003
+sh <fourmee-status>/scripts/claim.sh ingestion-003
 ```
 
 Run it from a clone of the repository the task lands in.

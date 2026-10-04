@@ -22,7 +22,7 @@ The kit is exploratory. Prefer deleting a rule over defending it.
 - `docs/`: maintainer records, not installed with the skills and not loaded at
   run time
 - `docs/decisions/`: numbered decision records, `ADR-<nnn>-<slug>.md`
-- `tests/unit/`: behavioural tests driving the bash helpers
+- `tests/unit/`: behavioural tests driving the `sh` helpers
 - `.mise/scripts/`: repository validation helpers
 - `.github/workflows/`: CI
 
@@ -37,14 +37,15 @@ Concretely:
 
 - do not re-describe generic git, GitHub, or code-review competence
 - do not add approval gates that duplicate harness permission modes
-- deterministic, non-reasoning steps belong in bash, not in prose
-- no harness-specific tool names: the kit must work in Claude Code and in
-  GitHub Copilot CLI
+- deterministic, non-reasoning steps belong in POSIX `sh`, not in prose
+- no harness-specific tool names in a skill: the kit must work in any harness
+  that reads Agent Skills. What one harness needs lives in
+  `fourmee/scripts/harness.sh`, nowhere else
 
 ## Authoring rules
 
 - `SKILL.md` stays at or below 500 lines and 5,000 tokens; references load on demand
-- Keep helper scripts non-executable and invoke them as `bash <skill-root>/scripts/...`
+- Keep helper scripts non-executable and invoke them as `sh <skill-root>/scripts/...`
 - The Fourmee skills (`fourmee` and `fourmee-*`) are one workflow installed whole, not independent
   units: a phase consumes the file the previous phase wrote. Still never
   reference a sibling skill by file path, only by name, so each stays
@@ -67,8 +68,11 @@ Concretely:
 - `mise run lint` runs ruff, shellcheck, rumdl, actionlint, Vale, skillcheck,
   the helper-mode check, and the skill security scanner
 - `mise run test` runs the behavioural test suite
-- The kit's helpers are bash and are covered behaviourally, so no coverage gate
-  is applied. Add one if Python source ever lands here.
+- The kit's helpers are POSIX `sh` and POSIX `awk`, held to it by ShellCheck's
+  shebang dialect: no arrays, `[[ ]]`, `local` or `pipefail`. See
+  [ADR-008](docs/decisions/ADR-008-posix-sh-helpers.md) for what replaces them.
+  They are covered behaviourally, so no coverage gate is applied. Add one if
+  Python source ever lands here.
 - Re-run the checks in `docs/harness-validation.md` after any harness upgrade,
   and delete any rule that no longer earns its tokens
 
@@ -76,8 +80,8 @@ CI runs `mise run lint` and `mise run test` on every push and pull request.
 The **pre-push hook** installed by `mise run dev` runs the same tasks locally,
 so a failure shows up before anything is shared. Do not bypass it with
 `--no-verify`. Reference every action by its full commit SHA, with the version
-in a trailing comment; Dependabot keeps both current. Tests run on Linux and
-macOS, lint on Linux only.
+in a trailing comment; Dependabot keeps both current. Tests run on Linux (dash),
+macOS (its own `sh`) and Alpine (BusyBox); lint runs on Linux only.
 
 ## Pull requests
 

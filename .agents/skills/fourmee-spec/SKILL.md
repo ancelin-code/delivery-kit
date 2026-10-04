@@ -19,7 +19,6 @@ keywords:
   - interfaces
 spec-version: "1.0"
 compatibility:
-  - bash@>=4.4
 metadata:
   category: knowledge-work
   owner: ancelin-code
