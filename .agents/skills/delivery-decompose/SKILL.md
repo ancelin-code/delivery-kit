@@ -52,7 +52,8 @@ it directly. Splitting a one-task change into an epic costs more than it saves.
    requirements alone invents work that is already done.
 2. **Group work into epics**, as the delivery conventions,
    `<delivery-orchestrator>/references/conventions.md`, define them. A group
-   past the cap below is two epics, not one large one.
+   that is more than one person can hold in their head, or that delivers two
+   separate outcomes, is two epics, not one large one.
 3. **Write one task file per unit of work**, from
    [the template](assets/task.template.md), into `delivery/tasks/<id>.md`.
 4. **Derive the dependency edges.** A task depends on another only when it
@@ -93,11 +94,10 @@ Every task states what must be true when it is done, which files are in scope,
 and what is deliberately out of scope. The acceptance criteria are observable
 outcomes, each checkable by running something, not restatements of the title.
 
-Caps, because both cost and reviewability depend on them:
-
-- at most 10 tasks per epic
-- a task body of at most 30 lines
-- no restating the requirements document; link `delivery/prd.md`
+A task is as long as an unfamiliar developer needs to execute it without asking
+a question, and no longer. Do not trim criteria, constraints or context to keep
+it short; trim restatement, and link `delivery/prd.md` instead of repeating the
+requirements.
 
 Give each task a `tier` from the tiers table in
 `<delivery-orchestrator>/references/conventions.md`. Match it to what the task needs: `plan`

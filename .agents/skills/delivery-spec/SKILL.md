@@ -37,16 +37,15 @@ The stages stay separate because approving *what* before deciding *how* is what
 stops a technology choice from entering as a requirement. Do not start stage B
 before stage A is approved.
 
-Three pages at most for the requirements. Length is not thoroughness: a long
-document hides the decisions that matter and costs tokens in every phase that
-loads it. The real test is that the requirements stay short enough for
-`delivery-decompose` to cut into tasks without re-reading them.
+The requirements are as long as they need to be and no longer. Brevity is not
+the goal and neither is length: a document that restates its sources or carries
+design detail hides the decisions that matter, while one trimmed to a size loses
+what the lanes build from. Cut repetition, never content. The real test is that
+`delivery-decompose` can cut the requirements into tasks without asking
+anything, and without re-reading the sources.
 
-Three is a budget, not a finding. Before exceeding it, check whether the excess
-is really design detail that belongs in stage B. If it is genuinely requirements
-and it still does not fit, say so and ask the approver to raise the limit for
-this document, naming what does not fit and why it has to be here. Do not
-silently run over.
+When a document runs long, check whether the excess is design detail that
+belongs in stage B. If it is genuinely requirements, it stays.
 
 ## When to use
 
@@ -190,8 +189,8 @@ are ambiguous: say so and stop, rather than burying the ambiguity in a record.
 
 ## Acceptance Criteria
 
-- the requirements fit the page budget, or the approver agreed to more, and
-  they state outcomes, invariants and exclusions
+- the requirements state outcomes, invariants and exclusions, and lose nothing
+  the lanes build from; nothing is cut to fit a size
 - every requirement is observable, and assumptions are marked as assumptions
 - no design or technology choice is embedded as a requirement
 - every recorded decision is one where independent choices would have been incompatible

@@ -242,19 +242,12 @@ class TestRejectedTaskSets:
         assert result.returncode == INVALID
         assert "Acceptance criteria" in result.stdout
 
-    def test_rejects_an_epic_over_the_cap(self, tmp_path: Path) -> None:
+    def test_accepts_an_epic_of_any_size(self, tmp_path: Path) -> None:
+        """No count caps an epic: its size is the decomposer's judgement."""
         tasks = tmp_path / "tasks"
-        for n in range(1, 12):
+        for n in range(1, 26):
             write_task(tasks, f"ingestion-{n:03d}")
-        result = validate(tasks)
-        assert result.returncode == INVALID
-        assert "more than the 10 allowed" in result.stdout
-
-    def test_the_epic_cap_is_configurable(self, tmp_path: Path) -> None:
-        tasks = tmp_path / "tasks"
-        for n in range(1, 12):
-            write_task(tasks, f"ingestion-{n:03d}")
-        assert validate(tasks, "--max-per-epic", "20").returncode == VALID
+        assert validate(tasks).returncode == VALID
 
     def test_rejects_a_file_without_frontmatter(self, tmp_path: Path) -> None:
         tasks = tmp_path / "tasks"

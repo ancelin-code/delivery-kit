@@ -27,7 +27,8 @@ Three nested units. Every artifact the kit produces belongs to one of them.
 A use case has exactly one requirements document. New work on the same use case
 revises that document and becomes new epics; it does not start a second one.
 
-`delivery-decompose` sets the cap on how many tasks an epic may hold.
+An epic has no task count: it is as large as one person can hold in their head,
+and `delivery-decompose` cuts a bigger group into several.
 
 ## Where artifacts live
 
@@ -109,11 +110,9 @@ and what is explicitly out of scope.
 `conflicts_with` is derived when the epic is decomposed, not discovered at run
 time.
 
-Caps keep a run affordable and reviewable, and each one is stated by the skill
-that enforces it: `delivery-spec` for the requirements document, and
-`delivery-decompose` for epic and task size. Read the number there rather than
-restating it here, so raising a cap takes one edit and cannot leave a stale copy
-behind.
+Nothing here is capped by size: not the requirements, an epic, nor a task. Each
+is as long as its reader needs and no longer, which means cutting repetition and
+never content.
 
 ## Several repositories
 

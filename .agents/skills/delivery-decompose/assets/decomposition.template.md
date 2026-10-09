@@ -13,7 +13,7 @@ reader who saw none of the decomposition must be able to follow it back.
 
 ## Epics
 
-One section per epic, within the task cap the skill sets. State what the slice
+One section per epic. State what the slice
 delivers, not what its tasks do: the tasks are listed under it, and their
 detail is in their own files.
 
