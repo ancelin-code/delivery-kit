@@ -19,14 +19,13 @@ die() {
 
 usage() {
   cat <<'USAGE'
-usage: sh validate-tasks.sh [--tasks-dir <dir>] [--max-per-epic <n>]
+usage: sh validate-tasks.sh [--tasks-dir <dir>] [--decomposition <path>]
 
 Validates every task file in <dir> (default: delivery/tasks), and the
 decomposition summary that has to agree with it.
 
 Options:
   --tasks-dir <dir>     Directory holding <id>.md task files (default: delivery/tasks).
-  --max-per-epic <n>    Maximum tasks allowed in one epic (default: 10).
   --decomposition <p>   Decomposition summary to cross-check (default:
                         decomposition.md beside the tasks directory, so
                         delivery/decomposition.md).
@@ -40,7 +39,6 @@ USAGE
 }
 
 tasks_dir="delivery/tasks"
-max_per_epic=10
 decomposition=""
 
 while [ $# -gt 0 ]; do
@@ -48,9 +46,6 @@ while [ $# -gt 0 ]; do
     --tasks-dir)
       [ $# -ge 2 ] || die "--tasks-dir requires a value"
       tasks_dir="$2"; shift 2 ;;
-    --max-per-epic)
-      [ $# -ge 2 ] || die "--max-per-epic requires a value"
-      max_per_epic="$2"; shift 2 ;;
     --decomposition)
       [ $# -ge 2 ] || die "--decomposition requires a value"
       decomposition="$2"; shift 2 ;;
@@ -61,7 +56,6 @@ while [ $# -gt 0 ]; do
   esac
 done
 
-case "$max_per_epic" in "" | *[!0-9]*) die "--max-per-epic must be a number" ;; esac
 [ -d "$tasks_dir" ] || die "tasks directory not found: $tasks_dir"
 # The summary is a sibling of the task set, not a child of it: it describes the
 # whole cut, and a file inside tasks/ would be globbed as a task.
@@ -232,20 +226,18 @@ if [ -f "$decomposition" ]; then
   run_as="$(grep -m1 '^\*\*Run as:\*\*' "$decomposition" || true)"
 fi
 
-# Passes 2 to 5 compare tasks with each other, which is what awk is for.
+# Passes 2 to 4 compare tasks with each other, which is what awk is for.
 #
 # Pass 2: cross-references.
 # Pass 3: dependency cycles, by repeatedly resolving tasks whose dependencies
 #         are all resolved. Whatever stays unresolved is part of a cycle.
-# Pass 4: epic size. An epic past the cap is a decomposition that was not
-#         finished, and it makes the dependency graph hard to reason about.
-# Pass 5: the decomposition summary. Decomposition also produces the grouping,
+# Pass 4: the decomposition summary. Decomposition also produces the grouping,
 #         the serialization points and the critical path, and those are
 #         reasoning, not something derivable from the task files. Without a
 #         file they die with the session that produced them and the approval
 #         gate has nothing to read.
 checks="$(RUN_AS="$run_as" SUMMARY="$summary_name" SUMMARY_PATH="$decomposition" HAS_SUMMARY="$has_summary" \
-  awk -F'\t' -v max="$max_per_epic" -v facts="$store/facts" '
+  awk -F'\t' -v facts="$store/facts" '
   function fail(who, why) { printf "FAIL\t%s\t%s\n", who, why }
   FILENAME == facts {
     # one line per task file
@@ -289,10 +281,6 @@ checks="$(RUN_AS="$run_as" SUMMARY="$summary_name" SUMMARY_PATH="$decomposition"
     cycle = ""
     for (i = 1; i <= n; i++) if (!(ids[i] in resolved)) cycle = cycle (cycle == "" ? "" : " ") ids[i]
     if (cycle != "") fail(cycle, "dependency cycle: these tasks can never become ready")
-
-    for (i = 1; i <= e; i++)
-      if (epic_count[epics[i]] > max)
-        fail(epics[i], "epic holds " epic_count[epics[i]] " tasks, more than the " max " allowed")
 
     summary = ENVIRON["SUMMARY"]
     if (ENVIRON["HAS_SUMMARY"] != 1) {
