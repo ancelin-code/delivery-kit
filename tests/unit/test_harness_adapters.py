@@ -16,6 +16,7 @@ from tests.unit.test_launch_lanes_script import (
     CLAIM,
     add_task,
     clone_of,
+    conf,
     fake_harness,
     git,
     launch_live,
@@ -47,9 +48,15 @@ def run_lane(
     harness: str,
     *extra: str,
     model: str | None = "m-1",
+    advisor: str | None = None,
+    mapped_for: str | None = None,
     env: dict[str, str] | None = None,
 ) -> tuple[list[str], dict[str, str]]:
-    """Launch one lane on a harness, and return its arguments and what else it logged."""
+    """Launch one lane on a harness, and return its arguments and what else it logged.
+
+    The build tier maps to ``model`` and ``advisor`` for ``mapped_for``, the lane's
+    own harness unless named, or for any harness when it is empty.
+    """
     origin_path = make_shared_origin(tmp_path)
     dev = clone_of(tmp_path, origin_path, "devA")
     add_task(dev, "b-001")
@@ -62,8 +69,9 @@ def run_lane(
     for name in names:
         recording_stub(bin_dir, name)
     env = dict(env or {})
-    if model is not None:
-        mapping = write_tiers(tmp_path / "t.conf", f"[build]\n\tharness = {harness}\n\tmodel = {model}\n")
+    keys = {"harness": harness if mapped_for is None else mapped_for, "model": model, "advisor": advisor}
+    if model is not None or advisor is not None:
+        mapping = write_tiers(tmp_path / "t.conf", conf(build={k: v for k, v in keys.items() if v}))
         env["DELIVERY_TIERS"] = str(mapping)
     result = launch_live(
         dev,
@@ -144,6 +152,20 @@ class TestCommandLines:
     @pytest.mark.parametrize("harness", ["claude", "copilot", "codex", "opencode", "pi"])
     def test_no_model_flag_without_a_mapping(self, tmp_path: Path, harness: str) -> None:
         args, _ = run_lane(tmp_path, harness, model=None)
+        assert "--model" not in args
+
+    def test_claude_passes_the_advisor(self, tmp_path: Path) -> None:
+        args, _ = run_lane(tmp_path, "claude", advisor="a-1")
+        assert args[2:6] == ["--model", "m-1", "--advisor", "a-1"]
+
+    @pytest.mark.parametrize("harness", ["copilot", "codex", "opencode", "pi"])
+    def test_only_claude_has_an_advisor(self, tmp_path: Path, harness: str) -> None:
+        args, _ = run_lane(tmp_path, harness, advisor="a-1", mapped_for="")
+        assert "a-1" not in args
+
+    def test_an_advisor_mapped_for_another_harness_is_not_passed(self, tmp_path: Path) -> None:
+        args, _ = run_lane(tmp_path, "claude", advisor="a-1", mapped_for="copilot")
+        assert "--advisor" not in args
         assert "--model" not in args
 
     def test_the_lane_runs_in_its_worktree(self, tmp_path: Path) -> None:

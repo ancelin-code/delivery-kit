@@ -177,8 +177,9 @@ is_tier() {
 # git is already required, so nothing here parses text. It brings the comments,
 # the quoting and the syntax errors, which it reports with the file and line.
 # What git cannot know is checked below: a section must be a tier and a key one
-# of the two. The result is the tier_harness and tier_model maps, where "-"
-# means a tier the file names without that key.
+# of harness, model and advisor. The result is the tier_harness, tier_model and
+# tier_advisor maps, where an empty value means a tier the file names without
+# that key.
 load_tiers() {
   user_conf="${XDG_CONFIG_HOME:-${HOME:-}/.config}/delivery-kit/tiers.conf"
   files=""
@@ -195,7 +196,7 @@ load_tiers() {
   [ -n "$files" ] || return 0
   while IFS= read -r file <&3; do
     [ -n "$file" ] || continue
-    rm -rf "$store/named" "$store/file_harness" "$store/file_model"
+    rm -rf "$store/named" "$store/file_harness" "$store/file_model" "$store/file_advisor"
     : >"$store/seen"
     out="$(git config --file "$file" --list 2>&1)" || die "${out#fatal: }"
     while IFS= read -r line; do
@@ -208,43 +209,42 @@ load_tiers() {
       key="${name#*.}"
       case "$key" in *.*) die "$file: unexpected key '$name' (expected a [tier] section)" ;; esac
       is_tier "$tier" || die "$file: unknown tier '$tier' (expected plan, build, or chore)"
-      case "$key" in harness | model) ;; *) die "$file: unknown key '$name' (expected harness or model)" ;; esac
+      case "$key" in harness | model | advisor) ;; *) die "$file: unknown key '$name' (expected harness, model, or advisor)" ;; esac
       ! grep -Fxq -- "$name" "$store/seen" || die "$file: $name is set twice"
       printf '%s\n' "$name" >>"$store/seen"
       put named "$tier" 1
       if [ "$key" = harness ]; then
         [ -z "$value" ] || is_harness "$value" ||
           die "$file: unknown harness '$value' (expected one of: $HARNESSES custom)"
-        put file_harness "$tier" "$value"
-      else
-        put file_model "$tier" "$value"
       fi
+      put "file_$key" "$tier" "$value"
     done <<EOF_CONF
 $out
 EOF_CONF
-    # The first file to name a tier decides all of it, harness and model alike.
+    # The first file to name a tier decides all of it, every key alike.
     for tier in plan build chore; do
       has named "$tier" || continue
       has tier_decided "$tier" && continue
       put tier_decided "$tier" 1
       put tier_harness "$tier" "$(get file_harness "$tier")"
       put tier_model "$tier" "$(get file_model "$tier")"
+      put tier_advisor "$tier" "$(get file_advisor "$tier")"
     done
   done 3<<EOF_FILES
 $files
 EOF_FILES
 }
 
-# The model a tier maps to, when it applies to the harness the lane runs on. A
-# mapping names its harness because a model id means nothing to another one:
-# passing it through would end the session at startup.
-#   model_for <tier> <harness>
-model_for() {
-  mapped_model="$(get tier_model "$1")"
-  mapped_harness="$(get tier_harness "$1")"
-  [ -n "$mapped_model" ] || return 0
-  [ -z "$mapped_harness" ] || [ "$mapped_harness" = "$2" ] || return 0
-  printf '%s' "$mapped_model"
+# The model or advisor a tier maps to, when it applies to the harness the lane
+# runs on. A mapping names its harness because a model id means nothing to
+# another one: passing it through would end the session at startup.
+#   mapped_for <tier_model|tier_advisor> <tier> <harness>
+mapped_for() {
+  mapped="$(get "$1" "$2")"
+  mapped_harness="$(get tier_harness "$2")"
+  [ -n "$mapped" ] || return 0
+  [ -z "$mapped_harness" ] || [ "$mapped_harness" = "$3" ] || return 0
+  printf '%s' "$mapped"
 }
 load_tiers
 
@@ -380,7 +380,7 @@ while IFS= read -r task_id <&3; do
   repo_name="$(basename "$repo_dir")"
 
   if [ "$dry_run" -eq 1 ]; then
-    model="$(model_for "$tier" "$use_harness")"
+    model="$(mapped_for tier_model "$tier" "$use_harness")"
     printf 'WOULD-LAUNCH\t%s\t%s\t%s\t%s\t%s\n' "$task_id" "$use_harness" "${model:-default}" "$worktree" "$repo_name"
     ! runs_alone "$task_id" || alone_started="$task_id"
     printf '%s\n' "$task_id" >>"$store/launched_ids"
@@ -406,7 +406,8 @@ while IFS= read -r task_id <&3; do
     continue
   fi
   # Resolved after the harness is known: a mapping names the one it is for.
-  model="$(model_for "$tier" "$use_harness")"
+  model="$(mapped_for tier_model "$tier" "$use_harness")"
+  advisor="$(mapped_for tier_advisor "$tier" "$use_harness")"
 
   git -C "$repo_dir" rev-parse --is-inside-work-tree >/dev/null 2>&1 ||
     { printf 'SKIP\t%s\tno clone of %s at %s\n' "$task_id" "$repo_name" "$repo_dir"; continue; }
@@ -461,7 +462,7 @@ while IFS= read -r task_id <&3; do
     . "$lib"
     if harness_run "$@"; then sh "$publish" --report "$report" "$task"; else sh "$release" "$task"; fi
   ' lane "$harness_lib" "$publish_script" "$release_script" "$lane_report" "$task_path" \
-    "$use_harness" "$prompt" "$model" "$add_dir" "$home" "$web" \
+    "$use_harness" "$prompt" "$model" "$advisor" "$add_dir" "$home" "$web" \
     </dev/null >"$log_file" 2>&1 &) || true
 
   printf 'LAUNCHED\t%s\t%s\t%s\t%s\t%s\n' "$task_id" "$use_harness" "${model:-default}" "$worktree" "$repo_name"

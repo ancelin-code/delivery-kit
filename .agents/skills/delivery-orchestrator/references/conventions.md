@@ -202,16 +202,24 @@ one section per tier, read with `git config`:
     harness = claude
     model = opus
 
+[build]
+    harness = claude
+    model = sonnet
+    advisor = opus
+
 [chore]
     harness = copilot
     model = gpt-6-luna
 ```
 
-`harness` and `model` are both optional: a missing `harness` means any, and a
-missing `model` means the harness's own default. A mapping applies only to the
-harness it names, so a model id never reaches a harness that would refuse it. A
-tier that no file names passes no model flag at all. Comments, quoting and
-syntax errors are git's.
+`harness`, `model` and `advisor` are all optional: a missing `harness` means
+any, and a missing `model` means the harness's own default. `advisor` names a
+stronger model the lane may consult at its own decision points; only Claude
+Code has one, and it must be at least as capable as `model`. Without it, a
+lane gets whatever advisor the developer's harness settings name. A mapping
+applies only to the harness it names, so a model id never reaches a harness
+that would refuse it. A tier that no file names passes no model flag at all.
+Comments, quoting and syntax errors are git's.
 
 Two files are read, and the first to name a tier decides all of it:
 
