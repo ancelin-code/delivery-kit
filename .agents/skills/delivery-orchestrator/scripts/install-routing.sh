@@ -41,7 +41,7 @@ lenses="$here/../assets/review-lenses.conf"
 [ -f "$block" ] || die "routing block not found: $block"
 [ -f "$lenses" ] || die "review lenses starter not found: $lenses"
 
-if grep -qs 'alula:routing' AGENTS.md; then
+if grep -qs 'delivery-kit:routing' AGENTS.md; then
   printf 'PRESENT\tAGENTS.md\n'
 else
   # Separate the block from existing content by one blank line, whatever the

@@ -2,16 +2,16 @@
 name: delivery-orchestrator
 author: Ancelin Serre
 description: >-
-  The project's delivery assistant and the entry point of Alula. Answers where
+  The project's delivery assistant and the entry point of Delivery Kit. Answers where
   the project stands, what to do next, and who is working on what, from delivery/ and git;
   and routes any request to build or change the project through requirements, design,
   decomposition, lanes and review, holding the approval gates and the lane policy. Use for
   "what's next", "what's the status", progress, blockers, or any new work on a project
   that has a delivery/ directory or asks to start one. Delegates the work itself to the
-  other Alula skills; it does not write requirements, code, or pull requests.
+  other Delivery Kit skills; it does not write requirements, code, or pull requests.
 license: Apache-2.0
-repository: https://github.com/ancelin-code/alula.git
-product-version: alula@v0
+repository: https://github.com/ancelin-code/delivery-kit.git
+product-version: delivery-kit@v0
 version: "0.1.0"
 keywords:
   - delivery-workflow
@@ -30,7 +30,7 @@ metadata:
 
 # Delivery Orchestrator
 
-The entry point to Alula: it routes a use case from intent to merged
+The entry point to Delivery Kit: it routes a use case from intent to merged
 work, deciding **what happens next** and **where a human must approve**. It does
 not do the work itself.
 

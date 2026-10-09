@@ -68,12 +68,12 @@ def add_task(
 
 
 def clean_env(repo: Path) -> dict[str, str]:
-    """The ambient environment without the developer's own Alula settings.
+    """The ambient environment without the developer's own Delivery Kit settings.
 
-    A real ~/.config/alula/tiers.conf or ALULA_HARNESS on the machine
+    A real ~/.config/delivery-kit/tiers.conf or DELIVERY_HARNESS on the machine
     running the suite would otherwise change what the launcher decides.
     """
-    env = {k: v for k, v in os.environ.items() if not k.startswith("ALULA_")}
+    env = {k: v for k, v in os.environ.items() if not k.startswith("DELIVERY_")}
     env["XDG_CONFIG_HOME"] = str(repo.parent / "no-user-config")
     return env
 
@@ -101,7 +101,7 @@ def launch(
 ) -> subprocess.CompletedProcess[str]:
     env = clean_env(repo)
     if worktree_root is not None:
-        env["ALULA_WORKTREE_ROOT"] = worktree_root
+        env["DELIVERY_WORKTREE_ROOT"] = worktree_root
     env.update(env_extra or {})
     return subprocess.run(  # noqa: S603
         [SH, str(SCRIPT), *args],
@@ -260,7 +260,7 @@ class TestTiers:
         repo = make_repo(tmp_path)
         add_task(repo, "a-001", tier=None)
         mapping = write_tiers(tmp_path / "tiers.conf", conf(build={"model": "sonnet"}))
-        result = launch(repo, ["--dry-run", "a-001"], env_extra={"ALULA_TIERS": str(mapping)})
+        result = launch(repo, ["--dry-run", "a-001"], env_extra={"DELIVERY_TIERS": str(mapping)})
         assert fields(result.stdout)[MODEL] == "sonnet"
 
     def test_an_unknown_tier_in_a_task_file_is_skipped_and_names_the_real_ones(self, tmp_path: Path) -> None:
@@ -277,7 +277,7 @@ class TestTiers:
             tmp_path / "tiers.conf",
             conf(plan={"harness": "claude", "model": "opus"}, chore={"harness": "copilot", "model": "gpt-6-luna"}),
         )
-        result = launch(repo, ["--dry-run", "a-001", "a-002"], env_extra={"ALULA_TIERS": str(mapping)})
+        result = launch(repo, ["--dry-run", "a-001", "a-002"], env_extra={"DELIVERY_TIERS": str(mapping)})
         rows = [line.split("\t") for line in result.stdout.splitlines() if line.startswith("WOULD")]
         assert [r[HARNESS : MODEL + 1] for r in rows] == [["claude", "opus"], ["copilot", "gpt-6-luna"]]
 
@@ -286,7 +286,7 @@ class TestTiers:
         add_task(repo, "a-001", tier="build")
         add_task(repo, "a-002", tier="chore")
         mapping = write_tiers(tmp_path / "tiers.conf", conf(build={"model": "sonnet"}, chore={"harness": "claude"}))
-        result = launch(repo, ["--dry-run", "a-001", "a-002"], env_extra={"ALULA_TIERS": str(mapping)})
+        result = launch(repo, ["--dry-run", "a-001", "a-002"], env_extra={"DELIVERY_TIERS": str(mapping)})
         rows = [line.split("\t") for line in result.stdout.splitlines() if line.startswith("WOULD")]
         assert [r[HARNESS : MODEL + 1] for r in rows] == [["auto", "sonnet"], ["claude", "default"]]
 
@@ -295,14 +295,14 @@ class TestTiers:
         repo = make_repo(tmp_path)
         add_task(repo, "a-001", tier="chore")
         mapping = write_tiers(tmp_path / "tiers.conf", conf(chore={"harness": "copilot", "model": "gpt-6-luna"}))
-        result = launch(repo, ["--dry-run", "--harness", "claude", "a-001"], env_extra={"ALULA_TIERS": str(mapping)})
+        result = launch(repo, ["--dry-run", "--harness", "claude", "a-001"], env_extra={"DELIVERY_TIERS": str(mapping)})
         assert fields(result.stdout)[HARNESS : MODEL + 1] == ["claude", "default"]
 
     def test_the_flag_wins_over_the_mapping_and_the_environment(self, tmp_path: Path) -> None:
         repo = make_repo(tmp_path)
         add_task(repo, "a-001", tier="plan")
         mapping = write_tiers(tmp_path / "tiers.conf", conf(plan={"harness": "claude", "model": "opus"}))
-        env = {"ALULA_TIERS": str(mapping), "ALULA_HARNESS": "claude"}
+        env = {"DELIVERY_TIERS": str(mapping), "DELIVERY_HARNESS": "claude"}
         result = launch(repo, ["--dry-run", "--harness", "copilot", "a-001"], env_extra=env)
         assert fields(result.stdout)[HARNESS] == "copilot"
 
@@ -310,26 +310,27 @@ class TestTiers:
         repo = make_repo(tmp_path)
         add_task(repo, "a-001", tier="plan")
         mapping = write_tiers(tmp_path / "tiers.conf", conf(plan={"harness": "copilot"}))
-        env = {"ALULA_TIERS": str(mapping), "ALULA_HARNESS": "claude"}
+        env = {"DELIVERY_TIERS": str(mapping), "DELIVERY_HARNESS": "claude"}
         result = launch(repo, ["--dry-run", "a-001"], env_extra=env)
         assert fields(result.stdout)[HARNESS] == "copilot"
 
     def test_the_environment_picks_the_harness_when_nothing_else_does(self, tmp_path: Path) -> None:
         repo = make_repo(tmp_path)
         add_task(repo, "a-001")
-        result = launch(repo, ["--dry-run", "a-001"], env_extra={"ALULA_HARNESS": "copilot"})
+        result = launch(repo, ["--dry-run", "a-001"], env_extra={"DELIVERY_HARNESS": "copilot"})
         assert fields(result.stdout)[HARNESS] == "copilot"
 
     def test_auto_is_accepted_as_a_choice(self, tmp_path: Path) -> None:
         repo = make_repo(tmp_path)
         add_task(repo, "a-001")
         assert launch(repo, ["--dry-run", "--harness", "auto", "a-001"]).returncode == OK
-        assert launch(repo, ["--dry-run", "a-001"], env_extra={"ALULA_HARNESS": "auto"}).returncode == OK
+        assert launch(repo, ["--dry-run", "a-001"], env_extra={"DELIVERY_HARNESS": "auto"}).returncode == OK
 
     def test_the_developers_file_is_read_from_the_xdg_config_directory(self, tmp_path: Path) -> None:
         repo = make_repo(tmp_path)
         add_task(repo, "a-001")
-        write_tiers(tmp_path / "xdg" / "alula" / "tiers.conf", conf(build={"harness": "claude", "model": "sonnet"}))
+        mapping = conf(build={"harness": "claude", "model": "sonnet"})
+        write_tiers(tmp_path / "xdg" / "delivery-kit" / "tiers.conf", mapping)
         result = launch(repo, ["--dry-run", "a-001"], env_extra={"XDG_CONFIG_HOME": str(tmp_path / "xdg")})
         assert fields(result.stdout)[HARNESS : MODEL + 1] == ["claude", "sonnet"]
 
@@ -342,7 +343,7 @@ class TestTiers:
             conf(plan={"model": "opus"}, build={"model": "sonnet"}),
         )
         mine = write_tiers(tmp_path / "mine.conf", conf(build={"model": "haiku"}))
-        result = launch(repo, ["--dry-run", "a-001", "a-002"], env_extra={"ALULA_TIERS": str(mine)})
+        result = launch(repo, ["--dry-run", "a-001", "a-002"], env_extra={"DELIVERY_TIERS": str(mine)})
         rows = [line.split("\t") for line in result.stdout.splitlines() if line.startswith("WOULD")]
         assert [r[MODEL] for r in rows] == ["opus", "haiku"]
 
@@ -352,7 +353,7 @@ class TestTiers:
         add_task(repo, "a-001", tier="build")
         write_tiers(repo / "delivery" / "tiers.conf", conf(build={"harness": "copilot", "model": "team-model"}))
         mine = write_tiers(tmp_path / "mine.conf", conf(build={"model": "my-model"}))
-        result = launch(repo, ["--dry-run", "a-001"], env_extra={"ALULA_TIERS": str(mine)})
+        result = launch(repo, ["--dry-run", "a-001"], env_extra={"DELIVERY_TIERS": str(mine)})
         assert fields(result.stdout)[HARNESS : MODEL + 1] == ["auto", "my-model"]
 
     def test_comments_and_blank_lines_are_ignored(self, tmp_path: Path) -> None:
@@ -360,7 +361,7 @@ class TestTiers:
         add_task(repo, "a-001")
         text = "# my models\n\n[build]\n; the cheap one\n\tmodel = sonnet  # my pick\n"
         mapping = write_tiers(tmp_path / "t.conf", text)
-        result = launch(repo, ["--dry-run", "a-001"], env_extra={"ALULA_TIERS": str(mapping)})
+        result = launch(repo, ["--dry-run", "a-001"], env_extra={"DELIVERY_TIERS": str(mapping)})
         assert fields(result.stdout)[MODEL] == "sonnet"
 
     @pytest.mark.parametrize(
@@ -383,23 +384,23 @@ class TestTiers:
         repo = make_repo(tmp_path)
         add_task(repo, "a-001")
         mapping = write_tiers(tmp_path / "t.conf", text)
-        result = launch(repo, ["--dry-run", "a-001"], env_extra={"ALULA_TIERS": str(mapping)})
+        result = launch(repo, ["--dry-run", "a-001"], env_extra={"DELIVERY_TIERS": str(mapping)})
         assert result.returncode == USAGE_ERROR
         assert message in result.stderr
 
     def test_a_named_mapping_file_that_does_not_exist_is_an_error(self, tmp_path: Path) -> None:
         repo = make_repo(tmp_path)
         add_task(repo, "a-001")
-        result = launch(repo, ["--dry-run", "a-001"], env_extra={"ALULA_TIERS": str(tmp_path / "nope.conf")})
+        result = launch(repo, ["--dry-run", "a-001"], env_extra={"DELIVERY_TIERS": str(tmp_path / "nope.conf")})
         assert result.returncode == USAGE_ERROR
-        assert "ALULA_TIERS names a missing file" in result.stderr
+        assert "DELIVERY_TIERS names a missing file" in result.stderr
 
     def test_an_unknown_harness_in_the_environment_is_an_error(self, tmp_path: Path) -> None:
         repo = make_repo(tmp_path)
         add_task(repo, "a-001")
-        result = launch(repo, ["--dry-run", "a-001"], env_extra={"ALULA_HARNESS": "gemini"})
+        result = launch(repo, ["--dry-run", "a-001"], env_extra={"DELIVERY_HARNESS": "gemini"})
         assert result.returncode == USAGE_ERROR
-        assert "ALULA_HARNESS must be" in result.stderr
+        assert "DELIVERY_HARNESS must be" in result.stderr
 
 
 class TestLauncherUsage:
@@ -631,7 +632,7 @@ class TestLaneStartup:
         bin_dir = fake_harness(tmp_path, log, names=("claude",))
         mapping = write_tiers(tmp_path / "t.conf", conf(build={"harness": "copilot"}))
 
-        result = self.go(dev, tmp_path, bin_dir, log, env={"ALULA_TIERS": str(mapping)})
+        result = self.go(dev, tmp_path, bin_dir, log, env={"DELIVERY_TIERS": str(mapping)})
 
         assert result.stdout.strip() == "SKIP\tb-001\tcopilot not found on PATH\nLANES\t0"
         assert not log.read_text(encoding="utf-8").strip(), "nothing should have been invoked"
@@ -653,7 +654,7 @@ class TestLaneStartup:
         bin_dir = fake_harness(tmp_path, log)
         mapping = write_tiers(tmp_path / "t.conf", conf(build={"harness": harness, "model": "some-model"}))
 
-        result = self.go(dev, tmp_path, bin_dir, log, env={"ALULA_TIERS": str(mapping)})
+        result = self.go(dev, tmp_path, bin_dir, log, env={"DELIVERY_TIERS": str(mapping)})
 
         assert f"LAUNCHED\tb-001\t{harness}\tsome-model" in result.stdout
         wait_for(lambda: log.read_text(encoding="utf-8").strip())
@@ -665,7 +666,7 @@ class TestLaneStartup:
         bin_dir = fake_harness(tmp_path, log)
         mapping = write_tiers(tmp_path / "t.conf", conf(chore={"harness": "copilot", "model": "gpt-6-luna"}))
 
-        result = self.go(dev, tmp_path, bin_dir, log, "--harness", "claude", env={"ALULA_TIERS": str(mapping)})
+        result = self.go(dev, tmp_path, bin_dir, log, "--harness", "claude", env={"DELIVERY_TIERS": str(mapping)})
 
         assert "LAUNCHED\tb-001\tclaude\tdefault" in result.stdout
         wait_for(lambda: log.read_text(encoding="utf-8").strip())

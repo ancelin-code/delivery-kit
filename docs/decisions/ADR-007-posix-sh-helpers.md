@@ -1,4 +1,4 @@
-# ADR-008: The helpers are POSIX sh, and data lives in files and awk
+# ADR-007: The helpers are POSIX sh, and data lives in files and awk
 
 **Status:** accepted
 **Date:** 2026-10-04

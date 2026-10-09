@@ -2,14 +2,14 @@
 name: delivery-status
 author: Ancelin Serre
 description: >-
-  Part of Alula, used by delivery-orchestrator and by developers directly.
+  Part of Delivery Kit, used by delivery-orchestrator and by developers directly.
   Claim a delivery task and read run state directly from git, with no shared status file
   and no model reasoning. Use when a developer picks up a task from a decomposed epic, when
   a launcher needs to know whether a task is free before starting a lane, or when asked who
   holds a task. Scripts only: it does not implement tasks or open pull requests.
 license: Apache-2.0
-repository: https://github.com/ancelin-code/alula.git
-product-version: alula@v0
+repository: https://github.com/ancelin-code/delivery-kit.git
+product-version: delivery-kit@v0
 version: "0.1.0"
 keywords:
   - claim-task

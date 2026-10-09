@@ -1,4 +1,4 @@
-# ADR-007: Tasks name a capability tier, and the developer maps it to a model
+# ADR-006: Tasks name a capability tier, and the developer maps it to a model
 
 **Status:** accepted
 **Date:** 2026-10-02
@@ -40,7 +40,7 @@ developer decides what that means.**
 - A mapping applies only to the harness it names. A model id means nothing to
   another harness, and passing it through would end the session at startup.
 - A lane runs on the first of `--harness`, the harness its tier maps to,
-  `ALULA_HARNESS`, then the first harness installed.
+  `DELIVERY_HARNESS`, then the first harness installed.
 - The launcher holds no model ids, and no longer falls back between harnesses
   for a label. A harness somebody chose is never swapped for another.
 - A malformed mapping stops the launch and names its file. git reports syntax
@@ -52,7 +52,7 @@ developer decides what that means.**
 which supersedes [ADR-002](ADR-002-reasoning-effort.md). That decision treated
 effort as an axis independent of the tier, and it is, but a level means
 something only for a particular model: the levels one harness accepts another
-refuses, and what `high` costs depends on the model behind it. Alula no longer
+refuses, and what `high` costs depends on the model behind it. Delivery Kit no longer
 chooses the model, so it cannot choose a level that fits it, and only the
 developer knows which model runs the lane. Effort belongs to the harness's own
 settings, where it is set once for the model in use.

@@ -362,8 +362,8 @@ class TestRouting:
         for _ in range(2):
             subprocess.run([SH, str(INSTALL)], cwd=repo, capture_output=True, text=True, check=True)  # noqa: S603
         text = (repo / "AGENTS.md").read_text(encoding="utf-8")
-        assert text.startswith("# Rules\n\nKeep it tidy.\n\n<!-- alula:routing -->\n")
-        assert text.count("<!-- alula:routing -->") == 1
+        assert text.startswith("# Rules\n\nKeep it tidy.\n\n<!-- delivery-kit:routing -->\n")
+        assert text.count("<!-- delivery-kit:routing -->") == 1
 
     def test_install_seeds_review_lenses_that_where_reads(self, tmp_path: Path) -> None:
         repo = make_repo(tmp_path)

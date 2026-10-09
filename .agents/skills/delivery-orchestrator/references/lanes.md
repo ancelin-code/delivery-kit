@@ -12,7 +12,7 @@ them.
 3. A **worktree** is created on that branch, outside the main working tree:
    `../lanes/<repository>/<id>` from the repository root by default, where
    `<repository>` is the directory name of the checkout the launcher ran from,
-   or `<dir>/<id>` when `ALULA_WORKTREE_ROOT=<dir>` is set in the
+   or `<dir>/<id>` when `DELIVERY_WORKTREE_ROOT=<dir>` is set in the
    environment or `--worktree-root <dir>` is given.
 4. A **session** runs in that worktree, unattended, to a validated working tree.
 5. When the session exits cleanly, the launcher runs

@@ -1,6 +1,6 @@
-# Agent Instructions for the alula repository
+# Agent Instructions for the delivery-kit repository
 
-This repository holds the AI-native **Alula**: a family of Agent Skills
+This repository holds the AI-native **Delivery Kit**: a family of Agent Skills
 that route a use case from requirements through parallel implementation lanes to
 draft pull requests.
 
@@ -46,7 +46,7 @@ Concretely:
 
 - `SKILL.md` stays at or below 500 lines and 5,000 tokens; references load on demand
 - Keep helper scripts non-executable and invoke them as `sh <skill-root>/scripts/...`
-- The Alula skills (`delivery-orchestrator` and `delivery-*`) are one workflow installed whole, not independent
+- The Delivery Kit skills (`delivery-orchestrator` and `delivery-*`) are one workflow installed whole, not independent
   units: a phase consumes the file the previous phase wrote. Still never
   reference a sibling skill by file path, only by name, so each stays
   individually evaluable and relocatable
@@ -70,7 +70,7 @@ Concretely:
 - `mise run test` runs the behavioural test suite
 - The kit's helpers are POSIX `sh` and POSIX `awk`, held to it by ShellCheck's
   shebang dialect: no arrays, `[[ ]]`, `local` or `pipefail`. See
-  [ADR-008](docs/decisions/ADR-008-posix-sh-helpers.md) for what replaces them.
+  [ADR-007](docs/decisions/ADR-007-posix-sh-helpers.md) for what replaces them.
   They are covered behaviourally, so no coverage gate is applied. Add one if
   Python source ever lands here.
 - Re-run the checks in `docs/harness-validation.md` after any harness upgrade,
