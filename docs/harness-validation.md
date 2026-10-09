@@ -67,6 +67,7 @@ skills documentation.
 | 7 | Copilot CLI accepts the model names the launcher passes | **Refuted** for every label but `terra`: `Model "luna" from --model flag is not available`. Fixed by a per-harness model id, taken from the `/models` picker. Superseded: the launcher no longer carries ids, see [ADR-006](decisions/ADR-006-capability-tiers.md) |
 | 8 | Lanes can reach the web, and `--no-web` takes it away on both harnesses | **Half refuted.** Copilot lanes always had it; Claude lanes never did. Fixed by allowing it on Claude, and by an off switch on both |
 | 9 | A lane started in another repository loads the kit's skills from the planning repository through `--add-dir` | **Half refuted.** Confirmed for Claude Code; Copilot CLI loads only an added directory's `.github/skills/`. Fixed by naming the skill file in a Copilot lane's prompt |
+| 10 | `claude -p` accepts `--advisor`, and refuses a bad pairing before the lane changes anything | Confirmed. A model that cannot advise exits 1 at startup; one less capable than the main model is warned about and dropped |
 
 ## 1. Skill discovery inside a worktree
 
@@ -419,3 +420,29 @@ both harnesses, for the task file, contracts and decisions. Claude Code keeps
 the slash invocation. Copilot CLI is told to read
 `delivery-implement/SKILL.md` by absolute path and follow it, which needs no
 extra install in any repository.
+
+## 10. An advisor in a lane
+
+A tier can name an `advisor`, which the Claude Code adapter passes as
+`--advisor`. The flag is not in `claude --help`, so the question was whether a
+headless session takes it, and what a pairing the API would refuse does to a
+lane.
+
+Method: `claude -p "Reply with the single word ok."` with `--model` and
+`--advisor`, from an empty directory, on Claude Code 2.1.295, reading the
+exit status.
+
+| `--model` | `--advisor` | Result |
+|---|---|---|
+| `sonnet` | `opus` | `ok`, exit 0 |
+| `opus` | `sonnet` | warning: `"sonnet" cannot advise "claude-opus-5-5"`, the advisor is not used; `ok`, exit 0 |
+| `opus` | `claude-haiku-4-5` | `Error: The model "claude-haiku-4-5" cannot be used as an advisor.`, exit 1 |
+| `sonnet` | `bogus-model` | the same error, exit 1 |
+
+An unusable advisor fails the lane at startup, before it changes anything, and
+the launcher releases its claim as it does for any failed session. A weaker one
+costs nothing but the warning in the lane's log.
+
+Not measured: whether a lane with an advisor delivers better pull requests than
+one without. That is the claim that would earn the key its place; until it is
+measured, `advisor` is a developer's choice, not a recommendation.

@@ -6,10 +6,12 @@
 # $HARNESSES and a new branch in harness_run and nowhere else.
 #
 # Each adapter answers the same questions: the binary, how a prompt is given
-# without a terminal, the flag that picks a model, the flag that grants access to
+# without a terminal, the flag that picks a model, the flag that names an
+# advisor model the session may consult, the flag that grants access to
 # the planning checkout, how the session is allowed to act with nobody there to
 # approve, and what --no-web turns off. Adapters that have no flag for one of
-# them say so in a comment instead of guessing one.
+# them say so in a comment instead of guessing one; only Claude Code has an
+# advisor, so the others ignore it without saying so each time.
 
 # The harnesses the launcher can drive, in the order "auto" tries them. The
 # binary of each is named like the harness. "custom" is not in the list: it is
@@ -35,11 +37,11 @@ harness_prompt() {
 
 # Run one lane's session in the current directory, the lane's worktree, and
 # return its exit status.
-#   harness_run <harness> <prompt> <model> <add-dir> <plan-dir> <web: 0|1>
-# <model> and <add-dir> are empty when there is none to pass. <plan-dir> is the
-# checkout holding the planning files, always set.
+#   harness_run <harness> <prompt> <model> <advisor> <add-dir> <plan-dir> <web: 0|1>
+# <model>, <advisor> and <add-dir> are empty when there is none to pass.
+# <plan-dir> is the checkout holding the planning files, always set.
 harness_run() {
-  harness="$1" prompt="$2" model="$3" add_dir="$4" plan_dir="$5" web="$6"
+  harness="$1" prompt="$2" model="$3" advisor="$4" add_dir="$5" plan_dir="$6" web="$7"
   case "$harness" in
     claude)
       # acceptEdits alone denies every shell command in -p mode, and nobody is
@@ -47,9 +49,13 @@ harness_run() {
       # Bash matches Copilot's --allow-all-tools; the denies still win over it.
       # Web tools are denied outright rather than left unallowed: a developer's
       # own settings may allow them, and --no-web has to hold regardless.
+      # An advisor that cannot act as one ends the session at startup, before it
+      # changes anything; one less capable than the main model is only warned
+      # about, and the lane runs without it.
       set -- claude -p "$prompt"
       [ -z "$add_dir" ] || set -- "$@" --add-dir "$add_dir"
       [ -z "$model" ] || set -- "$@" --model "$model"
+      [ -z "$advisor" ] || set -- "$@" --advisor "$advisor"
       set -- "$@" --permission-mode acceptEdits
       if [ "$web" = 1 ]; then
         set -- "$@" --allowedTools Bash WebFetch WebSearch --disallowedTools "Bash(terraform apply:*)" "Bash(terraform destroy:*)"

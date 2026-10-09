@@ -368,7 +368,7 @@ class TestTiers:
         ("text", "message"),
         [
             ("[buidl]\nmodel = x\n", "t.conf: unknown tier 'buidl' (expected plan, build, or chore)"),
-            ("[build]\nmodle = x\n", "t.conf: unknown key 'build.modle' (expected harness or model)"),
+            ("[build]\nmodle = x\n", "t.conf: unknown key 'build.modle' (expected harness, model, or advisor)"),
             (
                 "[build]\nharness = gemini\n",
                 f"t.conf: unknown harness 'gemini' (expected one of: {ALL_HARNESSES} custom)",
