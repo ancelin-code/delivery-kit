@@ -10,7 +10,7 @@ tagging it.
 
 First public release.
 
-- Five skills that take a use case from requirements to draft pull requests:
+- Five skills that take a project from requirements to draft pull requests:
   `delivery-orchestrator`, `delivery-spec`, `delivery-decompose`, `delivery-implement` and
   `delivery-status`.
 - Parallel implementation lanes with claims made by create-only git pushes, so
@@ -24,6 +24,6 @@ First public release.
 - Harness adapters for Claude Code, Copilot CLI, Codex, OpenCode and Pi, and a
   `DELIVERY_LANE_CMD` template for any other
   ([ADR-008](docs/decisions/ADR-008-harness-adapters.md)).
-- Multi-repository use cases planned once and landed where each change belongs.
+- Multi-repository projects planned once and landed where each change belongs.
 - A status snapshot that external tools can project into their own views.
 - Licensed under Apache-2.0.

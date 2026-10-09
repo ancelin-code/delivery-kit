@@ -4,7 +4,7 @@ author: Ancelin Serre
 description: >-
   Part of Delivery Kit, invoked by delivery-orchestrator. Turn an intent into a short
   requirements document, then record the design decisions and interface contracts that let
-  parallel lanes build compatible parts. Use when starting a use case, when an ask is too
+  parallel lanes build compatible parts. Use when starting a project, when an ask is too
   vague to decompose, or when parallel work needs an agreed interface to build against.
   Does not break work into tasks or implement anything.
 license: Apache-2.0

@@ -1,7 +1,7 @@
-"""Behavioural tests for a use case spread over several repositories.
+"""Behavioural tests for a project spread over several repositories.
 
 The planning files live in one clone; a task's ``repo`` field names the sibling
-clone its change lands in. Each test builds a use case directory holding two
+clone its change lands in. Each test builds a project directory holding two
 clones, ``home`` and ``api``, each with its own bare remote, and a fake ``gh``
 that answers for whichever repository it is run in.
 """

@@ -16,14 +16,14 @@ harness, or your own mapping, decides which model that means.
 
 ## How the kit fits together
 
-A repository is one **use case**: one project, one team, one set of
+A repository is one **project**: one team, one set of
 requirements. Decomposition cuts it into **epics**, coherent slices one person
 can hold in their head, and each epic into **tasks**, each one branch, one lane
 and one pull request.
 
 | Unit | Written as |
 |---|---|
-| Use case | `delivery/prd.md`, with its decision records and `delivery/contracts/` |
+| Project | `delivery/prd.md`, with its decision records and `delivery/contracts/` |
 | Epic | a section of `delivery/decomposition.md` |
 | Task | `delivery/tasks/<id>.md` |
 
@@ -31,13 +31,13 @@ Every artifact lives under `delivery/` at the repository root, so no agent has
 to search for one.
 
 The definitions the agents apply are in
-[delivery conventions](.agents/skills/delivery-orchestrator/references/conventions.md#use-cases-epics-and-tasks).
+[delivery conventions](.agents/skills/delivery-orchestrator/references/conventions.md#projects-epics-and-tasks).
 
 ```mermaid
 flowchart TD
     H([Human]) -->|invokes, once per phase| O["/delivery-orchestrator"]
 
-    subgraph UC["one repository = one use case"]
+    subgraph PRJ["one repository = one project"]
         O -.->|routes to| SPEC["/delivery-spec"]
         O -.->|routes to| DEC["/delivery-decompose"]
         O -.->|routes to| LAUNCH["launch-lanes.sh<br/>up to 3 lanes"]
@@ -145,8 +145,8 @@ clone's task branch.
 
 To put lanes somewhere else, set `DELIVERY_WORKTREE_ROOT` to a directory. It
 replaces the whole default: task ids go directly under it, with no repository
-level added, so give each use case its own directory and never share one between
-two use cases. Where lanes live is each developer's choice rather than the
+level added, so give each project its own directory and never share one between
+two projects. Where lanes live is each developer's choice rather than the
 project's, so set it in your own environment for the planning repository, not
 in a committed file. With mise, that is the untracked `mise.local.toml` at the
 planning repository's root:
@@ -287,17 +287,17 @@ copilot -p "Reply OK." --model <id>
 
 ### Several repositories
 
-A use case usually spans several repositories: infrastructure as code, a
+A project usually spans several repositories: infrastructure as code, a
 service, a data pipeline, sometimes an API and a demo app. The kit plans it
 **once, in one of them**, and lands each task in the repository its change
 belongs to. Nothing is copied between repositories, so there's nothing to keep
 in sync by hand.
 
-Clone every repository of the use case side by side, in one directory named
-after the use case, each clone named after its repository:
+Clone every repository of the project side by side, in one directory named
+after the project, each clone named after its repository:
 
 ```text
-shop/                         one directory per use case
+shop/                         one directory per project
 ├── shop-api/                 planning repository: delivery/, and the kit
 ├── shop-pipeline/
 ├── shop-iac/
@@ -308,7 +308,7 @@ shop/                         one directory per use case
 ```
 
 `lanes/` sits beside the clones, not inside any of them, and holds one
-directory per use case, not one per repository: every worktree goes under the
+directory per project, not one per repository: every worktree goes under the
 planning repository's name, whichever repository it belongs to. What reaches
 the forge is the lane's branch, pushed to its own repository.
 
@@ -345,20 +345,20 @@ branches and pull requests happen in the repository each task changes.
 
 - **The planning repository** holds `delivery/` (requirements, decisions,
   contracts, task files) and is the only one the kit is installed in. Pick the
-  repository whose lifecycle is the use case's, usually the main code
+  repository whose lifecycle is the project's, usually the main code
   repository. When three or more repositories share the work evenly, a small
-  dedicated `<use-case>-hub` repository keeps any one of them from becoming
+  dedicated `<project>-hub` repository keeps any one of them from becoming
   special.
 - **A task names where it lands** with `repo: shop-iac`, the directory name
   of the clone. Its claim, branch, worktree and pull request are all in that
   repository; its task file stays in the planning one. A task without `repo`
-  lands in the planning repository, so a single-repository use case changes
+  lands in the planning repository, so a single-repository project changes
   nothing.
 - **Dependencies cross repositories.** A task in the pipeline repository can
   wait for the API contract task to merge; `status.sh` reads every repository
   the task set names and derives state from each one's branches and pull
   requests.
-- **Decisions** about the use case live in the planning repository. A decision
+- **Decisions** about the project live in the planning repository. A decision
   confined to one repository's internals lives in that repository's own record.
 - **Contracts** are planned in `delivery/contracts/`. Once built, the
   repository that produces an interface owns its as-built form (an OpenAPI
@@ -473,7 +473,7 @@ Tell the orchestrator what you want built:
 
 In a repository with no `delivery/prd.md` yet, that starts the requirements.
 Once the file exists, the same request revises it, and decomposition turns the
-new work into new epics. The repository is the use case, so there is never a
+new work into new epics. The repository is the project, so there is never a
 second one to start.
 
 Ask it where things stand at any time, in your own words: *"what's next?"*,
@@ -618,7 +618,7 @@ match it. Connectors live in their own repositories, with their own credentials
 and configuration, so the kit holds nothing tool-specific.
 
 The kit's side is one command. From the planning repository, it prints the
-whole use case as JSON: epics and what each delivers, tasks with the state
+whole project as JSON: epics and what each delivers, tasks with the state
 `status.sh` gives them, their repository and pull request, and the planning
 documents.
 
@@ -694,7 +694,7 @@ This is a maintainer's task, not part of a run. It is deliberately not in any
 ## Design
 
 The route, the gates and the lane policy live in the `delivery-orchestrator`
-skill. Shared conventions - the use case, epic and task units, placeholders,
+skill. Shared conventions - the project, epic and task units, placeholders,
 task schema, branch names, the claim protocol, tiers, pull request rules -
 are in its `references/`, loaded on demand during a run.
 

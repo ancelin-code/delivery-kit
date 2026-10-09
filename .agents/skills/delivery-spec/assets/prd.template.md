@@ -1,4 +1,4 @@
-# <use case name>
+# <project name>
 
 **Status:** draft | approved
 **Approved by:** <name, date>

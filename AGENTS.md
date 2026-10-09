@@ -1,7 +1,7 @@
 # Agent Instructions for the delivery-kit repository
 
 This repository holds the AI-native **Delivery Kit**: a family of Agent Skills
-that route a use case from requirements through parallel implementation lanes to
+that route a project from requirements through parallel implementation lanes to
 draft pull requests.
 
 The kit is exploratory. Prefer deleting a rule over defending it.

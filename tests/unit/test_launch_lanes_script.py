@@ -426,7 +426,7 @@ class TestLauncherUsage:
         assert "task/a-001" not in git(repo, "branch", "--list").stdout
 
     def test_worktrees_default_to_a_directory_named_after_this_repository(self, tmp_path: Path) -> None:
-        """Clones side by side must not share ../lanes: task ids repeat across use cases."""
+        """Clones side by side must not share ../lanes: task ids repeat across projects."""
         repo = make_repo(tmp_path)
         add_task(repo, "a-001")
         result = launch(repo, ["--dry-run", "a-001"])
