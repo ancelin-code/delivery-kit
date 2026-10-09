@@ -14,17 +14,17 @@ skill's own installed directory the same way `<skill-root>` is. Neither is a
 path assumed relative to the skill doing the naming; the kit does not require
 one skill to sit at a fixed offset from another.
 
-## Use cases, epics and tasks
+## Projects, epics and tasks
 
 Three nested units. Every artifact the kit produces belongs to one of them.
 
 | Unit | What it is | Where it is written |
 |---|---|---|
-| Use case | The project: one team, one set of requirements, in one repository or [several](#several-repositories) | `delivery/prd.md`, with its decision records and contracts |
-| Epic | A coherent slice of the use case, small enough for one person to hold in their head | a section of `delivery/decomposition.md` |
+| Project | One team, one set of requirements, in one repository or [several](#several-repositories) | `delivery/prd.md`, with its decision records and contracts |
+| Epic | A coherent slice of the project, small enough for one person to hold in their head | a section of `delivery/decomposition.md` |
 | Task | One unit of work: one branch, one lane, one pull request | `delivery/tasks/<id>.md` |
 
-A use case has exactly one requirements document. New work on the same use case
+A project has exactly one requirements document. New work on the same project
 revises that document and becomes new epics; it does not start a second one.
 
 An epic has no task count: it is as large as one person can hold in their head,
@@ -60,7 +60,7 @@ Files shipped with a skill are named from that skill's root, for example
 ## Task identity
 
 A task id is an epic-scoped lowercase slug: `<epic>-<nnn>`, for example
-`ingestion-003`. Ids are unique within the use case, across all its
+`ingestion-003`. Ids are unique within the project, across all its
 repositories.
 
 Task files in git are the source of truth. No issue tracker is in the loop
@@ -116,21 +116,21 @@ never content.
 
 ## Several repositories
 
-A use case often spans repositories: infrastructure, a service, a data pipeline,
+A project often spans repositories: infrastructure, a service, a data pipeline,
 a demo app. It still has one plan, held in one of them, the **planning
 repository**. Copying planning files into the others would leave several
 sources to keep in sync by hand, so nothing is copied.
 
-- **Layout.** Every repository of the use case is cloned side by side in one
-  directory, `<use-case>/<repo>`, with the directory named after the repository.
+- **Layout.** Every repository of the project is cloned side by side in one
+  directory, `<project>/<repo>`, with the directory named after the repository.
   The kit finds a repository by that name, beside the planning one.
 - **Planning repository.** The repository that holds `delivery/`: the one whose
-  lifecycle is the use case's. Usually the main code repository; a dedicated
-  `<use-case>-hub` repository when three or more share the work evenly.
+  lifecycle is the project's. Usually the main code repository; a dedicated
+  `<project>-hub` repository when three or more share the work evenly.
 - **Tasks.** A task names where its change lands with `repo:`. Its claim, branch,
   worktree and pull request are all in that repository; its task file stays in
   the planning one. Dependencies cross repositories freely.
-- **Decisions.** A decision about the use case goes in the planning
+- **Decisions.** A decision about the project goes in the planning
   repository's record. A decision confined to one repository's internals goes in
   that repository's own record, written by the task that makes it.
 - **Contracts.** `delivery/contracts/` holds the agreed interface while it is

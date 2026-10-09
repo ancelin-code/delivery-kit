@@ -283,8 +283,8 @@ base_for() {
 # A task whose change lands in another repository names it with "repo:", the
 # directory name of a clone beside this one. The planning files stay here.
 home="$(git rev-parse --show-toplevel)"
-# Task ids are unique within one use case only. Repositories cloned side by side
-# would share a bare ../lanes, and a second use case's a-001 would find the
+# Task ids are unique within one project only. Repositories cloned side by side
+# would share a bare ../lanes, and a second project's a-001 would find the
 # first one's worktree in its place.
 [ -n "$worktree_root" ] || worktree_root="../lanes/$(basename "$home")"
 repo_dir_of() {

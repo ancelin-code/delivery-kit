@@ -46,7 +46,7 @@ a bare task id, the file is `delivery/tasks/<id>.md` under the repository root.
 The requirements it links are at `delivery/prd.md` and the contracts at
 `delivery/contracts/`; read them only when the task leaves a criterion unclear.
 These paths are relative to the repository holding the task file, which is not
-the one being changed when the task lands in another repository of the use case.
+the one being changed when the task lands in another repository of the project.
 With no argument at all, ask which task before doing anything else.
 
 Invoked with `--report <path>`, as the lane launcher does, also write the handoff

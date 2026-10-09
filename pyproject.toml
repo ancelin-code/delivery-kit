@@ -4,7 +4,7 @@
 [project]
 name = "delivery-kit"
 version = "0.1.0"
-description = "Delivery Kit: Agent Skills that take a use case from requirements to parallel lanes to draft pull requests"
+description = "Delivery Kit: Agent Skills that take a project from requirements to parallel lanes to draft pull requests"
 license = "Apache-2.0"
 license-files = ["LICENSE"]
 requires-python = ">=3.12,<3.13"

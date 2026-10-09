@@ -1,4 +1,4 @@
-# Decomposition: <use case name>
+# Decomposition: <project name>
 
 **Status:** draft | approved
 **Approved by:** <name, date>

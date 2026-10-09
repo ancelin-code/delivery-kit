@@ -91,7 +91,7 @@ else
 fi
 printf 'PHASE\trequirements\t%s\t%s\n' "$prd_state" "$prd"
 
-# The spine is optional: a use case whose parts need no agreed interface has
+# The spine is optional: a project whose parts need no agreed interface has
 # none. It is pending while any contract is not agreed or any record the kit
 # may have written is still proposed.
 pending=""

@@ -47,7 +47,7 @@ it directly. Splitting a one-task change into an epic costs more than it saves.
 1. **Read the approved artifacts**: `delivery/prd.md`, `delivery/contracts/`,
    and the decision records in `docs/adr/`, `docs/decisions/` or
    `delivery/decisions/`, whichever `delivery-spec` wrote to. Read enough of
-   the codebase too to know what already exists, including the use case's other
+   the codebase too to know what already exists, including the project's other
    repositories when they are cloned beside this one. Decomposing from the
    requirements alone invents work that is already done.
 2. **Group work into epics**, as the delivery conventions,
@@ -109,7 +109,7 @@ Set `type` to the Conventional Commits type of the change when it is not a
 feature: the lane's commit and pull request title are built from it and the
 title.
 
-Set `repo` when the use case spans repositories and the task's change lands in
+Set `repo` when the project spans repositories and the task's change lands in
 another one than this: the directory name of its clone beside this repository,
 as the conventions' section on several repositories describes. One task changes
 one repository; a change that needs two is two tasks with a dependency, usually

@@ -123,7 +123,7 @@ read cached refs instead of refreshing from the remote.
 
 For a tool outside git, such as a Jira or Confluence connector, the same state
 as one JSON document, with each task's epic, repository, dependencies and pull
-request, what each epic delivers, and the use case's documents:
+request, what each epic delivers, and the project's documents:
 
 ```sh
 sh <skill-root>/scripts/snapshot.sh

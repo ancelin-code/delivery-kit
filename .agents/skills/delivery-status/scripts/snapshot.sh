@@ -1,7 +1,7 @@
 #!/bin/sh
 set -eu
 
-# Print the state of the use case as one JSON document, for connectors that
+# Print the state of the project as one JSON document, for connectors that
 # project it into an external tool such as Jira or Confluence. The contract
 # those connectors follow is ADR-005 in the kit's repository.
 #
@@ -17,7 +17,7 @@ usage() {
   cat <<'USAGE'
 usage: sh snapshot.sh [options]
 
-Prints the use case, its epics, its tasks with their derived state and pull
+Prints the project, its epics, its tasks with their derived state and pull
 request, and its documents, as one JSON document (schema 1) on stdout.
 
 Options:

@@ -394,7 +394,7 @@ still reach the network.
 
 ## 9. Skills from an added directory
 
-A use case spread over several repositories keeps the kit and its plan in one
+A project spread over several repositories keeps the kit and its plan in one
 of them. A lane working in another repository gets the planning one with
 `--add-dir`. The question was whether a slash invocation then finds the kit's
 skills there.

@@ -30,7 +30,7 @@ metadata:
 
 # Delivery Orchestrator
 
-The entry point to Delivery Kit: it routes a use case from intent to merged
+The entry point to Delivery Kit: it routes a project from intent to merged
 work, deciding **what happens next** and **where a human must approve**. It does
 not do the work itself.
 
@@ -69,7 +69,7 @@ requests here. Run the command it names once, and mention it in the answer.
 ## Conventions
 
 Read [delivery conventions](references/conventions.md) once per run. It defines
-what a use case, an epic and a task each are, plus the task schema, branch
+what a project, an epic and a task each are, plus the task schema, branch
 names, claims, tiers and pull request rules, and the other skills rely on
 it rather than repeating those rules. It also fixes where every artifact below
 lives: all paths here are relative to the repository root, under `delivery/`.
