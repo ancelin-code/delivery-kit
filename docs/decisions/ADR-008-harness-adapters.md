@@ -1,4 +1,4 @@
-# ADR-009: Harnesses are adapters in one file, with a custom command as the way out
+# ADR-008: Harnesses are adapters in one file, with a custom command as the way out
 
 **Status:** accepted
 **Date:** 2026-10-04
@@ -20,7 +20,7 @@ and what `--no-web` turns off. The launcher resolves *which* harness runs a
 lane, and the adapter decides *what* the command line is.
 
 Five adapters ship: `claude`, `copilot`, `codex`, `opencode` and `pi`. `auto`
-tries them in that order. A sixth name, `custom`, runs `ALULA_LANE_CMD`, a
+tries them in that order. A sixth name, `custom`, runs `DELIVERY_LANE_CMD`, a
 shell command line with `{prompt}`, `{model}`, `{worktree}` and `{plan_dir}` in
 it, so a harness nobody has written an adapter for works on the first day.
 Placeholders become references to environment variables and never pasted text,

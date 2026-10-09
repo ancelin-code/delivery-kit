@@ -73,7 +73,7 @@ status_of() {
   ' "$1"
 }
 
-if grep -qs 'alula:routing' AGENTS.md; then
+if grep -qs 'delivery-kit:routing' AGENTS.md; then
   printf 'ROUTING\tpresent\n'
   routing=present
 else

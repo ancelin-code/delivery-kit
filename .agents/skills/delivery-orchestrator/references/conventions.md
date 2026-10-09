@@ -1,6 +1,6 @@
 # Delivery conventions
 
-The shared contract for Alula. Task files, branches, claims, tiers
+The shared contract for Delivery Kit. Task files, branches, claims, tiers
 and pull requests follow these rules. Skills reference this file rather
 than restating it.
 
@@ -178,7 +178,7 @@ The holder and claim time come from `git log -1 task/<id>`.
 ## Tiers
 
 A task's `tier` says how much capability its work needs. It is a hint, not a
-model name: Alula cannot know which models an account may use, so unless a
+model name: Delivery Kit cannot know which models an account may use, so unless a
 tier is mapped (below) the harness picks its own default.
 
 | Tier | For | Typically |
@@ -215,13 +215,13 @@ syntax errors are git's.
 
 Two files are read, and the first to name a tier decides all of it:
 
-1. The developer's own: `$ALULA_TIERS`, else
-   `$XDG_CONFIG_HOME/alula/tiers.conf` (`~/.config/alula/tiers.conf`).
+1. The developer's own: `$DELIVERY_TIERS`, else
+   `$XDG_CONFIG_HOME/delivery-kit/tiers.conf` (`~/.config/delivery-kit/tiers.conf`).
    It lives outside every repository, so it is never committed by accident.
 2. The project's: `delivery/tiers.conf`, committed when a team agrees on one.
 
 A lane runs on the first of: `--harness`, the harness its tier maps to,
-`$ALULA_HARNESS`, then the first harness found installed.
+`$DELIVERY_HARNESS`, then the first harness found installed.
 
 ## Review lenses
 

@@ -64,7 +64,7 @@ skills documentation.
 | 4 | Both harnesses accept `/<skill> <args>` as a `-p` prompt, from `.agents/skills/` | **Half refuted.** Confirmed for Copilot CLI; Claude Code needs `.claude/skills/`, fixed by symlinks |
 | 5 | A plain "what's next" or "what's the status" reaches the kit and gets a correct answer | **Refuted.** 1 of 4 routed, Copilot answered wrongly twice. Fixed by the description, `where.sh`, and a routing block in `AGENTS.md` |
 | 6 | A Claude Code lane under `--permission-mode acceptEdits` can run the repository's validation commands | **Refuted.** Every shell command is denied in `-p` mode. Fixed by `--allowedTools Bash`, with the deny rules still winning |
-| 7 | Copilot CLI accepts the model names the launcher passes | **Refuted** for every label but `terra`: `Model "luna" from --model flag is not available`. Fixed by a per-harness model id, taken from the `/models` picker. Superseded: the launcher no longer carries ids, see [ADR-007](decisions/ADR-007-capability-tiers.md) |
+| 7 | Copilot CLI accepts the model names the launcher passes | **Refuted** for every label but `terra`: `Model "luna" from --model flag is not available`. Fixed by a per-harness model id, taken from the `/models` picker. Superseded: the launcher no longer carries ids, see [ADR-006](decisions/ADR-006-capability-tiers.md) |
 | 8 | Lanes can reach the web, and `--no-web` takes it away on both harnesses | **Half refuted.** Copilot lanes always had it; Claude lanes never did. Fixed by allowing it on Claude, and by an off switch on both |
 | 9 | A lane started in another repository loads the kit's skills from the planning repository through `--add-dir` | **Half refuted.** Confirmed for Claude Code; Copilot CLI loads only an added directory's `.github/skills/`. Fixed by naming the skill file in a Copilot lane's prompt |
 
@@ -354,7 +354,7 @@ table above is a dated record, not a mapping the kit ships. A tier names a model
 only when a developer's `tiers.conf` does, and a mapping names the harness it is
 for, so an id never reaches a harness that would refuse it. That is this
 finding's lesson kept as a rule. The probe above still checks an id before it
-goes into a mapping; see [ADR-007](decisions/ADR-007-capability-tiers.md).
+goes into a mapping; see [ADR-006](decisions/ADR-006-capability-tiers.md).
 
 ## 8. Web access in a lane
 

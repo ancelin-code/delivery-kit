@@ -1,6 +1,6 @@
 # ADR-002: Reasoning effort is a task field with a batch override
 
-**Status:** superseded by [ADR-007](ADR-007-capability-tiers.md), which removes the field and the flag.
+**Status:** superseded by [ADR-006](ADR-006-capability-tiers.md), which removes the field and the flag.
 **Date:** 2026-09-22
 
 ## Context

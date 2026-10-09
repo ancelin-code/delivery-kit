@@ -1,15 +1,9 @@
-# Alula
+# Delivery Kit
 
 Agent Skills for AI-native delivery: requirements and design spine,
 decomposition, parallel implementation lanes, review.
 
-*Boring on purpose.* The name is Latin for "little wing": the alula is the small
-feather group that keeps a bird's wing from stalling at low speed. Alula is the
-same kind of part for delivery, small and unglamorous, and there to keep parallel
-work from stalling. The reasoning is in
-[ADR-010](docs/decisions/ADR-010-alula-name.md).
-
-**This repository is the kit.** The five Alula skills are one workflow,
+**This repository is the kit.** The five Delivery Kit skills are one workflow,
 not a catalogue you pick from. Each phase consumes the file the previous phase
 wrote, so a single skill installed alone is a phase with no input and no
 consumer. Install them together.
@@ -149,7 +143,7 @@ their `a-001` in `../lanes/a-001`. Nothing under `lanes/` is tracked by git:
 each directory is a `git worktree` registered with its own clone, holding that
 clone's task branch.
 
-To put lanes somewhere else, set `ALULA_WORKTREE_ROOT` to a directory. It
+To put lanes somewhere else, set `DELIVERY_WORKTREE_ROOT` to a directory. It
 replaces the whole default: task ids go directly under it, with no repository
 level added, so give each use case its own directory and never share one between
 two use cases. Where lanes live is each developer's choice rather than the
@@ -159,7 +153,7 @@ planning repository's root:
 
 ```toml
 [env]
-ALULA_WORKTREE_ROOT = "{{ env.HOME }}/lanes/shop"
+DELIVERY_WORKTREE_ROOT = "{{ env.HOME }}/lanes/shop"
 ```
 
 Every launch then uses it: `a-001` runs in `~/lanes/shop/a-001`, whether you
@@ -207,10 +201,10 @@ Each task's `tier` says how much capability its work needs:
 | `build` | Ordinary execution against explicit acceptance criteria. The default |
 | `chore` | Mechanical changes with no judgement in them |
 
-A tier is a hint, not a model name. Alula cannot know which models your
+A tier is a hint, not a model name. Delivery Kit cannot know which models your
 account may use, so by default it passes no model at all and the harness applies
 its own default. To say what a tier means for you, write a `tiers.conf` at
-`~/.config/alula/tiers.conf`. The names below are examples:
+`~/.config/delivery-kit/tiers.conf`. The names below are examples:
 
 ```ini
 [plan]
@@ -233,7 +227,7 @@ developer's own file wins, tier by tier. The full rules are in the
 [conventions](.agents/skills/delivery-orchestrator/references/conventions.md#mapping-a-tier-to-a-model).
 
 A lane runs on the first of: `--harness`, the harness its tier maps to,
-`$ALULA_HARNESS`, then the first harness found installed. `--harness` moves a
+`$DELIVERY_HARNESS`, then the first harness found installed. `--harness` moves a
 whole launch on purpose, for example to the one whose allowance still has room.
 
 ### Harnesses
@@ -261,8 +255,8 @@ inside the worktree and has no network; **Pi has no permission system**, so run
 its lanes in a container or a throwaway machine. `--no-web` is honoured by all
 five.
 
-For a harness without an adapter, set `ALULA_LANE_CMD` and `--harness custom`
-(or `ALULA_HARNESS=custom`). The template is a shell command line, run in the
+For a harness without an adapter, set `DELIVERY_LANE_CMD` and `--harness custom`
+(or `DELIVERY_HARNESS=custom`). The template is a shell command line, run in the
 lane's worktree, and these placeholders become the lane's values:
 
 | Placeholder | Value |
@@ -273,7 +267,7 @@ lane's worktree, and these placeholders become the lane's values:
 | `{plan_dir}` | The checkout that holds the planning files |
 
 ```sh
-export ALULA_LANE_CMD='mycli run --model {model} --dir {worktree} {prompt}'
+export DELIVERY_LANE_CMD='mycli run --model {model} --dir {worktree} {prompt}'
 ```
 
 Placeholders are values, never pasted text, so quotes and `$(...)` in a path or
@@ -399,7 +393,7 @@ Use the `skills` CLI. It installs all five skills, writes each one to
 `skills-lock.json` so every developer restores the same version.
 
 ```sh
-npx skills add https://github.com/ancelin-code/alula.git \
+npx skills add https://github.com/ancelin-code/delivery-kit.git \
   --skill '*' -a claude-code -a github-copilot -y
 ```
 
@@ -549,7 +543,7 @@ planning repository, wherever the launcher put it:
 
 ```sh
 home=$PWD
-lane=${ALULA_WORKTREE_ROOT:-../lanes/$(basename "$home")}/a-001
+lane=${DELIVERY_WORKTREE_ROOT:-../lanes/$(basename "$home")}/a-001
 git -C "$lane" status                  # what the lane has changed
 git -C "$lane" log --oneline           # what it has committed
 ```
@@ -636,7 +630,7 @@ A connector reads that on stdin:
 
 ```sh
 sh .agents/skills/delivery-status/scripts/snapshot.sh \
-  | alula-jira --config ~/jira/shop.toml --dry-run
+  | delivery-kit-jira --config ~/jira/shop.toml --dry-run
 ```
 
 Each run compares the whole snapshot with the tool and applies the difference,
@@ -646,7 +640,7 @@ non-zero, so no connector acts on a guess.
 
 | Connector | Tool | Repository |
 |---|---|---|
-| `alula-jira` | Jira Data Center | `alula-connector-jira` (not published yet) |
+| `delivery-kit-jira` | Jira Data Center | `delivery-kit-connector-jira` (not published yet) |
 
 What a connector must and must not do is the contract in
 [ADR-005](docs/decisions/ADR-005-external-tool-connectors.md). In short:

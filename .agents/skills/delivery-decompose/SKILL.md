@@ -2,15 +2,15 @@
 name: delivery-decompose
 author: Ancelin Serre
 description: >-
-  Part of Alula, invoked by delivery-orchestrator. Break approved requirements
+  Part of Delivery Kit, invoked by delivery-orchestrator. Break approved requirements
   and their design spine into task files that parallel lanes can execute independently,
   with dependencies, file conflicts and tiers made explicit, then validate the set
   deterministically. Use when work has been approved and needs splitting into tasks, or
   when an existing task set needs checking before lanes start. Does not implement tasks or
   decide requirements.
 license: Apache-2.0
-repository: https://github.com/ancelin-code/alula.git
-product-version: alula@v0
+repository: https://github.com/ancelin-code/delivery-kit.git
+product-version: delivery-kit@v0
 version: "0.1.0"
 keywords:
   - decompose

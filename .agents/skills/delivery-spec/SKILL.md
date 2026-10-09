@@ -2,14 +2,14 @@
 name: delivery-spec
 author: Ancelin Serre
 description: >-
-  Part of Alula, invoked by delivery-orchestrator. Turn an intent into a short
+  Part of Delivery Kit, invoked by delivery-orchestrator. Turn an intent into a short
   requirements document, then record the design decisions and interface contracts that let
   parallel lanes build compatible parts. Use when starting a use case, when an ask is too
   vague to decompose, or when parallel work needs an agreed interface to build against.
   Does not break work into tasks or implement anything.
 license: Apache-2.0
-repository: https://github.com/ancelin-code/alula.git
-product-version: alula@v0
+repository: https://github.com/ancelin-code/delivery-kit.git
+product-version: delivery-kit@v0
 version: "0.1.0"
 keywords:
   - requirements

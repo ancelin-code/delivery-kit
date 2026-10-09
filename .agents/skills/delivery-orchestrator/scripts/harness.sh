@@ -13,7 +13,7 @@
 
 # The harnesses the launcher can drive, in the order "auto" tries them. The
 # binary of each is named like the harness. "custom" is not in the list: it is
-# chosen on purpose, with ALULA_LANE_CMD.
+# chosen on purpose, with DELIVERY_LANE_CMD.
 HARNESSES="claude copilot codex opencode pi"
 
 is_harness() {
@@ -94,19 +94,19 @@ harness_run() {
       [ -z "$model" ] || set -- "$@" --model "$model"
       ;;
     custom)
-      # ALULA_LANE_CMD is a shell command line. Its placeholders become
+      # DELIVERY_LANE_CMD is a shell command line. Its placeholders become
       # references to environment variables, never pasted text, so a prompt
       # holding quotes or $(...) cannot change the command.
-      [ -n "${ALULA_LANE_CMD:-}" ] || { printf 'ERROR\tALULA_LANE_CMD is not set\n' >&2; return 1; }
-      ALULA_PROMPT="$prompt" ALULA_MODEL="$model" ALULA_WORKTREE="$PWD" \
-        ALULA_PLAN_DIR="$plan_dir" ALULA_WEB="$web"
-      export ALULA_PROMPT ALULA_MODEL ALULA_WORKTREE ALULA_PLAN_DIR ALULA_WEB
+      [ -n "${DELIVERY_LANE_CMD:-}" ] || { printf 'ERROR\tDELIVERY_LANE_CMD is not set\n' >&2; return 1; }
+      DELIVERY_PROMPT="$prompt" DELIVERY_MODEL="$model" DELIVERY_WORKTREE="$PWD" \
+        DELIVERY_PLAN_DIR="$plan_dir" DELIVERY_WEB="$web"
+      export DELIVERY_PROMPT DELIVERY_MODEL DELIVERY_WORKTREE DELIVERY_PLAN_DIR DELIVERY_WEB
       # shellcheck disable=SC2016 # the $ is for the command's shell, not this one
-      set -- sh -c "$(printf '%s' "$ALULA_LANE_CMD" | sed \
-        -e 's/{prompt}/"$ALULA_PROMPT"/g' \
-        -e 's/{model}/"$ALULA_MODEL"/g' \
-        -e 's/{worktree}/"$ALULA_WORKTREE"/g' \
-        -e 's/{plan_dir}/"$ALULA_PLAN_DIR"/g')"
+      set -- sh -c "$(printf '%s' "$DELIVERY_LANE_CMD" | sed \
+        -e 's/{prompt}/"$DELIVERY_PROMPT"/g' \
+        -e 's/{model}/"$DELIVERY_MODEL"/g' \
+        -e 's/{worktree}/"$DELIVERY_WORKTREE"/g' \
+        -e 's/{plan_dir}/"$DELIVERY_PLAN_DIR"/g')"
       ;;
     *)
       printf 'ERROR\tunknown harness: %s\n' "$harness" >&2

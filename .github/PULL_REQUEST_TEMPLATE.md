@@ -7,7 +7,7 @@ It becomes the commit message when this is squash-merged.
 
 <!--
 One or two sentences: what changes, and what it fixes or makes possible for
-someone using Alula. Link the issue, for example `Fixes #123`.
+someone using Delivery Kit. Link the issue, for example `Fixes #123`.
 -->
 
 ## How to review

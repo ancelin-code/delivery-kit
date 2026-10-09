@@ -2,15 +2,15 @@
 name: delivery-implement
 author: Ancelin Serre
 description: >-
-  Part of Alula, invoked by delivery-orchestrator inside a lane. Turn one task
+  Part of Delivery Kit, invoked by delivery-orchestrator inside a lane. Turn one task
   into a validated change in the working tree: resolve its acceptance criteria, freeze the
   scope, implement, validate proportionally with the repository's own commands, check the
   diff back against the criteria, and hand off. Use when implementing a task file from a
   decomposed epic, or a single change with explicit acceptance criteria. Does not decide
   what to build, commit, push, or open a pull request.
 license: Apache-2.0
-repository: https://github.com/ancelin-code/alula.git
-product-version: alula@v0
+repository: https://github.com/ancelin-code/delivery-kit.git
+product-version: delivery-kit@v0
 version: "0.1.0"
 keywords:
   - implement

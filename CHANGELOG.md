@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to Alula are recorded here. The kit is installed whole,
+All notable changes to Delivery Kit are recorded here. The kit is installed whole,
 so one version covers every skill. Set the date on a release's heading when
 tagging it.
 
@@ -20,10 +20,10 @@ First public release.
   none, the harness picks its own default. Reasoning effort is left to the
   harness's own settings.
 - The helpers are POSIX `sh`: no bash is required, and they run on dash, macOS's
-  own `sh` and BusyBox ([ADR-008](docs/decisions/ADR-008-posix-sh-helpers.md)).
+  own `sh` and BusyBox ([ADR-007](docs/decisions/ADR-007-posix-sh-helpers.md)).
 - Harness adapters for Claude Code, Copilot CLI, Codex, OpenCode and Pi, and a
-  `ALULA_LANE_CMD` template for any other
-  ([ADR-009](docs/decisions/ADR-009-harness-adapters.md)).
+  `DELIVERY_LANE_CMD` template for any other
+  ([ADR-008](docs/decisions/ADR-008-harness-adapters.md)).
 - Multi-repository use cases planned once and landed where each change belongs.
 - A status snapshot that external tools can project into their own views.
 - Licensed under Apache-2.0.

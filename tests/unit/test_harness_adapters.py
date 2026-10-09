@@ -64,7 +64,7 @@ def run_lane(
     env = dict(env or {})
     if model is not None:
         mapping = write_tiers(tmp_path / "t.conf", f"[build]\n\tharness = {harness}\n\tmodel = {model}\n")
-        env["ALULA_TIERS"] = str(mapping)
+        env["DELIVERY_TIERS"] = str(mapping)
     result = launch_live(
         dev,
         [
@@ -165,7 +165,7 @@ class TestWebAccess:
 class TestCustomCommand:
     def test_placeholders_become_the_lanes_values(self, tmp_path: Path) -> None:
         template = 'for v in {model} {worktree} {plan_dir}; do printf "VALUE %s\\n" "$v" >> "$FAKE_LOG"; done'
-        run_lane(tmp_path, "custom", env={"ALULA_LANE_CMD": template})
+        run_lane(tmp_path, "custom", env={"DELIVERY_LANE_CMD": template})
         wait_for(lambda: (tmp_path / "agent.log").read_text(encoding="utf-8").count("VALUE ") >= 3)  # noqa: PLR2004
         log = (tmp_path / "agent.log").read_text(encoding="utf-8").splitlines()
         values = [line.removeprefix("VALUE ") for line in log if line.startswith("VALUE ")]
@@ -185,7 +185,7 @@ class TestCustomCommand:
             bin_dir,
             log,
             isolated=True,
-            env_extra={"ALULA_LANE_CMD": template},
+            env_extra={"DELIVERY_LANE_CMD": template},
         )
         assert "LAUNCHED\ta-001\tcustom" in result.stdout, result.stdout + result.stderr
         wait_for(lambda: "VALUE" in log.read_text(encoding="utf-8"))
@@ -204,4 +204,4 @@ class TestCustomCommand:
             log,
             isolated=True,
         )
-        assert "SKIP\ta-001\tcustom needs ALULA_LANE_CMD to be set" in result.stdout
+        assert "SKIP\ta-001\tcustom needs DELIVERY_LANE_CMD to be set" in result.stdout

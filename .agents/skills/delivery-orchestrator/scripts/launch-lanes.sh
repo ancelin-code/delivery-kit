@@ -33,14 +33,14 @@ Options:
   --max-lanes <n>       Most lanes to run at once (default: 3).
   --harness <name>      claude, copilot, codex, opencode, pi, custom, or auto
                         (default: auto). auto uses the harness the task's tier
-                        maps to in tiers.conf, then $ALULA_HARNESS, then the
+                        maps to in tiers.conf, then $DELIVERY_HARNESS, then the
                         first one installed. Naming one forces every lane in the
-                        batch onto it. custom runs $ALULA_LANE_CMD, a command
+                        batch onto it. custom runs $DELIVERY_LANE_CMD, a command
                         line with {prompt}, {model}, {worktree} and {plan_dir}
                         in it, for a harness this launcher does not know.
   --tasks-dir <dir>     Directory holding <id>.md task files (default: delivery/tasks).
   --worktree-root <dir> Directory that receives one <task-id> worktree per lane.
-                        Defaults to $ALULA_WORKTREE_ROOT when set, else to
+                        Defaults to $DELIVERY_WORKTREE_ROOT when set, else to
                         ../lanes/<name of this repository>.
   --log-dir <dir>       Where session logs are written (default: .lanes/logs).
   --no-web              Take web fetch and web search away from the lanes.
@@ -65,11 +65,11 @@ USAGE
 
 max_lanes=3
 harness_flag=""
-env_harness="${ALULA_HARNESS:-}"
+env_harness="${DELIVERY_HARNESS:-}"
 tasks_dir="delivery/tasks"
 # A developer's own choice, so read from the environment: set once, it reaches
 # every launch, including the ones follow.sh and the orchestrator start.
-worktree_root="${ALULA_WORKTREE_ROOT:-}"
+worktree_root="${DELIVERY_WORKTREE_ROOT:-}"
 log_dir=".lanes/logs"
 # The kit installs as a whole, so delivery-status sits beside this skill. Kept as
 # an option because a consuming repository may relocate the scripts; never
@@ -115,7 +115,7 @@ case "$max_lanes" in "" | 0* | *[!0-9]*) die "--max-lanes must be a positive num
 [ "$harness_flag" != auto ] || harness_flag=""
 [ "$env_harness" != auto ] || env_harness=""
 [ -z "$harness_flag" ] || is_harness "$harness_flag" || die "--harness must be one of: $HARNESSES custom auto"
-[ -z "$env_harness" ] || is_harness "$env_harness" || die "ALULA_HARNESS must be one of: $HARNESSES custom auto"
+[ -z "$env_harness" ] || is_harness "$env_harness" || die "DELIVERY_HARNESS must be one of: $HARNESSES custom auto"
 [ -d "$tasks_dir" ] || die "tasks directory not found: $tasks_dir"
 # Without a working claim, concurrent lanes would take the same task and report
 # LAUNCHED for every one of them. Refuse to start rather than run unlocked.
@@ -180,11 +180,11 @@ is_tier() {
 # of the two. The result is the tier_harness and tier_model maps, where "-"
 # means a tier the file names without that key.
 load_tiers() {
-  user_conf="${XDG_CONFIG_HOME:-${HOME:-}/.config}/alula/tiers.conf"
+  user_conf="${XDG_CONFIG_HOME:-${HOME:-}/.config}/delivery-kit/tiers.conf"
   files=""
-  if [ -n "${ALULA_TIERS:-}" ]; then
-    [ -f "$ALULA_TIERS" ] || die "ALULA_TIERS names a missing file: $ALULA_TIERS"
-    files="$ALULA_TIERS
+  if [ -n "${DELIVERY_TIERS:-}" ]; then
+    [ -f "$DELIVERY_TIERS" ] || die "DELIVERY_TIERS names a missing file: $DELIVERY_TIERS"
+    files="$DELIVERY_TIERS
 "
   elif [ -f "$user_conf" ]; then
     files="$user_conf
@@ -397,8 +397,8 @@ while IFS= read -r task_id <&3; do
     [ "$use_harness" != "auto" ] ||
       { printf 'SKIP\t%s\tno supported harness on PATH (%s)\n' "$task_id" "$HARNESSES"; continue; }
   elif [ "$use_harness" = custom ]; then
-    [ -n "${ALULA_LANE_CMD:-}" ] ||
-      { printf 'SKIP\t%s\tcustom needs ALULA_LANE_CMD to be set\n' "$task_id"; continue; }
+    [ -n "${DELIVERY_LANE_CMD:-}" ] ||
+      { printf 'SKIP\t%s\tcustom needs DELIVERY_LANE_CMD to be set\n' "$task_id"; continue; }
   elif ! command -v "$use_harness" >/dev/null 2>&1; then
     # A harness somebody chose is never swapped for another: a lane on a harness
     # nobody asked for would spend an allowance nobody meant to spend.
