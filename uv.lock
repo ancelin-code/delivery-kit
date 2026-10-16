@@ -222,7 +222,7 @@ wheels = [
 
 [[package]]
 name = "cisco-ai-skill-scanner"
-version = "2.1.0"
+version = "2.2.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "anthropic" },
@@ -237,6 +237,7 @@ dependencies = [
     { name = "pdfid" },
     { name = "protobuf" },
     { name = "pydantic" },
+    { name = "pyjwt" },
     { name = "python-dotenv" },
     { name = "python-frontmatter" },
     { name = "python-multipart" },
@@ -244,16 +245,17 @@ dependencies = [
     { name = "rich" },
     { name = "tabulate" },
     { name = "textual" },
+    { name = "urllib3" },
     { name = "uvicorn", extra = ["standard"] },
     { name = "yara-x" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/66/87/93a5e410f33ed5c4c62f8da24bca7d99ec5331cfac9a59db384d23d13cfe/cisco_ai_skill_scanner-2.1.0.tar.gz", hash = "sha256:14542712f5966a99ec86b27882ef7c5b1803e43587c1fa69e00eb63ddee1ee2e", size = 1101996, upload-time = "2026-09-05T20:34:35.134Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/44/9e/8cdc90c01633a01f65e7482a4d922f8fc3e0b8f320813fe19b194abce174/cisco_ai_skill_scanner-2.2.2.tar.gz", hash = "sha256:ae1b1e69beed7ba2ae7132022840b11c55bcb4d851fa0659bd4d3a591f830a8a", size = 1182332, upload-time = "2026-10-09T02:43:50.73Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/5e/b5/a16cbb76ef9c7428409f2e74d48b42ad02329d44d9782978bb8c9125b207/cisco_ai_skill_scanner-2.1.0-cp311.cp312.cp313.cp314-none-macosx_13_0_arm64.whl", hash = "sha256:452811a64399a7f5f6656f5fccb5487a5f3a0ca00e8cdfa484761022da852bf6", size = 4758639, upload-time = "2026-09-05T20:34:26.498Z" },
-    { url = "https://files.pythonhosted.org/packages/95/c0/f0e1ad8bb6be5e6b0fe0e6a428e863f420c1789d2b56bd411d8dcec16e98/cisco_ai_skill_scanner-2.1.0-cp311.cp312.cp313.cp314-none-macosx_13_0_x86_64.whl", hash = "sha256:55e79e961bc96cf787bb41bb5b79c4dd4f434abbd54125df2bd9488b5c179412", size = 5071801, upload-time = "2026-09-05T20:34:28.233Z" },
-    { url = "https://files.pythonhosted.org/packages/f8/0b/9180f9b582cf3a5eb7270d6adf8d35c68d742610179b6e102e72507e7b72/cisco_ai_skill_scanner-2.1.0-cp311.cp312.cp313.cp314-none-manylinux_2_17_aarch64.whl", hash = "sha256:f867557d9baa7c6654b21c983717240efaf8b0b2f004ae8881e88957ccf69cfc", size = 4616261, upload-time = "2026-09-05T20:34:29.864Z" },
-    { url = "https://files.pythonhosted.org/packages/ff/be/5b468d653ece56ab24497b6bb308e0487cc6b4b1b77bb1ebd4b5eb26a19c/cisco_ai_skill_scanner-2.1.0-cp311.cp312.cp313.cp314-none-manylinux_2_17_x86_64.whl", hash = "sha256:c84292b720bf0eddc8913fe3017dcdb05bd7e98eb19f6ee61dee2c4eb9fa901e", size = 5013559, upload-time = "2026-09-05T20:34:31.697Z" },
-    { url = "https://files.pythonhosted.org/packages/b4/75/39bd974ae912a92c466e21af67c7a89e547e602301bf9195fc40b8821231/cisco_ai_skill_scanner-2.1.0-cp311.cp312.cp313.cp314-none-win_amd64.whl", hash = "sha256:c29d68a2915c73d38971765a35cb0ccd4640e2acb3a4bf542bdbab676dbec8a4", size = 5118622, upload-time = "2026-09-05T20:34:33.494Z" },
+    { url = "https://files.pythonhosted.org/packages/6c/79/8420c278c2ee67786326060650a131b1a5c47f990203894a6704a0282131/cisco_ai_skill_scanner-2.2.2-cp311.cp312.cp313.cp314-none-macosx_13_0_arm64.whl", hash = "sha256:ba6b9b5992fe51d2f041ac1d7edf0542abfe4d3b80641b9d9f7235ab7622fa67", size = 4858853, upload-time = "2026-10-09T02:43:40.345Z" },
+    { url = "https://files.pythonhosted.org/packages/0e/92/d7758d8b02da6ac274637f236f429f0d3ac21ffd6b35deb0a8e1fc37a94b/cisco_ai_skill_scanner-2.2.2-cp311.cp312.cp313.cp314-none-macosx_13_0_x86_64.whl", hash = "sha256:58be6433c8c67bbc5add4c660f33447ca0b37c1cb7ab18fdbd689b3cae38aa39", size = 5172009, upload-time = "2026-10-09T02:43:43.007Z" },
+    { url = "https://files.pythonhosted.org/packages/af/c1/64990862a1e4f05f18b5772fb994c80d49bb4a04617112b38c23a231170a/cisco_ai_skill_scanner-2.2.2-cp311.cp312.cp313.cp314-none-manylinux_2_17_aarch64.whl", hash = "sha256:dfd841bb83f3d2c643cc225c151dc6cc27bb78f109ce66a7b6134cbe4c6a6053", size = 4716459, upload-time = "2026-10-09T02:43:44.779Z" },
+    { url = "https://files.pythonhosted.org/packages/cc/48/db7ad3b0708cde2c78fbeef23bb9a8dbab9c144e679071f74b88d7096386/cisco_ai_skill_scanner-2.2.2-cp311.cp312.cp313.cp314-none-manylinux_2_17_x86_64.whl", hash = "sha256:6e84eb081de78fb4ba336b525cedb091dd5c81e7715e2ad71fb1ba10584e4129", size = 5113767, upload-time = "2026-10-09T02:43:46.87Z" },
+    { url = "https://files.pythonhosted.org/packages/6c/b0/febcaf700d1e7be7d4719ce8fdd2d209e6165026348196034b81f99c3309/cisco_ai_skill_scanner-2.2.2-cp311.cp312.cp313.cp314-none-win_amd64.whl", hash = "sha256:c93db6dc5ca956e2224fa189bcb0837f0b9c3bc84d779a173856003886754f02", size = 5219443, upload-time = "2026-10-09T02:43:48.908Z" },
 ]
 
 [[package]]
@@ -1067,6 +1069,15 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/49/2e/ced460408999b33da6b31b0021b0f37d329e202d4169aeb164493778f25b/pygments-2.21.0.tar.gz", hash = "sha256:610ca751c9bc2492b38eb9a38a7fbc93edbbb2d7182edaf34e66ae493dee5c8c", size = 5005329, upload-time = "2026-08-17T08:02:48.824Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/71/46/17f022dd3e953bf20a04a028a21ec746d942f8d2af30fa0f124fa0e6a684/pygments-2.21.0-py3-none-any.whl", hash = "sha256:2363c69b61c4a97c838da3b130dcd6468f4848992b21a82f2a63ec34377137d9", size = 1250147, upload-time = "2026-08-17T08:02:44.912Z" },
+]
+
+[[package]]
+name = "pyjwt"
+version = "2.15.1"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/43/ea/5194e52748b0da83d71e082d75496eaec6e58f419f5e184786ded517e6a9/pyjwt-2.15.1.tar.gz", hash = "sha256:4f259e80cdfb6b3fc18a7de51fd1ef9ec79652f25019bae68975ca2468a34df8", size = 121252, upload-time = "2026-09-28T18:40:42.598Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/50/ca/44de4e75f8aadc457f0634be3b542815078ded46dca30efb960edeecad6e/pyjwt-2.15.1-py3-none-any.whl", hash = "sha256:42d59d631f7768a1028a64c7ff581a9bf7519804daf91fc5b6c56e30eec5e193", size = 33860, upload-time = "2026-09-28T18:40:41.429Z" },
 ]
 
 [[package]]
