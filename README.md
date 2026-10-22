@@ -1,7 +1,16 @@
 # Delivery Kit
 
+[![CI](https://github.com/ancelin-code/delivery-kit/actions/workflows/ci.yaml/badge.svg?branch=develop)](https://github.com/ancelin-code/delivery-kit/actions/workflows/ci.yaml)
+[![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
+
 Agent Skills for AI-native delivery: requirements and design spine,
-decomposition, parallel implementation lanes, review.
+decomposition, parallel implementation lanes, review. Git is the only state:
+no server, no database, no status file.
+
+> **Status: pre-release.** The kit is used on real projects, but no version is
+> tagged yet and conventions may still change between commits. Install from
+> `main`, read [CHANGELOG.md](CHANGELOG.md) before updating, and expect breaking
+> changes to be called out there rather than migrated.
 
 **This repository is the kit.** The five Delivery Kit skills are one workflow,
 not a catalogue you pick from. Each phase consumes the file the previous phase
@@ -405,9 +414,12 @@ Use the `skills` CLI. It installs all five skills, writes each one to
 `skills-lock.json` so every developer restores the same version.
 
 ```sh
-npx skills add https://github.com/ancelin-code/delivery-kit.git \
+npx skills add https://github.com/ancelin-code/delivery-kit/tree/main \
   --skill '*' -a claude-code -a github-copilot -y
 ```
+
+The `/tree/main` suffix installs what has been released to `main`. Without it,
+you get the default branch, `develop`, where unreleased work lands first.
 
 Add an `-a <agent>` for each other harness your team uses; `npx skills add
 --help` lists the names it knows.
@@ -680,6 +692,23 @@ mise run dev     # local environment and git hooks
 mise run lint    # ruff, shellcheck, rumdl, actionlint, Vale, skillcheck, security scan
 mise run test    # behavioural tests
 ```
+
+### Contributing
+
+Issues and pull requests are welcome. Read [AGENTS.md](AGENTS.md) first: it
+holds the rules every change is checked against, above all that a rule stays in
+the kit only if removing it measurably degrades results.
+
+- Branch from `develop` and open the pull request against it. Pull requests are
+  squash-merged, so the title is a Conventional Commits line.
+- `main` holds released work only. It moves forward by merging `develop` into
+  it, and every release tag `vX.Y.Z` is cut on it.
+- Both branches are protected. A change reaches them only through a pull
+  request whose `lint` and `test` checks pass on Linux, macOS and Alpine.
+  Neither branch can be force-pushed or deleted, and a release tag cannot be
+  moved or deleted.
+- Work done with an agent is labelled `ai-assisted`; see
+  [AGENTS.md](AGENTS.md#pull-requests).
 
 ## Maintenance
 

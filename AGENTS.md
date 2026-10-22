@@ -85,6 +85,12 @@ macOS (its own `sh`) and Alpine (BusyBox); lint runs on Linux only.
 
 ## Pull requests
 
+Branch from `develop` and open the pull request against it; it is squash-merged.
+`main` receives `develop` through a merge pull request and carries the release
+tags, which `release.yaml` refuses anywhere else. Both branches are protected by
+rulesets: a pull request with passing `lint` and `test` checks, no force-push,
+no deletion. Release tags `v*` cannot be moved or deleted.
+
 Pull requests that agents worked on carry the `ai-assisted` label. A workflow
 adds it when a commit has a `Co-authored-by` or `Assisted-by` trailer naming an
 agent, or when an agent's own account opened the pull request. A tool that
