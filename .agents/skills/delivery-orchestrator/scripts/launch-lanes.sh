@@ -88,6 +88,10 @@ web=1
 task_ids=""
 
 [ -f "$harness_lib" ] || die "harness adapters not found: $harness_lib"
+# A lane is told to follow this file. Without it the session would run with no
+# skill at all, so a split install stops here rather than in every lane.
+[ -f "$implement_skill" ] ||
+  die "delivery-implement is not installed beside delivery-orchestrator in $(cd -P "$here/../.." && pwd -P): reinstall the kit whole"
 # shellcheck source=harness.sh source-path=SCRIPTDIR
 . "$harness_lib"
 

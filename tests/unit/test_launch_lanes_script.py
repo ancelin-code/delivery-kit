@@ -1032,3 +1032,19 @@ class TestLaneStartup:
         assert "already claimed" in result.stdout
         assert not (tmp_path / "lanesB" / "a-001").exists()
         assert "task/a-001" not in git(latecomer, "branch", "--list").stdout
+
+
+def test_refuses_to_launch_without_delivery_implement_beside_it(tmp_path: Path) -> None:
+    """A lane is told to follow delivery-implement; without it the session would run with no skill."""
+    skills = tmp_path / "skills"
+    shutil.copytree(SKILLS, skills)
+    shutil.rmtree(skills / "delivery-implement")
+    result = subprocess.run(  # noqa: S603
+        [SH, str(skills / "delivery-orchestrator" / "scripts" / "launch-lanes.sh"), "--dry-run", "a-001"],
+        cwd=tmp_path,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert result.returncode == 1
+    assert "delivery-implement is not installed beside delivery-orchestrator" in result.stderr

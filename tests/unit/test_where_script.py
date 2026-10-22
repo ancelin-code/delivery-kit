@@ -359,6 +359,49 @@ class TestMilestones:
         assert actions(result.stdout)[-1] == "complete"
 
 
+def split_install(tmp_path: Path) -> Path:
+    """The layout an update leaves after a copy install: delivery-implement was
+    up to date, so it stayed a copy in .claude/skills while the other four were
+    moved to .agents/skills and linked. Returns where.sh as Claude Code reaches it.
+    """
+    root = tmp_path / "install"
+    canonical = root / ".agents" / "skills"
+    linked = root / ".claude" / "skills"
+    canonical.mkdir(parents=True)
+    linked.mkdir(parents=True)
+    for skill in SCRIPTS.parents[1].iterdir():
+        if skill.name == "delivery-implement":
+            shutil.copytree(skill, linked / skill.name)
+        else:
+            shutil.copytree(skill, canonical / skill.name)
+            (linked / skill.name).symlink_to(Path("../../.agents/skills") / skill.name)
+    return linked / "delivery-orchestrator" / "scripts" / "where.sh"
+
+
+class TestInstallLayout:
+    """The kit's skills find each other as siblings, so a split install is the first thing to fix."""
+
+    def test_a_split_install_is_reported_before_anything_else(self, tmp_path: Path) -> None:
+        repo = make_repo(tmp_path)
+        approved_plan(repo)
+        task(repo, "a-001")
+        script = split_install(tmp_path)
+        env = os.environ.copy()
+        env["PATH"] = f"{fake_gh(tmp_path)}{os.pathsep}{env['PATH']}"
+        result = subprocess.run(  # noqa: S603
+            [SH, str(script), "--no-fetch"], cwd=repo, env=env, capture_output=True, text=True, check=False
+        )
+        assert result.returncode == OK, result.stderr
+        assert actions(result.stdout) == ["repair-install"]
+        detail = rows(result.stdout, "NEXT")[0][1]
+        assert ".agents/skills: delivery-implement." in detail
+        assert rows(result.stdout, "PHASE") == []
+
+    def test_a_whole_install_is_not_reported(self, tmp_path: Path) -> None:
+        repo = make_repo(tmp_path)
+        assert "repair-install" not in actions(where(repo, fake_gh(tmp_path)).stdout)
+
+
 LENSES = """\
 # lens     skill             paths that bring the lens in
 general    code-review

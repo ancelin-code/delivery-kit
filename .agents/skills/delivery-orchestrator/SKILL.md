@@ -63,6 +63,10 @@ a skill can be mapped in `delivery/review-lenses.conf`. When a named skill is no
 installed, say so by name rather than substituting another. The file's format
 is in the [review lenses](references/conventions.md#review-lenses) convention.
 
+A `NEXT repair-install` line means the kit's skills are not all installed side
+by side, so a phase would run without one of its siblings. Stop, and show the
+user that line: repairing the install is theirs to do.
+
 A `NEXT install-routing` line means this project's `AGENTS.md` does not yet send
 requests here. Run the command it names once, and mention it in the answer.
 

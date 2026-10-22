@@ -6,6 +6,11 @@ tagging it.
 
 ## [Unreleased]
 
+- An install whose skills are split between `.claude/skills/` and
+  `.agents/skills/`, as `npx skills update` leaves after an install naming
+  only `claude-code`, is reported by `where.sh` as `NEXT repair-install`, and
+  the lane launcher refuses to start without `delivery-implement`. The README
+  explains how to install so this cannot happen, and how to repair it.
 - Milestones: a large project is cut and run one end-to-end slice at a time,
   with a reviewed note closing each before the next is cut. `where.sh` and
   `follow.sh` stop at each boundary

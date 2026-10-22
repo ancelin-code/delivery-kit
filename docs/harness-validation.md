@@ -21,6 +21,7 @@ Environment at time of testing (2026-09-21, test 4 on 2026-09-22, tests 5 to
 | Claude Code | 2.1.278 (2.1.280 for test 5) |
 | GitHub Copilot CLI | 1.0.86 (1.0.87 for test 4, 1.0.88 for test 5) |
 | git | 2.34.1 |
+| skills CLI | 1.7.4, for test 11 on 2026-10-22 |
 
 ## Support matrix
 
@@ -68,6 +69,7 @@ skills documentation.
 | 8 | Lanes can reach the web, and `--no-web` takes it away on both harnesses | **Half refuted.** Copilot lanes always had it; Claude lanes never did. Fixed by allowing it on Claude, and by an off switch on both |
 | 9 | A lane started in another repository loads the kit's skills from the planning repository through `--add-dir` | **Half refuted.** Confirmed for Claude Code; Copilot CLI loads only an added directory's `.github/skills/`. Fixed by naming the skill file in a Copilot lane's prompt |
 | 10 | `claude -p` accepts `--advisor`, and refuses a bad pairing before the lane changes anything | Confirmed. A model that cannot advise exits 1 at startup; one less capable than the main model is warned about and dropped |
+| 11 | `npx skills add` and `npx skills update` keep the kit's five skills in one directory | **Refuted** for an install naming only `claude-code`: copies, then a split after update. Fixed by installing with an agent that reads `.agents/skills/`, and by a check in `where.sh` and the launcher |
 
 ## 1. Skill discovery inside a worktree
 
@@ -446,3 +448,35 @@ costs nothing but the warning in the lane's log.
 Not measured: whether a lane with an advisor delivers better pull requests than
 one without. That is the claim that would earn the key its place; until it is
 measured, `advisor` is a developer's choice, not a recommendation.
+
+## 11. Installing and updating with the skills CLI
+
+The kit's scripts find each other as siblings, `$(dirname "$0")/../../<skill>`,
+which holds only while all five skills sit in one directory. The question was
+whether the `skills` CLI keeps them there through an install and an update.
+The `tiroir` pilot found that it does not, and this test reproduces it.
+
+Method: an empty git repository, `skills` 1.7.4. Install from `main`, then
+point `skills-lock.json` at `develop`, where four of the five skills had
+changed, and run `npx skills update -p -y`.
+
+| Install | After `add` | After `update` |
+|---|---|---|
+| `-a claude-code` | five copies in `.claude/skills/`, no `.agents/` | four links into `.agents/skills/`, `delivery-implement` still a copy in `.claude/skills/` |
+| `-a claude-code -a github-copilot` | five skills in `.agents/skills/`, five links in `.claude/skills/` | unchanged layout |
+
+In the split layout, `.claude/skills/delivery-orchestrator/scripts/../../delivery-implement`
+resolves through the link to `.agents/skills/delivery-implement`, which does
+not exist, whichever directory the script was reached from. The launcher
+passed that path to each lane without checking it.
+
+Re-running `add -a claude-code` on the split install made all five copies again
+and left the four directories in `.agents/skills/` behind, stale for any
+harness that reads them. Removing every `delivery-*` directory under both
+paths, then installing with both agents, restored a whole install.
+
+**Fix.** The README installs with an agent that reads `.agents/skills/`, warns
+against `-a claude-code` alone, and gives the repair. `where.sh` checks that
+the other four skills are beside the orchestrator and reports
+`NEXT repair-install` when one is not. The launcher refuses to start without
+`delivery-implement`.
