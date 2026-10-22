@@ -397,6 +397,27 @@ class TestInstallLayout:
         assert ".agents/skills: delivery-implement." in detail
         assert rows(result.stdout, "PHASE") == []
 
+    def test_a_missing_delivery_refine_is_reported(self, tmp_path: Path) -> None:
+        repo = make_repo(tmp_path)
+        skills = tmp_path / "skills"
+        shutil.copytree(SCRIPTS.parents[1], skills)
+        shutil.rmtree(skills / "delivery-refine")
+        env = os.environ.copy()
+        env["PATH"] = f"{fake_gh(tmp_path)}{os.pathsep}{env['PATH']}"
+        result = subprocess.run(  # noqa: S603
+            [SH, str(skills / "delivery-orchestrator" / "scripts" / "where.sh"), "--no-fetch"],
+            cwd=repo,
+            env=env,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        assert actions(result.stdout) == ["repair-install"]
+        assert rows(result.stdout, "NEXT")[0][1].endswith(
+            ": delivery-refine. The kit installs whole: remove every delivery-* skill directory, "
+            "then reinstall them all in one 'npx skills add', naming at least one agent that reads .agents/skills"
+        )
+
     def test_a_whole_install_is_not_reported(self, tmp_path: Path) -> None:
         repo = make_repo(tmp_path)
         assert "repair-install" not in actions(where(repo, fake_gh(tmp_path)).stdout)

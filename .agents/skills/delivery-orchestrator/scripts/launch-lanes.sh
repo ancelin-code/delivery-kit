@@ -278,28 +278,27 @@ tier_above() {
   case "$1" in chore) printf build ;; *) printf plan ;; esac
 }
 
-# The harness, model and advisor of a lane's refinement session, as one
-# tab-separated line. A tier's own reviewer runs on the lane's harness, which
-# its model id is for. Otherwise the session runs as the tier above would: on
-# its harness when that one is installed, and with its model when the mapping
-# is for that harness. --harness forces the whole batch, review included.
+# Sets refine_harness, refine_model and refine_advisor for a lane's refinement
+# session. A tier's own reviewer runs on the lane's harness, which its model id
+# is for. Otherwise the session runs as the tier above would: on its harness
+# when that one is installed, and with its model when the mapping is for that
+# harness. --harness forces the whole batch, review included.
 #   refine_for <tier> <lane harness>
 refine_for() {
-  reviewer="$(mapped_for tier_reviewer "$1" "$2")"
-  if [ -n "$reviewer" ]; then
-    printf '%s\t%s\t\n' "$2" "$reviewer"
-    return 0
-  fi
+  refine_harness="$2"
+  refine_model="$(mapped_for tier_reviewer "$1" "$2")"
+  refine_advisor=""
+  [ -z "$refine_model" ] || return 0
   up="$(tier_above "$1")"
   up_harness="$(get tier_harness "$up")"
-  review_harness="$2"
   if [ -z "$harness_flag" ] && [ -n "$up_harness" ]; then
-    if [ "$dry_run" -eq 1 ] || [ "$up_harness" = custom ] || command -v "$up_harness" >/dev/null 2>&1; then
-      review_harness="$up_harness"
+    if [ "$dry_run" -eq 1 ] || { [ "$up_harness" = custom ] && [ -n "${DELIVERY_LANE_CMD:-}" ]; } ||
+      command -v "$up_harness" >/dev/null 2>&1; then
+      refine_harness="$up_harness"
     fi
   fi
-  printf '%s\t%s\t%s\n' "$review_harness" "$(mapped_for tier_model "$up" "$review_harness")" \
-    "$(mapped_for tier_advisor "$up" "$review_harness")"
+  refine_model="$(mapped_for tier_model "$up" "$refine_harness")"
+  refine_advisor="$(mapped_for tier_advisor "$up" "$refine_harness")"
 }
 
 # A task with "parallel: false" runs alone: no other lane of the set may be in
@@ -436,14 +435,9 @@ while IFS= read -r task_id <&3; do
   if [ "$dry_run" -eq 1 ]; then
     model="$(mapped_for tier_model "$tier" "$use_harness")"
     refine_harness=- refine_model=-
-    if [ "$refine" -eq 1 ]; then
-      IFS="$tab" read -r refine_harness refine_model _ <<EOF_REFINE
-$(refine_for "$tier" "$use_harness")
-EOF_REFINE
-      refine_model="${refine_model:-default}"
-    fi
+    [ "$refine" -eq 0 ] || refine_for "$tier" "$use_harness"
     printf 'WOULD-LAUNCH\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' "$task_id" "$use_harness" "${model:-default}" \
-      "$refine_harness" "$refine_model" "$worktree" "$repo_name"
+      "$refine_harness" "${refine_model:-default}" "$worktree" "$repo_name"
     ! runs_alone "$task_id" || alone_started="$task_id"
     printf '%s\n' "$task_id" >>"$store/launched_ids"
     launched=$((launched + 1))
@@ -470,12 +464,8 @@ EOF_REFINE
   # Resolved after the harness is known: a mapping names the one it is for.
   model="$(mapped_for tier_model "$tier" "$use_harness")"
   advisor="$(mapped_for tier_advisor "$tier" "$use_harness")"
-  refine_harness="" refine_model="" refine_advisor=""
-  if [ "$refine" -eq 1 ]; then
-    IFS="$tab" read -r refine_harness refine_model refine_advisor <<EOF_REFINE
-$(refine_for "$tier" "$use_harness")
-EOF_REFINE
-  fi
+  refine_harness=- refine_model=- refine_advisor=""
+  [ "$refine" -eq 0 ] || refine_for "$tier" "$use_harness"
 
   git -C "$repo_dir" rev-parse --is-inside-work-tree >/dev/null 2>&1 ||
     { printf 'SKIP\t%s\tno clone of %s at %s\n' "$task_id" "$repo_name" "$repo_dir"; continue; }
@@ -557,8 +547,7 @@ EOF_REFINE
     </dev/null >"$log_file" 2>&1 &) || true
 
   printf 'LAUNCHED\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' "$task_id" "$use_harness" "${model:-default}" \
-    "${refine_harness:--}" "$([ "$refine" -eq 0 ] && printf -- - || printf '%s' "${refine_model:-default}")" \
-    "$worktree" "$repo_name"
+    "$refine_harness" "${refine_model:-default}" "$worktree" "$repo_name"
   ! runs_alone "$task_id" || alone_started="$task_id"
   printf '%s\n' "$task_id" >>"$store/launched_ids"
   launched=$((launched + 1))

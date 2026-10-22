@@ -1142,7 +1142,15 @@ class TestRefineSelection:
 class TestRefineSession:
     """A lane is two sessions: delivery-implement, then delivery-refine on its change."""
 
-    def run(self, tmp_path: Path, *extra: str, mapping: str | None = None, **harness: object) -> tuple[Path, Path]:
+    def run(
+        self,
+        tmp_path: Path,
+        *extra: str,
+        mapping: str | None = None,
+        forced: str | None = "claude",
+        **harness: object,
+    ) -> tuple[Path, Path]:
+        """Run one lane; ``forced`` is the --harness value, and None leaves the choice to the tiers alone."""
         origin_path = make_shared_origin(tmp_path)
         dev = clone_of(tmp_path, origin_path, "devA")
         log = tmp_path / "agent.log"
@@ -1154,10 +1162,11 @@ class TestRefineSession:
             dev,
             [
                 "--claim-script", str(CLAIM), "--worktree-root", str(tmp_path / "lanes"),
-                "--log-dir", str(logs), "--harness", "claude", *extra, "a-001",
+                "--log-dir", str(logs), *(["--harness", forced] if forced else []), *extra, "a-001",
             ],
             fake_harness(tmp_path, log, **harness),
             log,
+            isolated=forced is None,
             env_extra=env,
         )  # fmt: skip
         lane_log = logs / "a-001.log"
@@ -1181,6 +1190,21 @@ class TestRefineSession:
         assert "--model opus" in prompts[1]
         assert "REFINE\tclaude\topus" in lane_log.read_text(encoding="utf-8")
         assert "PUBLISHED" in lane_log.read_text(encoding="utf-8")
+
+    def test_an_advisor_without_a_model_stays_an_advisor(self, tmp_path: Path) -> None:
+        mapping = conf(build={"harness": "claude", "model": "sonnet"}, plan={"harness": "claude", "advisor": "opus"})
+        log, _ = self.run(tmp_path, mapping=mapping, edits=True)
+        refine = self.prompts(log)[1]
+        assert "--advisor opus" in refine
+        assert "--model" not in refine
+
+    @pytest.mark.parametrize("above", ["copilot", "custom"])
+    def test_the_lane_harness_reviews_when_the_tier_above_cannot_run(self, tmp_path: Path, above: str) -> None:
+        """copilot is not installed, and custom has no DELIVERY_LANE_CMD."""
+        mapping = conf(build={"harness": "claude", "model": "sonnet"}, plan={"harness": above, "model": "opus"})
+        log, lane_log = self.run(tmp_path, mapping=mapping, forced=None, names=("claude",), edits=True)
+        assert [p.split()[1] for p in self.prompts(log)] == ["/delivery-implement", "/delivery-refine"]
+        assert "REFINE\tclaude\tdefault" in lane_log.read_text(encoding="utf-8")
 
     def test_nothing_to_refine_when_the_implementation_left_no_change(self, tmp_path: Path) -> None:
         log, lane_log = self.run(tmp_path)
