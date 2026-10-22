@@ -46,7 +46,9 @@ choice belongs to whoever launches.
 
 `sh <skill-root>/scripts/follow.sh` then keeps the set moving: it launches each
 task once its dependencies merge, skipping any that conflicts with work in
-flight, which a single launch cannot see.
+flight, which a single launch cannot see. It stops at the end of a milestone
+with a `MILESTONE` line: the next one has no tasks until its predecessor is
+reviewed and its own cut approved.
 
 Use `--dry-run` first when the task set is unfamiliar. It makes every decision
 and prints the outcome without creating a worktree or starting a session.

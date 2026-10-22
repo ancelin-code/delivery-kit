@@ -16,11 +16,13 @@ one skill to sit at a fixed offset from another.
 
 ## Projects, epics and tasks
 
-Three nested units. Every artifact the kit produces belongs to one of them.
+Three nested units, and an optional fourth between the first two. Every
+artifact the kit produces belongs to one of them.
 
 | Unit | What it is | Where it is written |
 |---|---|---|
 | Project | One team, one set of requirements, in one repository or [several](#several-repositories) | `delivery/prd.md`, with its decision records and contracts |
+| Milestone | Optional. An ordered, end-to-end slice of the project: a group of epics with an observable exit criterion | the Milestones section of `delivery/decomposition.md`, then `delivery/milestones/<slug>.md` once reviewed |
 | Epic | A coherent slice of the project, small enough for one person to hold in their head | a section of `delivery/decomposition.md` |
 | Task | One unit of work: one branch, one lane, one pull request | `delivery/tasks/<id>.md` |
 
@@ -29,6 +31,80 @@ revises that document and becomes new epics; it does not start a second one.
 
 An epic has no task count: it is as large as one person can hold in their head,
 and `delivery-decompose` cuts a bigger group into several.
+
+## Milestones
+
+A project too large or too uncertain to cut in one go is delivered in
+milestones, each a working end-to-end slice, with a stop after each to look at
+what it taught. Only decomposition and execution are incremental: the
+requirements and the design spine are written in full up front, and a
+milestone review that finds them wrong revises them through their own gates.
+
+A project without a Milestones section in `delivery/decomposition.md` has no
+milestones, and nothing in this section applies to it.
+
+- **The plan.** The Milestones section lists every milestone in delivery order,
+  each under `### <slug>` with an `**Exit:**` line, the outcome that shows the
+  slice works end to end; a `**Requirements:**` line, the
+  [requirement ids](#requirement-ids) it targets, with `(part)` after one it
+  delivers only in part; and an `**Epics:**` line, empty until it is cut.
+- **The current milestone** is the first one whose review note is not
+  approved. Only it, and the closed ones before it, have epics and task files:
+  a later milestone is cut once a person has reviewed the one before.
+- **An epic belongs to exactly one milestone**, by being listed on its
+  `**Epics:**` line. A task's milestone is its epic's.
+- **The gate.** When every task of the current milestone is merged, a person
+  checks its exit criterion against the running system and records the review
+  in `delivery/milestones/<slug>.md`: whether the exit held, the coverage, what
+  was learned, and the decision. Approving that note closes the milestone.
+  The decision is to **continue**, and the next milestone is cut, which puts
+  the decomposition back to draft for its own approval; or to **revise** the
+  requirements, a decision record or the milestone plan first, each through
+  the gate it already has.
+- **The last milestone is reviewed too**: its note is where requirements left
+  partly covered get an explicit fate before the project is complete.
+
+A milestone's state is derived, like a task's:
+
+| State | Rule |
+|---|---|
+| Closed | its review note is approved |
+| Undecomposed | it is current, and its `**Epics:**` line is empty |
+| Active | it is current, and some of its tasks are not merged |
+| Merged | it is current, every task is merged, and there is no review note |
+| Reviewing | it is current, every task is merged, and its review note is a draft |
+| Planned | it comes after the current one |
+
+## Requirement ids
+
+An outcome in `delivery/prd.md` carries a stable id, so that tasks and
+milestones can name it:
+
+```markdown
+- **A4.** Members sign in to the server to connect a host. Revoking a member's
+  access takes effect at their next request.
+```
+
+The id is the bolded token ending in a dot at the start of the bullet: letters,
+digits and hyphens, such as `A4`, `X1a` or `SEC-2`. Ids are never reused once
+approved; a dropped requirement leaves its id unused. Only lines in this form
+are requirements to the kit's scripts: invariants and exclusions are not
+tracked by id.
+
+A task names what it covers under `## Covers`, one requirement per line, and
+says what it does of a requirement it covers only in part:
+
+```markdown
+## Covers
+
+- A1
+- A4 (part): sign-in through the server; revocation is not built
+```
+
+Coverage is derived from those lines and git, with nothing stored:
+`<delivery-status>/scripts/coverage.sh` reports each requirement as covered (a
+merged task covers it in full), partly (merged tasks cover it in part only),
+planned (only unmerged tasks cover it) or not started.
 
 ## Where artifacts live
 
@@ -43,6 +119,7 @@ for: when a file is not at its path below, it does not exist yet.
 | Contracts | `delivery/contracts/<interface>.md` | `delivery-spec`, stage B |
 | Decomposition summary | `delivery/decomposition.md` | `delivery-decompose` |
 | Task files | `delivery/tasks/<id>.md` | `delivery-decompose`, or the orchestrator on the direct path |
+| Milestone reviews | `delivery/milestones/<slug>.md` | `delivery-decompose`, with the human who approves it |
 | Review lenses | `delivery/review-lenses.conf` | `install-routing.sh` seeds it; the project's maintainers edit it |
 
 An existing decision record directory is one already holding ADR files, such as
@@ -105,7 +182,8 @@ review: [security]
 | `repo` | The repository the change lands in, as the directory name of its clone, when it is not the one holding the plan. See [several repositories](#several-repositories). Optional. |
 
 The body states acceptance criteria as observable outcomes, the files in scope,
-and what is explicitly out of scope.
+and what is explicitly out of scope. When the requirements carry
+[ids](#requirement-ids), a `## Covers` section names the ones the task covers.
 
 `conflicts_with` is derived when the epic is decomposed, not discovered at run
 time.

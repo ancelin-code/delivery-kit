@@ -660,3 +660,260 @@ class TestSnapshot:
 
         assert result.returncode == CLAIM_ERROR
         assert result.stdout == ""
+
+
+PRD = """\
+# Project
+
+**Status:** approved
+
+## Outcomes
+
+- **A1.** One server serves one organisation.
+- **A4.** Members sign in; revoking access takes effect at their next request.
+- **R1.** Keyword search finds a note.
+- **X1a.** A member never reaches a store they were not granted.
+"""
+
+PLAN = """\
+# Decomposition: tiroir
+
+**Status:** approved
+
+## Milestones
+
+### skeleton
+
+**Exit:** a member finds a note they appended.
+**Requirements:** A1, A4 (part),
+  R1
+**Epics:** server
+
+### team
+
+**Exit:** two members share a store.
+**Requirements:** A4, X1a
+**Epics:**
+
+## Epics
+
+### server
+
+The server runs.
+
+- `server-001` - Do server-001
+- `server-002` - Do server-002
+"""
+
+
+def write_plan(repo: Path, *, plan: str = PLAN) -> None:
+    (repo / "delivery").mkdir(exist_ok=True)
+    (repo / "delivery" / "prd.md").write_text(PRD, encoding="utf-8")
+    (repo / "delivery" / "decomposition.md").write_text(plan, encoding="utf-8")
+
+
+def write_covering_task(repo: Path, task_id: str, covers: str, *, epic: str = "server") -> None:
+    tasks = repo / "delivery" / "tasks"
+    tasks.mkdir(parents=True, exist_ok=True)
+    (tasks / f"{task_id}.md").write_text(
+        f"---\nid: {task_id}\ntitle: Do {task_id}\nepic: {epic}\ndepends_on: []\nparallel: true\n"
+        f"conflicts_with: []\ntier: build\n---\n\n## Covers\n\n{covers}\n\n## Acceptance criteria\n- observable\n",
+        encoding="utf-8",
+    )
+
+
+def write_review(repo: Path, slug: str, status: str) -> None:
+    folder = repo / "delivery" / "milestones"
+    folder.mkdir(exist_ok=True)
+    (folder / f"{slug}.md").write_text(f"# Milestone review: {slug}\n\n**Status:** {status}\n", encoding="utf-8")
+
+
+def milestone_rows(stdout: str) -> list[list[str]]:
+    return [row[1:] for row in rows_of(stdout) if row[0] == "MILESTONE"]
+
+
+class TestMilestoneState:
+    """status.sh - a milestone's state, derived from its tasks and its review note."""
+
+    def test_a_plan_without_milestones_prints_no_milestone_row(self, tmp_path: Path, origin: Path) -> None:
+        dev = developer(tmp_path, origin, "devA")
+        write_task(dev, "ingestion-001")
+        (dev / "delivery" / "decomposition.md").write_text(DECOMPOSITION, encoding="utf-8")
+        assert milestone_rows(run_status(["--no-fetch"], cwd=dev).stdout) == []
+
+    def test_the_current_milestone_is_active_until_its_tasks_merge(self, tmp_path: Path, origin: Path) -> None:
+        dev = developer(tmp_path, origin, "devA")
+        write_plan(dev)
+        write_covering_task(dev, "server-001", "- A1")
+        write_covering_task(dev, "server-002", "- R1")
+        result = run_status(["--no-fetch"], cwd=dev, bin_dir=fake_gh(tmp_path, merged=["server-001"]))
+        assert milestone_rows(result.stdout) == [
+            ["skeleton", "active", "server", "A1 A4 R1"],
+            ["team", "planned", "-", "A4 X1a"],
+        ]
+
+    def test_merged_then_reviewing_then_closed(self, tmp_path: Path, origin: Path) -> None:
+        dev = developer(tmp_path, origin, "devA")
+        write_plan(dev)
+        write_covering_task(dev, "server-001", "- A1")
+        write_covering_task(dev, "server-002", "- R1")
+        gh = fake_gh(tmp_path, merged=["server-001", "server-002"])
+
+        def states() -> list[str]:
+            return [row[1] for row in milestone_rows(run_status(["--no-fetch"], cwd=dev, bin_dir=gh).stdout)]
+
+        assert states() == ["merged", "planned"]
+        write_review(dev, "skeleton", "draft")
+        assert states() == ["reviewing", "planned"]
+        write_review(dev, "skeleton", "approved")
+        assert states() == ["closed", "undecomposed"]
+
+    def test_a_filter_prints_task_rows_only(self, tmp_path: Path, origin: Path) -> None:
+        dev = developer(tmp_path, origin, "devA")
+        write_plan(dev)
+        write_covering_task(dev, "server-001", "- A1")
+        assert milestone_rows(run_status(["--no-fetch", "--ready"], cwd=dev).stdout) == []
+
+
+def run_coverage(args: list[str], *, cwd: Path, bin_dir: Path) -> subprocess.CompletedProcess[str]:
+    env = os.environ.copy()
+    env["PATH"] = f"{bin_dir}{os.pathsep}{env['PATH']}"
+    return subprocess.run(  # noqa: S603
+        [SH, str(SCRIPTS_DIR / "coverage.sh"), "--no-fetch", *args],
+        capture_output=True,
+        text=True,
+        cwd=cwd,
+        env=env,
+        check=False,
+    )
+
+
+class TestCoverage:
+    """coverage.sh - what merged work covers of each requirement."""
+
+    def test_reports_each_requirement_with_the_tasks_behind_it(self, tmp_path: Path, origin: Path) -> None:
+        dev = developer(tmp_path, origin, "devA")
+        write_plan(dev)
+        write_covering_task(dev, "server-001", "- A1\n- A4 (part): sign-in only;\n  revocation comes with team")
+        write_covering_task(dev, "server-002", "- R1")
+        result = run_coverage([], cwd=dev, bin_dir=fake_gh(tmp_path, merged=["server-001"]))
+        assert result.returncode == 0, result.stderr
+        assert rows_of(result.stdout) == [
+            ["REQ", "A1", "covered", "skeleton", "server-001", "-"],
+            ["REQ", "A4", "partly", "skeleton,team", "server-001", "-"],
+            ["PART", "A4", "server-001", "done", "sign-in only; revocation comes with team"],
+            ["REQ", "R1", "planned", "skeleton", "-", "server-002"],
+            ["REQ", "X1a", "not-started", "team", "-", "-"],
+            ["COVERAGE", "covered=1", "partly=1", "planned=1", "not-started=1"],
+        ]
+
+    def test_a_full_cover_merged_later_completes_a_partial_one(self, tmp_path: Path, origin: Path) -> None:
+        dev = developer(tmp_path, origin, "devA")
+        write_plan(dev)
+        write_covering_task(dev, "server-001", "- A4 (part): sign-in only")
+        write_covering_task(dev, "server-002", "- A4")
+        result = run_coverage([], cwd=dev, bin_dir=fake_gh(tmp_path, merged=["server-001", "server-002"]))
+        assert ["REQ", "A4", "covered", "skeleton,team", "server-001,server-002", "-"] in rows_of(result.stdout)
+        assert [row for row in rows_of(result.stdout) if row[0] == "PART"] == []
+
+    def test_a_milestone_narrows_the_report_to_its_targets(self, tmp_path: Path, origin: Path) -> None:
+        dev = developer(tmp_path, origin, "devA")
+        write_plan(dev)
+        write_covering_task(dev, "server-001", "- A1")
+        result = run_coverage(["--milestone", "team"], cwd=dev, bin_dir=fake_gh(tmp_path))
+        assert [row[1] for row in rows_of(result.stdout) if row[0] == "REQ"] == ["A4", "X1a"]
+
+    def test_an_unknown_milestone_is_an_error(self, tmp_path: Path, origin: Path) -> None:
+        dev = developer(tmp_path, origin, "devA")
+        write_plan(dev)
+        write_covering_task(dev, "server-001", "- A1")
+        result = run_coverage(["--milestone", "nope"], cwd=dev, bin_dir=fake_gh(tmp_path))
+        assert result.returncode == 1
+        assert "no milestone 'nope'" in result.stderr
+
+    def test_requirements_without_ids_are_an_error(self, tmp_path: Path, origin: Path) -> None:
+        dev = developer(tmp_path, origin, "devA")
+        write_task(dev, "ingestion-001")
+        (dev / "delivery" / "prd.md").write_text("# P\n\n- one server\n", encoding="utf-8")
+        result = run_coverage([], cwd=dev, bin_dir=fake_gh(tmp_path))
+        assert result.returncode == 1
+        assert "has no requirement ids" in result.stderr
+
+    def test_fails_rather_than_guess_when_merged_state_cannot_be_read(self, tmp_path: Path, origin: Path) -> None:
+        dev = developer(tmp_path, origin, "devA")
+        write_plan(dev)
+        write_covering_task(dev, "server-001", "- A1")
+        bin_dir = tmp_path / "broken"
+        bin_dir.mkdir()
+        (bin_dir / "gh").write_text("#!/bin/sh\nexit 1\n", encoding="utf-8")
+        (bin_dir / "gh").chmod(0o755)
+        result = run_coverage([], cwd=dev, bin_dir=bin_dir)
+        assert result.returncode == 1
+        assert "REQ" not in result.stdout
+
+
+class TestSnapshotMilestones:
+    """snapshot.sh - milestones and requirement coverage, for connectors."""
+
+    def test_carries_milestones_and_coverage(self, tmp_path: Path, origin: Path) -> None:
+        dev = developer(tmp_path, origin, "devA")
+        write_plan(dev)
+        write_covering_task(dev, "server-001", "- A1\n- A4 (part): sign-in only")
+        write_covering_task(dev, "server-002", "- R1")
+
+        snapshot = snapshot_of(run_snapshot(["--no-fetch"], cwd=dev, bin_dir=fake_gh(tmp_path, merged=["server-001"])))
+
+        assert snapshot["schema"] == 1
+        assert snapshot["milestones"] == [
+            {
+                "id": "skeleton",
+                "state": "active",
+                "exit": "a member finds a note they appended.",
+                "epics": ["server"],
+                "requirements": ["A1", "A4", "R1"],
+            },
+            {
+                "id": "team",
+                "state": "planned",
+                "exit": "two members share a store.",
+                "epics": [],
+                "requirements": ["A4", "X1a"],
+            },
+        ]
+        assert snapshot["requirements"] == [
+            {
+                "id": "A1",
+                "state": "covered",
+                "milestones": ["skeleton"],
+                "merged": ["server-001"],
+                "open": [],
+                "parts": [],
+            },
+            {
+                "id": "A4",
+                "state": "partly",
+                "milestones": ["skeleton", "team"],
+                "merged": ["server-001"],
+                "open": [],
+                "parts": [{"task": "server-001", "state": "done", "note": "sign-in only"}],
+            },
+            {
+                "id": "R1",
+                "state": "planned",
+                "milestones": ["skeleton"],
+                "merged": [],
+                "open": ["server-002"],
+                "parts": [],
+            },
+            {"id": "X1a", "state": "not-started", "milestones": ["team"], "merged": [], "open": [], "parts": []},
+        ]
+
+    def test_a_project_without_them_has_empty_lists(self, tmp_path: Path, origin: Path) -> None:
+        dev = developer(tmp_path, origin, "devA")
+        write_task(dev, "ingestion-001")
+        (dev / "delivery" / "prd.md").write_text("# Shop requirements\n\n- loads documents\n", encoding="utf-8")
+
+        snapshot = snapshot_of(run_snapshot(["--no-fetch"], cwd=dev))
+
+        assert snapshot["milestones"] == []
+        assert snapshot["requirements"] == []

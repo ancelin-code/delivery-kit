@@ -86,10 +86,20 @@ fresh context, so a long session never has to stay alive to carry state.
 | Decomposition | `delivery/decomposition.md`, plus `delivery/tasks/<id>.md` per task | `delivery-decompose` | **Human approves** |
 | Lanes | a draft pull request per task | `delivery-status`, then `delivery-implement` | none, runs unattended |
 | Review | findings on the pull request | the review skill each `REVIEW` row names, else the harness review | **Human approves the merge** |
+| Milestone review, when the plan has milestones | `delivery/milestones/<slug>.md` | `delivery-decompose` | **Human approves** |
 
 Approval gates sit on **artifacts**, not on steps. Once decomposition is
 approved, lanes run unattended up to a draft pull request. Pull request review is
 the final gate.
+
+A plan cut in milestones goes round the last three phases once per milestone,
+as the [delivery conventions](references/conventions.md#milestones) define.
+`where.sh` prints a `MILESTONE` row for each, and `NEXT review-milestone`,
+`approve-milestone-review` or `decompose-milestone` at the boundary. Never cut
+or start the next milestone before its predecessor's review note is approved:
+that stop is the point of having milestones. When the review decides to
+revise, route the revision to `delivery-spec`; the gates it reopens hold the
+next cut back by themselves.
 
 ## Choosing the ceremony
 
@@ -168,7 +178,8 @@ sh <skill-root>/scripts/follow.sh -- <the launcher options you used>
 
 It launches each task as the merges it depends on land, within the same limits,
 and prints one line per event: `PUBLISHED`, `MERGED`, `LAUNCHED`, `LANE-FAILED`,
-and `COMPLETE` or `STUCK` when it exits. Run it in the background where the
+and `COMPLETE`, `MILESTONE` or `STUCK` when it exits. `MILESTONE` means the
+current milestone needs a person: tell the user, and take up its review. Run it in the background where the
 harness reports a background command's output as it arrives, and tell the user
 about the lines that need them: a pull request to review, a failed lane, a stuck
 set. Merging stays with the user; the loop never merges.
@@ -214,6 +225,6 @@ request commands the harness already performs well.
 ## Acceptance Criteria
 
 - every phase transition happened through a file, not a live session
-- each of the three artifact gates was approved by a human before the next phase
+- each artifact gate, including a milestone's review note, was approved by a human before the next phase
 - no lane ran on a task claimed by somebody else, and no two conflicting tasks ran together
 - a missing delegate skill was reported by name instead of being improvised

@@ -9,7 +9,7 @@ import pytest
 
 from tests.conftest import PROJECT_DIR
 
-EXPECTED_HELPERS = 13
+EXPECTED_HELPERS = 14
 SCRIPTS = sorted(PROJECT_DIR.glob(".agents/skills/*/scripts/*.sh"))
 EXECUTABLES = [path for path in SCRIPTS if path.name != "harness.sh"]
 

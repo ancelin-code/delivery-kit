@@ -90,6 +90,10 @@ starting another. Three things carry the weight:
 Write for somebody who was not in the conversation. Every requirement should be
 checkable: a reader must be able to say whether it holds, without asking you.
 
+Give every outcome a stable id, `- **<id>.** <outcome>`, as the template shows.
+Tasks and milestones cite those ids, and coverage is derived from them, so a
+revision keeps the ids that survive and never reuses a dropped one.
+
 ### A4. Test it before handing it over
 
 The document is finished when somebody else could build from it without

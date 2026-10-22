@@ -28,12 +28,13 @@ def repo_with(tmp_path: Path, tasks: dict[str, str]) -> Path:
     return repo
 
 
-def scripted_status(tmp_path: Path, polls: list[dict[str, str]]) -> Path:
-    """A status.sh that prints the next poll's states each time it runs."""
+def scripted_status(tmp_path: Path, polls: list[dict[str, str]], milestones: str = "") -> Path:
+    """A status.sh that prints the next poll's states each time it runs, then any MILESTONE rows."""
     folder = tmp_path / "polls"
     folder.mkdir()
     for n, states in enumerate(polls, start=1):
         rows = "".join(f"TASK\t{task_id}\t{state}\t-\tDo {task_id}\n" for task_id, state in states.items())
+        rows += milestones
         (folder / f"{n}.tsv").write_text(rows, encoding="utf-8")
     script = tmp_path / "status.sh"
     script.write_text(
@@ -135,6 +136,39 @@ class TestAdvancing:
         args = (tmp_path / "launches.log").read_text()
         assert "--no-web" in args
         assert "--max-lanes 3" in args
+
+
+class TestMilestoneBoundary:
+    """The loop never crosses into the next milestone; it says a person is needed."""
+
+    def test_a_merged_milestone_stops_the_loop_for_its_review(self, tmp_path: Path) -> None:
+        repo = repo_with(tmp_path, {"a-001": ""})
+        status = scripted_status(
+            tmp_path,
+            [{"a-001": "in-progress"}, {"a-001": "done"}],
+            milestones="MILESTONE\tskeleton\tmerged\ta\t-\nMILESTONE\tteam\tplanned\t-\t-\n",
+        )
+        result = follow(repo, status, recording_launcher(tmp_path))
+        assert result.returncode == COMPLETE
+        assert events(result.stdout)[-1] == ["MILESTONE", "skeleton", "merged"]
+        assert ["COMPLETE"] not in events(result.stdout)
+
+    def test_an_uncut_milestone_is_reported_rather_than_started(self, tmp_path: Path) -> None:
+        repo = repo_with(tmp_path, {"a-001": ""})
+        status = scripted_status(
+            tmp_path,
+            [{"a-001": "done"}],
+            milestones="MILESTONE\tskeleton\tclosed\ta\t-\nMILESTONE\tteam\tundecomposed\t-\t-\n",
+        )
+        result = follow(repo, status, recording_launcher(tmp_path))
+        assert events(result.stdout) == [["MILESTONE", "team", "undecomposed"]]
+        assert launched(tmp_path) == []
+
+    def test_every_milestone_closed_is_complete(self, tmp_path: Path) -> None:
+        repo = repo_with(tmp_path, {"a-001": ""})
+        status = scripted_status(tmp_path, [{"a-001": "done"}], milestones="MILESTONE\tskeleton\tclosed\ta\t-\n")
+        result = follow(repo, status, recording_launcher(tmp_path))
+        assert events(result.stdout) == [["COMPLETE"]]
 
 
 class TestLimits:

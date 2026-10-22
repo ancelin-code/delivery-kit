@@ -10,10 +10,11 @@ solution here.>
 
 ## Outcomes
 
-What must be true when this is done. Each one observable.
+What must be true when this is done. Each one observable, with a stable id
+that tasks and milestones refer to. An id is never reused.
 
-- <outcome, phrased so a reader can check whether it holds>
-- <outcome>
+- **<id>.** <outcome, phrased so a reader can check whether it holds>
+- **<id>.** <outcome>
 
 ## Invariants
 

@@ -24,11 +24,23 @@ and one pull request.
 | Unit | Written as |
 |---|---|
 | Project | `delivery/prd.md`, with its decision records and `delivery/contracts/` |
+| Milestone, optional | the Milestones section of `delivery/decomposition.md`, and a review note `delivery/milestones/<slug>.md` |
 | Epic | a section of `delivery/decomposition.md` |
 | Task | `delivery/tasks/<id>.md` |
 
 Every artifact lives under `delivery/` at the repository root, so no agent has
 to search for one.
+
+A project too large or too uncertain to cut at once is delivered in
+**milestones**: ordered end-to-end slices, each with an exit criterion. The
+requirements and the design stay whole. Only the current milestone is cut into
+tasks, and once its tasks are merged a person reviews it in a short note:
+whether the exit held, what was learned, and whether to continue or to revise
+the requirements or a decision first. Approving the note lets the next
+milestone be cut. Tasks name the requirement ids they cover, in full or in
+part, so `delivery-status/scripts/coverage.sh` can say what is left of each
+requirement. A project without milestones runs as one flat set, exactly as
+before.
 
 The definitions the agents apply are in
 [delivery conventions](.agents/skills/delivery-orchestrator/references/conventions.md#projects-epics-and-tasks).
@@ -523,7 +535,9 @@ sh .agents/skills/delivery-orchestrator/scripts/follow.sh -- --no-web
 
 Options after `--` go to the launcher. Your part is reviewing and merging the
 pull requests it reports; it never merges, and it exits once every task is
-merged, or when the remaining tasks can never become ready. The orchestrator
+merged, or when the remaining tasks can never become ready. With milestones, it
+stops at the end of each one with a `MILESTONE` line, and never starts the
+next. The orchestrator
 starts it for you after the first launch.
 
 ### 4. Watch a running lane
@@ -618,9 +632,9 @@ match it. Connectors live in their own repositories, with their own credentials
 and configuration, so the kit holds nothing tool-specific.
 
 The kit's side is one command. From the planning repository, it prints the
-whole project as JSON: epics and what each delivers, tasks with the state
-`status.sh` gives them, their repository and pull request, and the planning
-documents.
+whole project as JSON: milestones, epics and what each delivers, tasks with
+the state `status.sh` gives them, their repository and pull request, the
+coverage of each requirement, and the planning documents.
 
 ```sh
 sh .agents/skills/delivery-status/scripts/snapshot.sh

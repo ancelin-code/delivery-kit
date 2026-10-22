@@ -15,6 +15,14 @@ review: []
 <Two or three sentences: what exists now, and why this change is needed. Link
 the requirements document, `../prd.md`, rather than restating it.>
 
+## Covers
+
+<The requirement ids this task delivers, one per line, when the requirements
+carry ids. Delete the section otherwise.>
+
+- <id>
+- <id> (part): <what this task does of it, and what it leaves>
+
 ## Scope
 
 Files this task is expected to touch:

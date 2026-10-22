@@ -22,7 +22,10 @@ usage() {
 usage: sh validate-tasks.sh [--tasks-dir <dir>] [--decomposition <path>]
 
 Validates every task file in <dir> (default: delivery/tasks), and the
-decomposition summary that has to agree with it.
+decomposition summary that has to agree with it. When tasks name the
+requirements they cover, or the summary has a Milestones section, also checks
+them against the requirements beside it (delivery/prd.md) and the milestone
+review notes (delivery/milestones/<slug>.md).
 
 Options:
   --tasks-dir <dir>     Directory holding <id>.md task files (default: delivery/tasks).
@@ -116,10 +119,35 @@ field() {
   ' "$1"
 }
 
+# The Covers section of a task: one line per requirement, "full<TAB><id>" for
+# "- <id>", "part<TAB><id><TAB><note>" for "- <id> (part): <note>", whose note
+# may wrap onto indented lines, and "bad<TAB><line>" for anything else.
+covers_of() {
+  awk '
+    function flush() { if (how != "") printf "%s\t%s\t%s\n", how, req, note; how = "" }
+    /^##[[:space:]]/ { flush(); in_covers = ($0 ~ /^##[[:space:]]+Covers[[:space:]]*$/); next }
+    !in_covers { next }
+    /^[-*][ \t]+/ {
+      flush()
+      line = $0; sub(/^[-*][ \t]+/, "", line); sub(/[ \t]+$/, "", line)
+      req = line; sub(/[ \t].*/, "", req); note = ""
+      if (req !~ /^[A-Za-z0-9][A-Za-z0-9-]*$/) { how = "bad"; req = line }
+      else if (line == req) how = "full"
+      else if (line ~ /^[^ \t]+[ \t]+\(part\):/) { how = "part"; note = line; sub(/^[^:]*:[ \t]*/, "", note) }
+      else { how = "bad"; req = line }
+      next
+    }
+    /^[ \t]+[^ \t]/ && how == "part" { l = $0; gsub(/^[ \t]+|[ \t]+$/, "", l); note = note (note == "" ? "" : " ") l; next }
+    { flush() }
+    END { flush() }
+  ' "$1"
+}
+
 # The facts pass 1 collects, one task per line, for the cross-checks in pass 2:
-# "<id><TAB><epic><TAB><parallel><TAB><depends_on><TAB><conflicts_with>".
+# "<id><TAB><epic><TAB><parallel><TAB><depends_on><TAB><conflicts_with><TAB><covers>".
 store="$(mktemp -d)"
 trap 'rm -rf "$store"' EXIT
+tab="$(printf '\t')"
 : >"$store/facts"
 : >"$store/ids"
 
@@ -205,12 +233,28 @@ for file in "$tasks_dir"/*.md; do
     *) fail "$base" "parallel must be true or false, got '$parallel'" ;;
   esac
 
+  # What the task covers of the requirements. A partial cover says what it
+  # does, or nobody can tell what is left of the requirement.
+  covers=""
+  while IFS="$tab" read -r how req note; do
+    case "$how" in
+      full) covers="$covers${covers:+ }$req" ;;
+      part)
+        covers="$covers${covers:+ }$req"
+        [ -n "$note" ] || fail "$base" "covers $req in part with no note: write '- $req (part): <what this task does of it>'"
+        ;;
+      bad) fail "$base" "unreadable Covers line '$req': write '- <id>' or '- <id> (part): <note>'" ;;
+    esac
+  done <<EOF_COVERS
+$(covers_of "$file")
+EOF_COVERS
+
   # A task without observable acceptance criteria cannot be verified as done.
   if ! grep -qiE '^#+[[:space:]]*acceptance criteria' "$file"; then
     fail "$base" "no 'Acceptance criteria' heading in the body"
   fi
 
-  printf '%s\t%s\t%s\t%s\t%s\n' "$id" "$epic" "$parallel" "$depends" "$conflicts" >>"$store/facts"
+  printf '%s\t%s\t%s\t%s\t%s\t%s\n' "$id" "$epic" "$parallel" "$depends" "$conflicts" "$covers" >>"$store/facts"
 done
 
 [ "$found" -eq 1 ] || die "no task files found in $tasks_dir"
@@ -226,6 +270,61 @@ if [ -f "$decomposition" ]; then
   run_as="$(grep -m1 '^\*\*Run as:\*\*' "$decomposition" || true)"
 fi
 
+# The milestone plan, one line per milestone in plan order:
+# "<slug><TAB><has exit><TAB><epics><TAB><targets><TAB><review status>".
+# A target's "(part)" is dropped: which part is the tasks' to say.
+: >"$store/milestones"
+has_milestones=0
+if [ -f "$decomposition" ] && grep -Eq '^##[[:space:]]+Milestones[[:space:]]*$' "$decomposition"; then
+  has_milestones=1
+  awk '
+    # An empty list is written "-": read splits on tabs as whitespace, and would
+    # otherwise shift the fields after it.
+    function flush() { if (slug != "") printf "%s\t%s\t%s\t%s\n", slug, has_exit, (epics == "" ? "-" : epics), (targets == "" ? "-" : targets) }
+    function ids(s) {
+      sub(/^\*\*[A-Za-z]+:\*\*/, "", s); gsub(/\([^)]*\)/, " ", s); gsub(/,/, " ", s)
+      gsub(/[ \t]+/, " ", s); sub(/^ /, "", s); sub(/ $/, "", s); return s
+    }
+    /^##[[:space:]]/ { flush(); slug = ""; in_plan = ($0 ~ /^##[[:space:]]+Milestones[[:space:]]*$/); next }
+    !in_plan { next }
+    /^###[[:space:]]/ {
+      flush(); slug = $0; sub(/^###[[:space:]]+/, "", slug); sub(/[[:space:]]+$/, "", slug)
+      has_exit = 0; epics = ""; targets = ""; open = ""; next
+    }
+    slug == "" { next }
+    /^\*\*Exit:\*\*[ \t]*[^ \t]/ { has_exit = 1; open = ""; next }
+    /^\*\*Epics:\*\*/ { epics = ids($0); open = "epics"; next }
+    /^\*\*Requirements:\*\*/ { targets = ids($0); open = "targets"; next }
+    /^[ \t]*$/ || /^\*\*/ { open = ""; next }
+    open == "epics" { epics = ids(epics " " $0) }
+    open == "targets" { targets = ids(targets " " $0) }
+    END { flush() }
+  ' "$decomposition" | while IFS="$tab" read -r slug has_exit epics targets; do
+    [ "$epics" != - ] || epics=""
+    [ "$targets" != - ] || targets=""
+    review=""
+    note="$(dirname "$decomposition")/milestones/$slug.md"
+    if [ -f "$note" ]; then
+      review="$(awk '/^\*\*Status:\*\*/ { sub(/^\*\*Status:\*\*[ \t]*/, ""); sub(/[ \t]+$/, ""); print tolower($0); exit }' "$note")"
+    fi
+    printf '%s\t%s\t%s\t%s\t%s\n' "$slug" "$has_exit" "$epics" "$targets" "$review"
+  done >"$store/milestones"
+fi
+
+# Requirement ids, from the outcomes of the requirements beside the summary:
+# lines reading "- **<id>.** ...". Only read when something refers to them.
+prd="$(dirname "$decomposition")/prd.md"
+: >"$store/requirements"
+has_prd=0
+if [ -f "$prd" ]; then
+  has_prd=1
+  awk '
+    /^[-*][ \t]+\*\*[A-Za-z0-9][A-Za-z0-9-]*\.\*\*/ {
+      id = $0; sub(/^[-*][ \t]+\*\*/, "", id); sub(/\.\*\*.*/, "", id); print id
+    }
+  ' "$prd" >"$store/requirements"
+fi
+
 # Passes 2 to 4 compare tasks with each other, which is what awk is for.
 #
 # Pass 2: cross-references.
@@ -237,19 +336,26 @@ fi
 #         file they die with the session that produced them and the approval
 #         gate has nothing to read.
 checks="$(RUN_AS="$run_as" SUMMARY="$summary_name" SUMMARY_PATH="$decomposition" HAS_SUMMARY="$has_summary" \
-  awk -F'\t' -v facts="$store/facts" '
+  HAS_MILESTONES="$has_milestones" HAS_PRD="$has_prd" PRD="$prd" \
+  awk -F'\t' -v facts="$store/facts" -v plan="$store/milestones" -v reqs="$store/requirements" '
   function fail(who, why) { printf "FAIL\t%s\t%s\n", who, why }
   FILENAME == facts {
     # one line per task file
     if (!($1 in seen)) { ids[++n] = $1; seen[$1] = 1 }
-    epic_of[$1] = $2; parallel_of[$1] = $3; depends_of[$1] = $4; conflicts_of[$1] = $5
+    epic_of[$1] = $2; parallel_of[$1] = $3; depends_of[$1] = $4; conflicts_of[$1] = $5; covers_of[$1] = $6
     if ($2 != "") {
       if (!($2 in epic_count)) { epics[++e] = $2 }
       epic_count[$2]++
     }
     next
   }
-  { declared_ids[++d] = $2; declared_epic[$2] = $1 }
+  FILENAME == plan {
+    # one line per milestone, in plan order
+    m++; slug_at[m] = $1; exit_at[m] = $2; epics_at[m] = $3; targets_at[m] = $4; review_at[m] = $5
+    next
+  }
+  FILENAME == reqs { requirement[$1] = 1; requirements++; next }
+  { declared_ids[++d] = $2; declared_epic[$2] = $1; declared_epics[$1] = 1 }
   END {
     for (i = 1; i <= n; i++) {
       id = ids[i]
@@ -282,6 +388,68 @@ checks="$(RUN_AS="$run_as" SUMMARY="$summary_name" SUMMARY_PATH="$decomposition"
     for (i = 1; i <= n; i++) if (!(ids[i] in resolved)) cycle = cycle (cycle == "" ? "" : " ") ids[i]
     if (cycle != "") fail(cycle, "dependency cycle: these tasks can never become ready")
 
+    # Covers name requirement ids that the requirements document defines.
+    prd = ENVIRON["PRD"]
+    for (i = 1; i <= n; i++) {
+      id = ids[i]
+      k = split(covers_of[id], cov, " ")
+      for (j = 1; j <= k; j++) {
+        if (ENVIRON["HAS_PRD"] != 1) fail(id, "covers \047" cov[j] "\047, but there is no " prd)
+        else if (!requirements) fail(id, "covers \047" cov[j] "\047, but " prd " has no ids: an outcome reads \047- **<id>.** ...\047")
+        else if (!(cov[j] in requirement)) fail(id, "covers \047" cov[j] "\047, which is no requirement id in " prd)
+      }
+    }
+
+    # Milestones. The current one is the first whose review note is not
+    # approved: only it and the closed ones before it may have tasks, so the
+    # next is cut after a person has looked at what this one taught.
+    current = 0; scope = 0
+    if (ENVIRON["HAS_MILESTONES"] == 1) {
+      if (m == 0) fail(ENVIRON["SUMMARY"], "has a Milestones section with no \047### <slug>\047 milestone in it")
+      for (i = 1; i <= m; i++) {
+        s = slug_at[i]
+        if (s !~ /^[a-z0-9]([a-z0-9-]*[a-z0-9])?$/) fail(s, "milestone is not a lowercase slug")
+        if (s in milestone_index) fail(s, "milestone is listed twice")
+        milestone_index[s] = i
+        if (exit_at[i] != 1) fail(s, "milestone has no \047**Exit:**\047 line stating its observable outcome")
+        k = split(epics_at[i], es, " ")
+        for (j = 1; j <= k; j++) {
+          if (es[j] in milestone_of_epic) fail(es[j], "epic is in two milestones: " milestone_of_epic[es[j]] " and " s)
+          else milestone_of_epic[es[j]] = s
+          if (!(es[j] in declared_epics) && !(es[j] in epic_count)) fail(s, "lists epic \047" es[j] "\047, which has no section under Epics and no task")
+        }
+        k = split(targets_at[i], ts, " ")
+        for (j = 1; j <= k; j++) {
+          if (ENVIRON["HAS_PRD"] != 1) fail(s, "targets \047" ts[j] "\047, but there is no " prd)
+          else if (!(ts[j] in requirement)) fail(s, "targets \047" ts[j] "\047, which is no requirement id in " prd)
+        }
+        if (!current && review_at[i] != "approved") current = i
+        if (epics_at[i] != "" && (!current || current == i)) scope = i
+      }
+      for (ep in declared_epics) if (!(ep in milestone_of_epic)) fail(ep, "epic belongs to no milestone: list it on a milestone\047s **Epics:** line")
+      for (i = 1; i <= n; i++) {
+        id = ids[i]; ep = epic_of[id]
+        if (!(ep in milestone_of_epic)) {
+          if (!(ep in declared_epics)) fail(id, "epic \047" ep "\047 belongs to no milestone")
+          continue
+        }
+        mi = milestone_index[milestone_of_epic[ep]]
+        if (current && mi > current)
+          fail(id, "belongs to milestone " slug_at[mi] ", after the current one, " slug_at[current] ": cut it once " slug_at[current] "\047s review note is approved")
+        if (mi == scope) in_scope[id] = 1
+        k = split(covers_of[id], cov, " ")
+        for (j = 1; j <= k; j++) covered_in[mi, cov[j]] = 1
+      }
+      if (current && epics_at[current] != "") {
+        k = split(targets_at[current], ts, " ")
+        for (j = 1; j <= k; j++)
+          if (!((current, ts[j]) in covered_in))
+            fail(slug_at[current], "targets " ts[j] ", but no task of the milestone covers it")
+      }
+    } else {
+      for (i = 1; i <= n; i++) in_scope[ids[i]] = 1
+    }
+
     summary = ENVIRON["SUMMARY"]
     if (ENVIRON["HAS_SUMMARY"] != 1) {
       fail(summary, "no decomposition summary at " ENVIRON["SUMMARY_PATH"])
@@ -301,22 +469,25 @@ checks="$(RUN_AS="$run_as" SUMMARY="$summary_name" SUMMARY_PATH="$decomposition"
       # The launcher reads the fields, not the summary, so the two must agree: a
       # set the summary calls serial runs one lane at a time only if every task
       # says so.
-      alone = 0
-      for (i = 1; i <= n; i++) if (parallel_of[ids[i]] == "false") alone++
+      # With milestones, Run as describes the cut being run: the current
+      # milestone tasks, or those of the last one cut once every milestone is closed.
+      alone = 0; scoped = 0
+      for (i = 1; i <= n; i++) if (ids[i] in in_scope) { scoped++; if (parallel_of[ids[i]] == "false") alone++ }
       run_as = ENVIRON["RUN_AS"]
       if (run_as ~ /\|/) fail(summary, "Run as still reads \047lanes | serially\047: pick one")
       else if (run_as ~ /serial/) {
         for (i = 1; i <= n; i++)
-          if (parallel_of[ids[i]] != "false")
+          if ((ids[i] in in_scope) && parallel_of[ids[i]] != "false")
             fail(ids[i], summary " runs the set serially, so parallel must be false")
       } else if (run_as ~ /lanes/) {
-        if (n > 1 && alone == n) fail(summary, "every task runs alone, so Run as should say serially")
+        if (scoped > 1 && alone == scoped) fail(summary, "every task runs alone, so Run as should say serially")
       } else fail(summary, "no \047Run as:\047 line saying lanes or serially")
     }
     printf "TASKS\t%s\n", n
     printf "EPICS\t%s\n", e
+    if (ENVIRON["HAS_MILESTONES"] == 1) printf "MILESTONES\t%s\tcurrent=%s\n", m, (current ? slug_at[current] : "-")
   }
-' "$store/facts" "$store/declared")"
+' "$store/facts" "$store/milestones" "$store/requirements" "$store/declared")"
 
 printf '%s\n' "$checks"
 failures=$((failures + $(printf '%s\n' "$checks" | grep -c '^FAIL' || true)))
