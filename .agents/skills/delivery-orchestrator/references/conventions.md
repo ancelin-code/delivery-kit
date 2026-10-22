@@ -236,6 +236,11 @@ push of the current commit is **not** a claim: when the branch already points at
 that commit, git resolves the push as a no-op and exits 0, and the second
 developer reads success on a task somebody else holds.
 
+Run from the branch `task/<id>`, a won claim also makes `<remote>/task/<id>`
+that branch's upstream. A branch started from the remote's default branch
+tracks it otherwise, and a plain `git push` is refused, or, with
+`push.default=upstream`, lands on the default branch.
+
 Exit codes: `0` claim won, `2` already held, `1` usage or environment error.
 
 ## Derived status
