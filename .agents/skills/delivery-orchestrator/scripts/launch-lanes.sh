@@ -418,7 +418,9 @@ while IFS= read -r task_id <&3; do
   base="$(base_for "$repo_dir")" ||
     { printf 'SKIP\t%s\tcannot fetch the default branch of %s; a lane must not start from a stale base\n' "$task_id" "$repo_name"; continue; }
   worktree_abs="$(absolute "$worktree")"
-  git -C "$repo_dir" worktree add --quiet -b "$branch" "$worktree_abs" "$base" 2>/dev/null ||
+  # --no-track: the base is the remote's default branch, and a task branch that
+  # tracked it would push there. The claim sets its own branch as upstream.
+  git -C "$repo_dir" worktree add --quiet --no-track -b "$branch" "$worktree_abs" "$base" 2>/dev/null ||
     { printf 'SKIP\t%s\tcould not create worktree on %s\n' "$task_id" "$branch"; continue; }
 
   # Claim from inside the worktree. Losing the claim is normal, not an error:

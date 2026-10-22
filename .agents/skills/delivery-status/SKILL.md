@@ -70,7 +70,8 @@ developer can ask rather than duplicate the work.
 
 Run the claim from the lane's worktree, on the branch `task/<id>`. On success
 the local branch is advanced to the claim commit so the lane builds on top of
-it. A worktree with uncommitted changes is never reset; the script reports that
+it, and its upstream is set to the claimed branch, so a plain `git push` goes
+there rather than to the branch it was started from. A worktree with uncommitted changes is never reset; the script reports that
 it left the branch alone.
 
 Pass `--remote <name>` when the shared remote is not `origin`, and

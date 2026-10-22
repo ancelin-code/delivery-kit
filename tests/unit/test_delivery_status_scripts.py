@@ -245,6 +245,27 @@ class TestClaimBranchAdvance:
         assert first(rows, "ADVANCED") == "task/ingestion-003"
         assert git(dev, "rev-parse", "HEAD").stdout.strip() == first(rows, "COMMIT")
 
+    def test_a_plain_push_goes_to_the_claimed_branch(self, tmp_path: Path, origin: Path) -> None:
+        """A branch started from the remote default branch tracks it until the claim says otherwise."""
+        dev = developer(tmp_path, origin, "devA")
+        git(dev, "checkout", "-q", "-b", "task/ingestion-003", "--track", "origin/main")
+
+        result = run_claim(["ingestion-003"], cwd=dev)
+
+        assert first(rows_of(result.stdout), "UPSTREAM") == "origin/task/ingestion-003"
+        (dev / "work.txt").write_text("done\n", encoding="utf-8")
+        git(dev, "add", "work.txt")
+        git(dev, "commit", "-q", "-m", "feat: work")
+        git(dev, "push", "-q")
+        assert (
+            git(dev, "ls-remote", "origin", "refs/heads/task/ingestion-003").stdout.split()[0]
+            == git(dev, "rev-parse", "HEAD").stdout.strip()
+        )
+        assert (
+            git(dev, "ls-remote", "origin", "refs/heads/main").stdout.split()[0]
+            != git(dev, "rev-parse", "HEAD").stdout.strip()
+        )
+
     def test_no_advance_leaves_the_local_branch_alone(self, tmp_path: Path, origin: Path) -> None:
         dev = self._on_task_branch(tmp_path, origin, "ingestion-003")
         before = git(dev, "rev-parse", "HEAD").stdout

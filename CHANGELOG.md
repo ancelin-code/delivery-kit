@@ -6,6 +6,10 @@ tagging it.
 
 ## [Unreleased]
 
+- A lane's branch pushes to itself. The launcher no longer lets `task/<id>`
+  track the default branch it starts from, and a won claim sets
+  `<remote>/task/<id>` as the branch's upstream, so a plain `git push` from a
+  lane worktree is no longer refused or sent to the default branch.
 - An install whose skills are split between `.claude/skills/` and
   `.agents/skills/`, as `npx skills update` leaves after an install naming
   only `claude-code`, is reported by `where.sh` as `NEXT repair-install`, and

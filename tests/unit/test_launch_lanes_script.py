@@ -574,6 +574,23 @@ class TestLaneStartup:
         assert recorded.strip(), "the harness was never invoked"
         assert str(tmp_path / "lanes" / "a-001") in recorded
 
+    def test_the_lane_branch_pushes_to_itself(self, tmp_path: Path) -> None:
+        """A lane started from the default branch must not track it, or a plain push goes astray."""
+        origin_path = make_shared_origin(tmp_path)
+        dev = clone_of(tmp_path, origin_path, "devA")
+        log = tmp_path / "agent.log"
+
+        result = launch_live(
+            dev,
+            ["--claim-script", str(CLAIM), "--worktree-root", str(tmp_path / "lanes"), "a-001"],
+            fake_harness(tmp_path, log),
+            log,
+        )
+
+        assert result.returncode == OK
+        upstream = git(tmp_path / "lanes" / "a-001", "rev-parse", "--abbrev-ref", "task/a-001@{upstream}")
+        assert upstream.stdout.strip() == "origin/task/a-001"
+
     @staticmethod
     def one_task_remote(tmp_path: Path, tier: str = "build") -> Path:
         origin_path = make_shared_origin(tmp_path)
