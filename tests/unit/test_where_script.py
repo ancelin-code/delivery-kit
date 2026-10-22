@@ -280,6 +280,85 @@ class TestLanes:
         assert "NEXT\tstart" not in result.stdout
 
 
+def milestone_plan(repo: Path, second_epics: str = "") -> None:
+    """Two milestones; the first holds epic a, the one task() writes into."""
+    artifact(repo, "delivery/prd.md", "approved")
+    artifact(
+        repo,
+        "delivery/decomposition.md",
+        "approved",
+        "\n## Milestones\n\n### skeleton\n\n**Exit:** it works.\n**Requirements:**\n**Epics:** a\n\n"
+        f"### team\n\n**Exit:** it is shared.\n**Requirements:**\n**Epics:** {second_epics}\n\n"
+        "## Parallelism\n\n**Run as:** lanes\n",
+    )
+
+
+class TestMilestones:
+    """With milestones, merged work stops at a review instead of reading as complete."""
+
+    def test_the_current_milestone_runs_lanes_as_usual(self, tmp_path: Path) -> None:
+        repo = make_repo(tmp_path)
+        milestone_plan(repo)
+        task(repo, "a-001")
+        result = where(repo, fake_gh(tmp_path))
+        assert rows(result.stdout, "MILESTONE") == [["skeleton", "active", "a", "-"], ["team", "planned", "-", "-"]]
+        assert actions(result.stdout)[-1] == "start"
+
+    def test_a_merged_milestone_asks_for_its_review(self, tmp_path: Path) -> None:
+        repo = make_repo(tmp_path)
+        milestone_plan(repo)
+        task(repo, "a-001")
+        result = where(repo, fake_gh(tmp_path, merged=["a-001"]))
+        action, detail = rows(result.stdout, "NEXT")[-1]
+        assert action == "review-milestone"
+        assert "write delivery/milestones/skeleton.md with delivery-decompose" in detail
+        assert detail.endswith("delivery-status/scripts/coverage.sh --milestone skeleton)")
+
+    def test_a_draft_review_awaits_approval(self, tmp_path: Path) -> None:
+        repo = make_repo(tmp_path)
+        milestone_plan(repo)
+        task(repo, "a-001")
+        artifact(repo, "delivery/milestones/skeleton.md", "draft")
+        result = where(repo, fake_gh(tmp_path, merged=["a-001"]))
+        assert rows(result.stdout, "NEXT")[-1] == [
+            "approve-milestone-review",
+            "delivery/milestones/skeleton.md awaits human approval",
+        ]
+
+    def test_an_approved_review_asks_for_the_next_cut(self, tmp_path: Path) -> None:
+        repo = make_repo(tmp_path)
+        milestone_plan(repo)
+        task(repo, "a-001")
+        artifact(repo, "delivery/milestones/skeleton.md", "approved")
+        result = where(repo, fake_gh(tmp_path, merged=["a-001"]))
+        assert actions(result.stdout)[-1] == "decompose-milestone"
+        assert rows(result.stdout, "NEXT")[-1][1].startswith("team: ")
+
+    def test_complete_once_the_last_review_is_approved(self, tmp_path: Path) -> None:
+        repo = make_repo(tmp_path)
+        milestone_plan(repo, second_epics="b")
+        task(repo, "a-001")
+        write(
+            repo,
+            "delivery/tasks/b-001.md",
+            "---\nid: b-001\ntitle: Do b-001\nepic: b\ndepends_on: []\nparallel: true\n"
+            "conflicts_with: []\ntier: build\n---\n\n## Acceptance criteria\n- observable\n",
+        )
+        artifact(repo, "delivery/milestones/skeleton.md", "approved")
+        merged = fake_gh(tmp_path, merged=["a-001", "b-001"])
+        assert actions(where(repo, merged).stdout)[-1] == "review-milestone"
+        artifact(repo, "delivery/milestones/team.md", "approved")
+        assert actions(where(repo, merged).stdout)[-1] == "complete"
+
+    def test_a_plan_without_milestones_still_completes(self, tmp_path: Path) -> None:
+        repo = make_repo(tmp_path)
+        approved_plan(repo)
+        task(repo, "a-001")
+        result = where(repo, fake_gh(tmp_path, merged=["a-001"]))
+        assert rows(result.stdout, "MILESTONE") == []
+        assert actions(result.stdout)[-1] == "complete"
+
+
 LENSES = """\
 # lens     skill             paths that bring the lens in
 general    code-review

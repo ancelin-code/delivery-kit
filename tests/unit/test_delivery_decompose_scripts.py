@@ -34,9 +34,12 @@ def write_task(
     parallel: str = "true",
     criteria: bool = True,
     file_name: str | None = None,
+    covers: str | None = None,
 ) -> None:
     tasks_dir.mkdir(parents=True, exist_ok=True)
     body = "## Acceptance criteria\n- the thing is observably true\n" if criteria else "## Notes\n- none\n"
+    if covers is not None:
+        body = f"## Covers\n\n{covers}\n" + body
     (tasks_dir / f"{file_name or task_id}.md").write_text(
         "---\n"
         f"id: {task_id}\n"
@@ -52,7 +55,9 @@ def write_task(
     )
 
 
-def write_summary(tasks_dir: Path, groups: dict[str, list[str]] | None = None, run_as: str = "lanes") -> Path:
+def write_summary(
+    tasks_dir: Path, groups: dict[str, list[str]] | None = None, run_as: str = "lanes", milestones: str = ""
+) -> Path:
     """Write the decomposition summary the validator cross-checks.
 
     With no ``groups`` it mirrors whatever the task files say, which is what
@@ -75,7 +80,7 @@ def write_summary(tasks_dir: Path, groups: dict[str, list[str]] | None = None, r
 
     path = tasks_dir.parent / "decomposition.md"
     path.write_text(
-        f"# Decomposition: test\n\n## Epics\n\n{sections}## Parallelism\n\n**Run as:** {run_as}\n",
+        f"# Decomposition: test\n\n{milestones}## Epics\n\n{sections}## Parallelism\n\n**Run as:** {run_as}\n",
         encoding="utf-8",
     )
     return path
@@ -346,3 +351,258 @@ class TestDecompositionSummary:
         write_summary(tasks)
         result = validate(tasks)
         assert result.returncode == VALID, result.stdout
+
+
+PRD = """\
+# Project
+
+**Status:** approved
+
+## Outcomes
+
+- **A1.** One server serves one organisation.
+- **A4.** Members sign in; revoking access takes effect at their next
+  request.
+- **X1a.** A member never reaches a store they were not granted.
+
+## Invariants
+
+- Plain files are the source of truth.
+"""
+
+
+def write_prd(tasks_dir: Path) -> None:
+    (tasks_dir.parent / "prd.md").write_text(PRD, encoding="utf-8")
+
+
+def milestone(slug: str, *, epics: str = "", targets: str = "", exit_line: bool = True) -> str:
+    exit_text = "**Exit:** it works end to end.\n" if exit_line else ""
+    return f"### {slug}\n\nWhy this slice first.\n\n{exit_text}**Requirements:** {targets}\n**Epics:** {epics}\n\n"
+
+
+def plan(*milestones: str) -> str:
+    return "## Milestones\n\n" + "".join(milestones)
+
+
+def review_note(tasks_dir: Path, slug: str, status: str) -> None:
+    folder = tasks_dir.parent / "milestones"
+    folder.mkdir(exist_ok=True)
+    (folder / f"{slug}.md").write_text(f"# Milestone review: {slug}\n\n**Status:** {status}\n", encoding="utf-8")
+
+
+def failures(result: subprocess.CompletedProcess[str]) -> list[list[str]]:
+    return [line.split("\t")[1:] for line in result.stdout.splitlines() if line.startswith("FAIL\t")]
+
+
+class TestCovers:
+    """A task names the requirements it covers, so what is left of each can be derived."""
+
+    def test_accepts_full_and_partial_covers_of_known_requirements(self, tmp_path: Path) -> None:
+        tasks = tmp_path / "tasks"
+        write_prd(tasks)
+        write_task(tasks, "ingestion-001", covers="- A1\n- A4 (part): sign-in only;\n  revocation comes later")
+        assert validate(tasks).returncode == VALID
+
+    def test_rejects_an_id_the_requirements_do_not_define(self, tmp_path: Path) -> None:
+        tasks = tmp_path / "tasks"
+        write_prd(tasks)
+        write_task(tasks, "ingestion-001", covers="- A9")
+        result = validate(tasks)
+        assert result.returncode == INVALID
+        assert failures(result) == [
+            ["ingestion-001", "covers 'A9', which is no requirement id in " + str(tmp_path / "prd.md")]
+        ]
+
+    def test_rejects_a_partial_cover_without_a_note(self, tmp_path: Path) -> None:
+        tasks = tmp_path / "tasks"
+        write_prd(tasks)
+        write_task(tasks, "ingestion-001", covers="- A4 (part):")
+        result = validate(tasks)
+        assert result.returncode == INVALID
+        assert "covers A4 in part with no note" in failures(result)[0][1]
+
+    def test_rejects_a_line_it_cannot_read(self, tmp_path: Path) -> None:
+        tasks = tmp_path / "tasks"
+        write_prd(tasks)
+        write_task(tasks, "ingestion-001", covers="- A4 partly, sign-in")
+        result = validate(tasks)
+        assert result.returncode == INVALID
+        assert "unreadable Covers line 'A4 partly, sign-in'" in failures(result)[0][1]
+
+    def test_rejects_covers_when_the_requirements_have_no_ids(self, tmp_path: Path) -> None:
+        tasks = tmp_path / "tasks"
+        tasks.mkdir()
+        (tmp_path / "prd.md").write_text("# P\n\n## Outcomes\n\n- one server\n", encoding="utf-8")
+        write_task(tasks, "ingestion-001", covers="- A1")
+        result = validate(tasks)
+        assert result.returncode == INVALID
+        assert "has no ids" in failures(result)[0][1]
+
+    def test_a_set_without_covers_needs_no_requirements(self, tmp_path: Path) -> None:
+        """Covers are optional: the check costs nothing to a project that does not use them."""
+        tasks = tmp_path / "tasks"
+        write_task(tasks, "ingestion-001")
+        assert validate(tasks).returncode == VALID
+
+
+class TestMilestones:
+    """Only the current milestone is cut, and its cut covers what it targets."""
+
+    def setup_two_milestones(
+        self, tasks: Path, *, second_epics: str = "", covers: str = "- A1\n- A4 (part): sign-in"
+    ) -> None:
+        write_prd(tasks)
+        write_task(tasks, "server-001", epic="server", covers=covers)
+        write_summary(
+            tasks,
+            milestones=plan(
+                milestone("skeleton", epics="server", targets="A1, A4 (part)"),
+                milestone("team", epics=second_epics, targets="A4, X1a"),
+            ),
+        )
+
+    def test_accepts_a_cut_of_the_current_milestone(self, tmp_path: Path) -> None:
+        tasks = tmp_path / "tasks"
+        self.setup_two_milestones(tasks)
+        result = validate(tasks)
+        assert result.returncode == VALID, result.stdout
+        assert "MILESTONES\t2\tcurrent=skeleton" in result.stdout
+
+    def test_rejects_a_target_no_task_of_the_milestone_covers(self, tmp_path: Path) -> None:
+        tasks = tmp_path / "tasks"
+        self.setup_two_milestones(tasks, covers="- A1")
+        result = validate(tasks)
+        assert result.returncode == INVALID
+        assert failures(result) == [["skeleton", "targets A4, but no task of the milestone covers it"]]
+
+    def test_rejects_tasks_of_a_milestone_after_the_current_one(self, tmp_path: Path) -> None:
+        tasks = tmp_path / "tasks"
+        self.setup_two_milestones(tasks, second_epics="team")
+        write_task(tasks, "team-001", epic="team", covers="- A4\n- X1a")
+        write_summary(
+            tasks,
+            milestones=plan(
+                milestone("skeleton", epics="server", targets="A1, A4 (part)"),
+                milestone("team", epics="team", targets="A4, X1a"),
+            ),
+        )
+        result = validate(tasks)
+        assert result.returncode == INVALID
+        assert failures(result) == [
+            [
+                "team-001",
+                (
+                    "belongs to milestone team, after the current one, skeleton: "
+                    "cut it once skeleton's review note is approved"
+                ),
+            ]
+        ]
+
+    def test_an_approved_review_makes_the_next_milestone_current(self, tmp_path: Path) -> None:
+        tasks = tmp_path / "tasks"
+        write_prd(tasks)
+        write_task(tasks, "server-001", epic="server", covers="- A1\n- A4 (part): sign-in")
+        write_task(tasks, "team-001", epic="team", covers="- A4\n- X1a", parallel="false")
+        write_summary(
+            tasks,
+            milestones=plan(
+                milestone("skeleton", epics="server", targets="A1, A4 (part)"),
+                milestone("team", epics="team", targets="A4, X1a"),
+            ),
+            run_as="serially",
+        )
+        review_note(tasks, "skeleton", "approved")
+        result = validate(tasks)
+        assert result.returncode == VALID, result.stdout
+        assert "current=team" in result.stdout
+
+    def test_a_draft_review_does_not_close_a_milestone(self, tmp_path: Path) -> None:
+        tasks = tmp_path / "tasks"
+        write_prd(tasks)
+        write_task(tasks, "server-001", epic="server", covers="- A1\n- A4 (part): sign-in")
+        write_task(tasks, "team-001", epic="team", covers="- A4\n- X1a")
+        write_summary(
+            tasks,
+            milestones=plan(
+                milestone("skeleton", epics="server", targets="A1, A4 (part)"),
+                milestone("team", epics="team", targets="A4, X1a"),
+            ),
+        )
+        review_note(tasks, "skeleton", "draft")
+        assert validate(tasks).returncode == INVALID
+
+    def test_run_as_describes_the_current_milestone_only(self, tmp_path: Path) -> None:
+        """A closed milestone that ran in lanes does not stop the next from running serially."""
+        tasks = tmp_path / "tasks"
+        write_prd(tasks)
+        write_task(tasks, "server-001", epic="server", covers="- A1")
+        write_task(tasks, "server-002", epic="server", covers="- A4 (part): sign-in")
+        write_task(tasks, "team-001", epic="team", covers="- A4", parallel="false")
+        write_task(tasks, "team-002", epic="team", covers="- X1a", parallel="false")
+        write_summary(
+            tasks,
+            milestones=plan(
+                milestone("skeleton", epics="server", targets="A1, A4 (part)"),
+                milestone("team", epics="team", targets="A4, X1a"),
+            ),
+            run_as="serially",
+        )
+        review_note(tasks, "skeleton", "approved")
+        assert validate(tasks).returncode == VALID
+
+    def test_rejects_an_epic_in_no_milestone(self, tmp_path: Path) -> None:
+        tasks = tmp_path / "tasks"
+        write_prd(tasks)
+        write_task(tasks, "server-001", epic="server", covers="- A1")
+        write_task(tasks, "ops-001", epic="ops")
+        write_summary(tasks, milestones=plan(milestone("skeleton", epics="server", targets="A1")))
+        result = validate(tasks)
+        assert result.returncode == INVALID
+        assert ["ops", "epic belongs to no milestone: list it on a milestone's **Epics:** line"] in failures(result)
+
+    def test_rejects_an_epic_in_two_milestones(self, tmp_path: Path) -> None:
+        tasks = tmp_path / "tasks"
+        write_prd(tasks)
+        write_task(tasks, "server-001", epic="server", covers="- A1")
+        write_summary(
+            tasks,
+            milestones=plan(milestone("skeleton", epics="server", targets="A1"), milestone("team", epics="server")),
+        )
+        result = validate(tasks)
+        assert ["server", "epic is in two milestones: skeleton and team"] in failures(result)
+
+    def test_rejects_a_milestone_without_an_exit_criterion(self, tmp_path: Path) -> None:
+        tasks = tmp_path / "tasks"
+        write_prd(tasks)
+        write_task(tasks, "server-001", epic="server", covers="- A1")
+        write_summary(tasks, milestones=plan(milestone("skeleton", epics="server", targets="A1", exit_line=False)))
+        result = validate(tasks)
+        assert result.returncode == INVALID
+        assert failures(result)[0][0] == "skeleton"
+        assert "no '**Exit:**' line" in failures(result)[0][1]
+
+    def test_rejects_a_target_the_requirements_do_not_define(self, tmp_path: Path) -> None:
+        tasks = tmp_path / "tasks"
+        write_prd(tasks)
+        write_task(tasks, "server-001", epic="server", covers="- A1")
+        write_summary(
+            tasks,
+            milestones=plan(milestone("skeleton", epics="server", targets="A1"), milestone("later", targets="Z9")),
+        )
+        result = validate(tasks)
+        assert failures(result) == [
+            ["later", "targets 'Z9', which is no requirement id in " + str(tmp_path / "prd.md")]
+        ]
+
+    def test_a_wrapped_requirements_line_is_read_whole(self, tmp_path: Path) -> None:
+        tasks = tmp_path / "tasks"
+        write_prd(tasks)
+        write_task(tasks, "server-001", epic="server", covers="- A1")
+        write_summary(
+            tasks,
+            milestones=(
+                "## Milestones\n\n### skeleton\n\n**Exit:** works.\n**Requirements:** A1,\n  X1a\n**Epics:** server\n\n"
+            ),
+        )
+        result = validate(tasks)
+        assert failures(result) == [["skeleton", "targets X1a, but no task of the milestone covers it"]]

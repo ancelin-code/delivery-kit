@@ -40,12 +40,17 @@ Events, tab-separated, one per line:
   IN-REVIEW    <id>                a pull request left draft
   MERGED       <id>                a task is done
   WAITING      review=<ids> running=<id:minutes ...>
-  COMPLETE                         every task is merged
+  MILESTONE    <slug> <state>      every task is merged, and the current milestone
+                                   needs a person: its review (merged, reviewing)
+                                   or its cut (undecomposed); the loop never
+                                   starts the next milestone
+  COMPLETE                         every task is merged, and every milestone closed
   STUCK        <ids>               blocked, with nothing in flight to unblock them
   ERROR        <message>           task state could not be read; retried
 
 Exit codes:
-  0  every task is merged, or --max-polls was reached
+  0  every task is merged, a milestone boundary was reached, or --max-polls
+     was reached
   1  usage error, or task state unreadable five polls in a row
   3  stuck: the remaining tasks can never become ready
 USAGE
@@ -240,7 +245,14 @@ EOF_LAUNCHED
     mv "$store/now" "$store/state"
 
     if [ $(($(count ready) + $(count in_flight) + $(count blocked))) -eq 0 ] && [ -n "$(ls "$store/state")" ]; then
-      event COMPLETE
+      # The next milestone has no tasks until a person reviews this one and
+      # approves its cut, so merged work at a boundary is a stop, not the end.
+      boundary="$(printf '%s\n' "$rows" | awk -F'\t' -v OFS='\t' '$1 == "MILESTONE" && $3 != "closed" && $3 != "planned" { print $2, $3; exit }')"
+      if [ -n "$boundary" ]; then
+        event MILESTONE "$boundary"
+      else
+        event COMPLETE
+      fi
       exit 0
     fi
     if [ $(($(count ready) + $(count in_flight))) -eq 0 ] && [ "$(count blocked)" -gt 0 ]; then

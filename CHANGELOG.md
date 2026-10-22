@@ -6,6 +6,14 @@ tagging it.
 
 ## [Unreleased]
 
+- Milestones: a large project is cut and run one end-to-end slice at a time,
+  with a reviewed note closing each before the next is cut. `where.sh` and
+  `follow.sh` stop at each boundary
+  ([ADR-010](docs/decisions/ADR-010-milestones.md)).
+- Requirement coverage: requirements carry ids, tasks list the ids they cover
+  in full or in part, and `coverage.sh` reports what is left of each. The
+  snapshot carries milestones and coverage for connectors.
+
 ## [0.1.0] - Unreleased
 
 First public release.

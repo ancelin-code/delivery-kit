@@ -22,6 +22,8 @@ Run from the repository root. Prints, tab-separated:
   ROUTING  present | missing          the AGENTS.md block that routes requests here
   PHASE    <phase> <state> <path>     requirements, design, decomposition
   TASK     ...                        one row per task, as delivery-status prints it
+  MILESTONE ...                       one row per milestone when the plan has them,
+                                      as delivery-status prints it
   SUMMARY  ...                        task counts, as delivery-status prints it
   REVIEW   <id> <pr> <lens> <skill> <why>
                                       per task in review, one row per lens; skill
@@ -57,7 +59,9 @@ git rev-parse --is-inside-work-tree >/dev/null 2>&1 || die "not inside a git rep
 # The kit installs as a whole, so delivery-status sits beside this skill, the
 # same assumption launch-lanes.sh makes for claim.sh.
 here="$(cd "$(dirname "$0")" && pwd)"
-status_script="$here/../../delivery-status/scripts/status.sh"
+[ -d "$here/../../delivery-status/scripts" ] || die "delivery-status is not installed beside delivery-orchestrator"
+status_dir="$(cd "$here/../../delivery-status/scripts" && pwd)"
+status_script="$status_dir/status.sh"
 [ -f "$status_script" ] || die "delivery-status is not installed beside delivery-orchestrator"
 
 # The value of the "**Status:**" line, lowercased; empty when there is none.
@@ -127,10 +131,13 @@ printf 'PHASE\tdecomposition\t%s\t%s\n' "$decomposition_state" "$decomposition"
 # Scripts are named by a path runnable from the repository root, so an agent can
 # act on a NEXT line without looking for them.
 root="$(pwd -P)"
-case "$here" in
-  "$root"/*) shown="${here#"$root"/}" ;;
-  *) shown="$here" ;;
-esac
+shown_path() {
+  case "$1" in
+    "$root"/*) printf '%s' "${1#"$root"/}" ;;
+    *) printf '%s' "$1" ;;
+  esac
+}
+shown="$(shown_path "$here")"
 
 next() {
   printf 'NEXT\t%s\t%s\n' "$1" "$2"
@@ -282,6 +289,26 @@ EOF_TABLE
 done
 
 [ -z "$in_review" ] || next review "pull requests await review, one pass per REVIEW row: $in_review"
+
+# Milestones. Only the current one, the first whose review note is not
+# approved, has work left; its state says whether that work is lanes, a cut,
+# or a review. A plan without milestones prints no MILESTONE row.
+current="$(printf '%s\n' "$rows" | awk -F'\t' '$1 == "MILESTONE" && $3 != "closed" && $3 != "planned" { print $2 "\t" $3; exit }')"
+milestone="${current%%"$tab"*}"
+case "${current#*"$tab"}" in
+  undecomposed)
+    next decompose-milestone "$milestone: decompose it with delivery-decompose, from delivery/milestones/ and the plan in delivery/decomposition.md"
+    exit 0
+    ;;
+  merged)
+    next review-milestone "every task of $milestone is merged: check its exit criterion, then write delivery/milestones/$milestone.md with delivery-decompose (coverage: sh $(shown_path "$status_dir")/coverage.sh --milestone $milestone)"
+    exit 0
+    ;;
+  reviewing)
+    next approve-milestone-review "delivery/milestones/$milestone.md awaits human approval"
+    exit 0
+    ;;
+esac
 
 # A task with "parallel: false" runs alone: nothing else of the set in flight
 # while it runs. A set that serializes is one where every task says so.
