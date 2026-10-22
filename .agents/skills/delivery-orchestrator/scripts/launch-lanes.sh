@@ -24,10 +24,15 @@ usage: sh launch-lanes.sh [options] [task-id...]
 
 Starts a lane per task id, reading ids from stdin when none are given. A task
 with a repo field gets its worktree, claim and pull request in that clone,
-beside this repository; the lane reads its task file and contracts here. A lane
-whose session exits cleanly is published as a draft pull request by
-publish-lane.sh; one whose session fails without leaving work behind gives its
-claim back through release-lane.sh. Both sit beside this script.
+beside this repository; the lane reads its task file and contracts here.
+
+A lane is two sessions in its worktree: delivery-implement on the task's tier,
+then, when it left a change, delivery-refine on a stronger one, which reviews
+the change, fixes what it finds and simplifies it. A lane whose implementation
+session exits cleanly is published as a draft pull request by publish-lane.sh,
+whatever the refinement did; one whose implementation session fails without
+leaving work behind gives its claim back through release-lane.sh. Both sit
+beside this script.
 
 Options:
   --max-lanes <n>       Most lanes to run at once (default: 3).
@@ -43,6 +48,8 @@ Options:
                         Defaults to $DELIVERY_WORKTREE_ROOT when set, else to
                         ../lanes/<name of this repository>.
   --log-dir <dir>       Where session logs are written (default: .lanes/logs).
+  --no-refine           Publish what delivery-implement leaves, with no review
+                        and simplification session after it.
   --no-web              Take web fetch and web search away from the lanes.
                         SECURITY: web access is on by default, and it is a
                         prompt-injection path. A lane runs unattended with a
@@ -55,6 +62,12 @@ Options:
                         started without a claim.
   --dry-run             Print what would happen; create nothing, launch nothing.
   -h, --help            Print this help.
+
+Prints, tab-separated, one line per task:
+  LAUNCHED      <id> <harness> <model> <review harness> <review model> <worktree> <repository>
+  WOULD-LAUNCH  the same, for --dry-run; a model is "default" when none is passed,
+                and the review columns are "-" with --no-refine
+  SKIP          <id> <reason>
 
 Exit codes:
   0  every selected lane started, or the dry run completed
@@ -79,12 +92,14 @@ claim_script="$here/../../delivery-status/scripts/claim.sh"
 publish_script="$here/publish-lane.sh"
 release_script="$here/release-lane.sh"
 implement_skill="$here/../../delivery-implement/SKILL.md"
+refine_skill="$here/../../delivery-refine/SKILL.md"
 harness_lib="$here/harness.sh"
 # Written by the lane inside its worktree, where an unattended session may write,
 # and published as the pull request body rather than committed.
 lane_report=".lane-report.md"
 dry_run=0
 web=1
+refine=1
 task_ids=""
 
 [ -f "$harness_lib" ] || die "harness adapters not found: $harness_lib"
@@ -92,6 +107,8 @@ task_ids=""
 # skill at all, so a split install stops here rather than in every lane.
 [ -f "$implement_skill" ] ||
   die "delivery-implement is not installed beside delivery-orchestrator in $(cd -P "$here/../.." && pwd -P): reinstall the kit whole"
+[ -f "$refine_skill" ] ||
+  die "delivery-refine is not installed beside delivery-orchestrator in $(cd -P "$here/../.." && pwd -P): reinstall the kit whole"
 # shellcheck source=harness.sh source-path=SCRIPTDIR
 . "$harness_lib"
 
@@ -105,6 +122,7 @@ while [ $# -gt 0 ]; do
     --claim-script) [ $# -ge 2 ] || die "--claim-script requires a value"; claim_script="$2"; shift 2 ;;
     --dry-run) dry_run=1; shift ;;
     --no-web) web=0; shift ;;
+    --no-refine) refine=0; shift ;;
     -h | --help) usage; exit 0 ;;
     --) shift; while [ $# -gt 0 ]; do task_ids="$task_ids$1
 "; shift; done ;;
@@ -181,9 +199,9 @@ is_tier() {
 # git is already required, so nothing here parses text. It brings the comments,
 # the quoting and the syntax errors, which it reports with the file and line.
 # What git cannot know is checked below: a section must be a tier and a key one
-# of harness, model and advisor. The result is the tier_harness, tier_model and
-# tier_advisor maps, where an empty value means a tier the file names without
-# that key.
+# of harness, model, advisor and reviewer. The result is the tier_harness,
+# tier_model, tier_advisor and tier_reviewer maps, where an empty value means a
+# tier the file names without that key.
 load_tiers() {
   user_conf="${XDG_CONFIG_HOME:-${HOME:-}/.config}/delivery-kit/tiers.conf"
   files=""
@@ -200,7 +218,7 @@ load_tiers() {
   [ -n "$files" ] || return 0
   while IFS= read -r file <&3; do
     [ -n "$file" ] || continue
-    rm -rf "$store/named" "$store/file_harness" "$store/file_model" "$store/file_advisor"
+    rm -rf "$store/named" "$store/file_harness" "$store/file_model" "$store/file_advisor" "$store/file_reviewer"
     : >"$store/seen"
     out="$(git config --file "$file" --list 2>&1)" || die "${out#fatal: }"
     while IFS= read -r line; do
@@ -213,7 +231,7 @@ load_tiers() {
       key="${name#*.}"
       case "$key" in *.*) die "$file: unexpected key '$name' (expected a [tier] section)" ;; esac
       is_tier "$tier" || die "$file: unknown tier '$tier' (expected plan, build, or chore)"
-      case "$key" in harness | model | advisor) ;; *) die "$file: unknown key '$name' (expected harness, model, or advisor)" ;; esac
+      case "$key" in harness | model | advisor | reviewer) ;; *) die "$file: unknown key '$name' (expected harness, model, advisor, or reviewer)" ;; esac
       ! grep -Fxq -- "$name" "$store/seen" || die "$file: $name is set twice"
       printf '%s\n' "$name" >>"$store/seen"
       put named "$tier" 1
@@ -233,6 +251,7 @@ EOF_CONF
       put tier_harness "$tier" "$(get file_harness "$tier")"
       put tier_model "$tier" "$(get file_model "$tier")"
       put tier_advisor "$tier" "$(get file_advisor "$tier")"
+      put tier_reviewer "$tier" "$(get file_reviewer "$tier")"
     done
   done 3<<EOF_FILES
 $files
@@ -242,7 +261,7 @@ EOF_FILES
 # The model or advisor a tier maps to, when it applies to the harness the lane
 # runs on. A mapping names its harness because a model id means nothing to
 # another one: passing it through would end the session at startup.
-#   mapped_for <tier_model|tier_advisor> <tier> <harness>
+#   mapped_for <tier_model|tier_advisor|tier_reviewer> <tier> <harness>
 mapped_for() {
   mapped="$(get "$1" "$2")"
   mapped_harness="$(get tier_harness "$2")"
@@ -251,6 +270,37 @@ mapped_for() {
   printf '%s' "$mapped"
 }
 load_tiers
+
+# The refinement session reviews on a stronger model than the one that wrote
+# the change: a reviewer weaker than the author finds no more than the author
+# does. Without a reviewer of its own, a tier is reviewed one tier up.
+tier_above() {
+  case "$1" in chore) printf build ;; *) printf plan ;; esac
+}
+
+# The harness, model and advisor of a lane's refinement session, as one
+# tab-separated line. A tier's own reviewer runs on the lane's harness, which
+# its model id is for. Otherwise the session runs as the tier above would: on
+# its harness when that one is installed, and with its model when the mapping
+# is for that harness. --harness forces the whole batch, review included.
+#   refine_for <tier> <lane harness>
+refine_for() {
+  reviewer="$(mapped_for tier_reviewer "$1" "$2")"
+  if [ -n "$reviewer" ]; then
+    printf '%s\t%s\t\n' "$2" "$reviewer"
+    return 0
+  fi
+  up="$(tier_above "$1")"
+  up_harness="$(get tier_harness "$up")"
+  review_harness="$2"
+  if [ -z "$harness_flag" ] && [ -n "$up_harness" ]; then
+    if [ "$dry_run" -eq 1 ] || [ "$up_harness" = custom ] || command -v "$up_harness" >/dev/null 2>&1; then
+      review_harness="$up_harness"
+    fi
+  fi
+  printf '%s\t%s\t%s\n' "$review_harness" "$(mapped_for tier_model "$up" "$review_harness")" \
+    "$(mapped_for tier_advisor "$up" "$review_harness")"
+}
 
 # A task with "parallel: false" runs alone: no other lane of the set may be in
 # flight while it runs, here or on another developer's machine. Only the remote
@@ -385,7 +435,15 @@ while IFS= read -r task_id <&3; do
 
   if [ "$dry_run" -eq 1 ]; then
     model="$(mapped_for tier_model "$tier" "$use_harness")"
-    printf 'WOULD-LAUNCH\t%s\t%s\t%s\t%s\t%s\n' "$task_id" "$use_harness" "${model:-default}" "$worktree" "$repo_name"
+    refine_harness=- refine_model=-
+    if [ "$refine" -eq 1 ]; then
+      IFS="$tab" read -r refine_harness refine_model _ <<EOF_REFINE
+$(refine_for "$tier" "$use_harness")
+EOF_REFINE
+      refine_model="${refine_model:-default}"
+    fi
+    printf 'WOULD-LAUNCH\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' "$task_id" "$use_harness" "${model:-default}" \
+      "$refine_harness" "$refine_model" "$worktree" "$repo_name"
     ! runs_alone "$task_id" || alone_started="$task_id"
     printf '%s\n' "$task_id" >>"$store/launched_ids"
     launched=$((launched + 1))
@@ -412,6 +470,12 @@ while IFS= read -r task_id <&3; do
   # Resolved after the harness is known: a mapping names the one it is for.
   model="$(mapped_for tier_model "$tier" "$use_harness")"
   advisor="$(mapped_for tier_advisor "$tier" "$use_harness")"
+  refine_harness="" refine_model="" refine_advisor=""
+  if [ "$refine" -eq 1 ]; then
+    IFS="$tab" read -r refine_harness refine_model refine_advisor <<EOF_REFINE
+$(refine_for "$tier" "$use_harness")
+EOF_REFINE
+  fi
 
   git -C "$repo_dir" rev-parse --is-inside-work-tree >/dev/null 2>&1 ||
     { printf 'SKIP\t%s\tno clone of %s at %s\n' "$task_id" "$repo_name" "$repo_dir"; continue; }
@@ -456,22 +520,45 @@ while IFS= read -r task_id <&3; do
     cross_repo=1
   fi
   prompt="$(harness_prompt "$use_harness" "$cross_repo" "$implement_skill" "$task_path --report $lane_report")"
+  refine_prompt=""
+  [ "$refine" -eq 0 ] ||
+    refine_prompt="$(harness_prompt "$refine_harness" "$cross_repo" "$refine_skill" "$task_path --report $lane_report")"
 
   # No stdin: claude -p otherwise waits for piped input before starting.
-  # Publish only after a clean exit. A lane that stopped on a bad task reverts
-  # its attempt, so the publisher finds nothing and opens no pull request.
-  # A failed session releases the claim, unless it left work behind.
+  # Publish only after a clean implementation session. A lane that stopped on a
+  # bad task reverts its attempt, so there is nothing to refine, and the
+  # publisher finds nothing and opens no pull request. A failed implementation
+  # session releases the claim, unless it left work behind.
+  # A refinement session that fails takes nothing away: the change is published
+  # as delivery-implement left it, and the report says the review did not run.
   # shellcheck disable=SC2016 # expanded by the inner shell, not this one
   (cd "$worktree_abs" && nohup sh -c '
     lib="$1" publish="$2" release="$3" report="$4" task="$5"
-    shift 5
+    refine="$6" refine_harness="$7" refine_prompt="$8" refine_model="$9" refine_advisor="${10}"
+    shift 10
     . "$lib"
-    if harness_run "$@"; then sh "$publish" --report "$report" "$task"; else sh "$release" "$task"; fi
+    if ! harness_run "$@"; then
+      sh "$release" "$task"
+      exit
+    fi
+    if [ "$refine" = 1 ] && [ -n "$(git status --porcelain -- . ":(exclude)$report")" ]; then
+      printf "REFINE\t%s\t%s\n" "$refine_harness" "${refine_model:-default}"
+      status=0
+      harness_run "$refine_harness" "$refine_prompt" "$refine_model" "$refine_advisor" "$5" "$6" "$7" || status=$?
+      if [ "$status" -ne 0 ]; then
+        printf "REFINE-FAILED\t%s\n" "$status"
+        printf "\n## Refinement\n\nThe review and simplification session failed (exit %s), so this change is published as delivery-implement left it. The lane log has the details.\n" "$status" >>"$report"
+      fi
+    fi
+    sh "$publish" --report "$report" "$task"
   ' lane "$harness_lib" "$publish_script" "$release_script" "$lane_report" "$task_path" \
+    "$refine" "$refine_harness" "$refine_prompt" "$refine_model" "$refine_advisor" \
     "$use_harness" "$prompt" "$model" "$advisor" "$add_dir" "$home" "$web" \
     </dev/null >"$log_file" 2>&1 &) || true
 
-  printf 'LAUNCHED\t%s\t%s\t%s\t%s\t%s\n' "$task_id" "$use_harness" "${model:-default}" "$worktree" "$repo_name"
+  printf 'LAUNCHED\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' "$task_id" "$use_harness" "${model:-default}" \
+    "${refine_harness:--}" "$([ "$refine" -eq 0 ] && printf -- - || printf '%s' "${refine_model:-default}")" \
+    "$worktree" "$repo_name"
   ! runs_alone "$task_id" || alone_started="$task_id"
   printf '%s\n' "$task_id" >>"$store/launched_ids"
   launched=$((launched + 1))

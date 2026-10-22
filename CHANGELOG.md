@@ -10,6 +10,13 @@ tagging it.
   track the default branch it starts from, and a won claim sets
   `<remote>/task/<id>` as the branch's upstream, so a plain `git push` from a
   lane worktree is no longer refused or sent to the default branch.
+- A sixth skill, `delivery-refine`, runs as a second session in every lane: it
+  reviews the change `delivery-implement` left, fixes what it finds, simplifies
+  it without changing its behaviour, re-validates, and adds a Refinement section
+  to the pull request body. It runs one tier up, or on a tier's new `reviewer`
+  key in `tiers.conf`; `--no-refine` skips it. The launcher's `LAUNCHED` and
+  `WOULD-LAUNCH` lines gain the review harness and model after the lane's model
+  ([ADR-011](docs/decisions/ADR-011-lane-refinement.md)).
 - An install whose skills are split between `.claude/skills/` and
   `.agents/skills/`, as `npx skills update` leaves after an install naming
   only `claude-code`, is reported by `where.sh` as `NEXT repair-install`, and

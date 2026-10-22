@@ -12,7 +12,7 @@ no server, no database, no status file.
 > `main`, read [CHANGELOG.md](CHANGELOG.md) before updating, and expect breaking
 > changes to be called out there rather than migrated.
 
-**This repository is the kit.** The five Delivery Kit skills are one workflow,
+**This repository is the kit.** The six Delivery Kit skills are one workflow,
 not a catalogue you pick from. Each phase consumes the file the previous phase
 wrote, so a single skill installed alone is a phase with no input and no
 consumer. Install them together.
@@ -70,7 +70,8 @@ flowchart TD
 
         LAUNCH -->|claims via| ST["/delivery-status"]
         LAUNCH -->|one worktree per task| IMP["/delivery-implement"]
-        IMP -->|draft pull request| G3{{Human approves the merge}}
+        IMP -->|the change, uncommitted| REF["/delivery-refine<br/>one tier up"]
+        REF -->|draft pull request| G3{{Human approves the merge}}
     end
 
     O -.->|direct implement:<br/>one task file, merge gate only| IMP
@@ -78,7 +79,7 @@ flowchart TD
 
     classDef skill fill:#e8f0fe,stroke:#3367d6,color:#111
     classDef gate fill:#fff4e5,stroke:#e8710a,color:#111
-    class O,SPEC,DEC,IMP,ST skill
+    class O,SPEC,DEC,IMP,REF,ST skill
     class G1,G2,G3 gate
 ```
 
@@ -99,7 +100,7 @@ of the route to use:
 How much of a full route runs in parallel is decomposition's finding, not a
 choice made up front; see [Parallel or serial](#parallel-or-serial).
 
-## The five skills
+## The six skills
 
 | Skill | Owns | Produces | Runs as |
 |---|---|---|---|
@@ -108,9 +109,19 @@ choice made up front; see [Parallel or serial](#parallel-or-serial).
 | `delivery-decompose` | Splitting approved work into epics and independent tasks | `delivery/decomposition.md` and `delivery/tasks/<id>.md`, validated | a human's session |
 | `delivery-status` | Claims and run state, read from git | exit codes and tab-separated rows | `sh`, no model |
 | `delivery-implement` | One task into one validated change | a working tree and a handoff report | an unattended lane |
+| `delivery-refine` | Reviewing that change, fixing what the review finds, and simplifying it | the same working tree, and a Refinement section in the report | the same lane, a second session on a stronger model |
 
 Only `delivery-orchestrator` is invoked by a human directly. The rest are reached
 through it, or through `launch-lanes.sh`.
+
+`delivery-refine` is the second session of every lane. It did not write the
+change, it runs on the tier above the task's, and it works in one pass: review
+the change against the task's acceptance criteria, fix what that finds, then
+simplify the lines the change added without altering their behaviour, and
+re-run validation. Simplifying last means the fixes get tidied too, and no
+effort goes into polishing code about to change. A failed refinement never
+loses the implementation: the change is published as it was, and the report
+says so. `--no-refine` on the launcher skips it.
 
 `delivery-spec` covers two stages rather than shipping as two skills: they are
 written in one sitting from the same source material, and the design spine is
@@ -208,8 +219,8 @@ each merge to start the next task.
 A serial set still goes through every phase and every gate: the requirements,
 contracts and task files are what stop the work encoding guesses, whether or
 not it runs concurrently. What changes is who needs the lanes. When one person
-holds the whole set, skip the launcher and invoke `delivery-implement` per task
-in dependency order; the claim only earns its keep when several people pick
+holds the whole set, skip the launcher and invoke `delivery-implement`, then
+`delivery-refine`, per task in dependency order; the claim only earns its keep when several people pick
 from the same tasks.
 
 ### Which model runs a lane
@@ -250,6 +261,21 @@ developer's own file wins, tier by tier. The full rules are in the
 A lane runs on the first of: `--harness`, the harness its tier maps to,
 `$DELIVERY_HARNESS`, then the first harness found installed. `--harness` moves a
 whole launch on purpose, for example to the one whose allowance still has room.
+
+A lane's refinement session runs one tier up: a `chore` task is reviewed as a
+`build` one, a `build` task as a `plan` one, and a `plan` task by `plan`. With
+the mapping above, a `build` lane is written by `sonnet` and reviewed by `opus`,
+because a reviewer no stronger than the author finds little the author would
+not. When the tier above maps to another harness, the review runs there, which
+also gives the change a second model's view. A tier can name its own
+`reviewer` instead, a model for the tier's own harness:
+
+```ini
+[chore]
+    harness = claude
+    model = haiku
+    reviewer = sonnet
+```
 
 ### Harnesses
 
@@ -409,7 +435,7 @@ dash, BusyBox ash and macOS's own `sh`.
 
 ### 1. Install the kit into a target repository
 
-Use the `skills` CLI. It installs all five skills, writes each one to
+Use the `skills` CLI. It installs all six skills, writes each one to
 `.agents/skills/` and symlinks it into `.claude/skills/`, and records a
 `skills-lock.json` so every developer restores the same version.
 

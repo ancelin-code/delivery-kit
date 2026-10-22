@@ -65,11 +65,11 @@ git rev-parse --is-inside-work-tree >/dev/null 2>&1 || die "not inside a git rep
 # to fix: nothing after it can be trusted.
 here="$(cd "$(dirname "$0")" && pwd)"
 missing=""
-for skill in delivery-spec delivery-decompose delivery-implement delivery-status; do
+for skill in delivery-spec delivery-decompose delivery-implement delivery-refine delivery-status; do
   [ -f "$here/../../$skill/SKILL.md" ] || missing="$missing${missing:+ }$skill"
 done
 if [ -n "$missing" ]; then
-  printf 'NEXT\trepair-install\t%s\n' "not beside delivery-orchestrator in $(cd -P "$here/../.." && pwd -P): $missing. The kit installs whole: remove every delivery-* skill directory, then reinstall all five in one 'npx skills add', naming at least one agent that reads .agents/skills"
+  printf 'NEXT\trepair-install\t%s\n' "not beside delivery-orchestrator in $(cd -P "$here/../.." && pwd -P): $missing. The kit installs whole: remove every delivery-* skill directory, then reinstall them all in one 'npx skills add', naming at least one agent that reads .agents/skills"
   exit 0
 fi
 status_dir="$(cd "$here/../../delivery-status/scripts" && pwd)"
