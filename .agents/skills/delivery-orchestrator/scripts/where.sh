@@ -28,7 +28,9 @@ Run from the repository root. Prints, tab-separated:
   REVIEW   <id> <pr> <lens> <skill> <why>
                                       per task in review, one row per lens; skill
                                       is - when no skill is mapped to the lens
-  NEXT     <action> <detail>          what to do now; more than one when both apply
+  NEXT     <action> <detail>          what to do now; more than one when both apply.
+                                      repair-install, alone, when a kit skill is
+                                      missing beside this one
 
 Options:
   --remote <name>   Shared remote, when it is not origin.
@@ -56,10 +58,20 @@ done
 git rev-parse --is-inside-work-tree >/dev/null 2>&1 || die "not inside a git repository"
 [ "$(git rev-parse --show-toplevel)" = "$(pwd -P)" ] || die "run from the repository root"
 
-# The kit installs as a whole, so delivery-status sits beside this skill, the
-# same assumption launch-lanes.sh makes for claim.sh.
+# The kit installs as a whole: its skills find each other as siblings, the way
+# launch-lanes.sh finds claim.sh and delivery-implement. An install whose skills
+# are split between two directories, as an update that relinks some skills and
+# leaves others copied produces, loses its siblings, so it is the first thing
+# to fix: nothing after it can be trusted.
 here="$(cd "$(dirname "$0")" && pwd)"
-[ -d "$here/../../delivery-status/scripts" ] || die "delivery-status is not installed beside delivery-orchestrator"
+missing=""
+for skill in delivery-spec delivery-decompose delivery-implement delivery-status; do
+  [ -f "$here/../../$skill/SKILL.md" ] || missing="$missing${missing:+ }$skill"
+done
+if [ -n "$missing" ]; then
+  printf 'NEXT\trepair-install\t%s\n' "not beside delivery-orchestrator in $(cd -P "$here/../.." && pwd -P): $missing. The kit installs whole: remove every delivery-* skill directory, then reinstall all five in one 'npx skills add', naming at least one agent that reads .agents/skills"
+  exit 0
+fi
 status_dir="$(cd "$here/../../delivery-status/scripts" && pwd)"
 status_script="$status_dir/status.sh"
 [ -f "$status_script" ] || die "delivery-status is not installed beside delivery-orchestrator"

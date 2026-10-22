@@ -424,6 +424,28 @@ you get the default branch, `develop`, where unreleased work lands first.
 Add an `-a <agent>` for each other harness your team uses; `npx skills add
 --help` lists the names it knows.
 
+Keep `-a github-copilot`, or another agent that reads `.agents/skills/`, even
+if your team uses only Claude Code. With `-a claude-code` alone, the CLI copies
+each skill into `.claude/skills/` and creates no `.agents/`. A later
+`npx skills update` then moves the skills it updates to `.agents/skills/` with
+links, and leaves the ones it finds up to date as copies. The kit's skills find
+each other as siblings, so that split install loses `delivery-implement`, and
+lanes would run without it. `where.sh` reports a split install as
+`NEXT repair-install`, and the launcher refuses to start. Installed with both
+agents, every skill is linked from the start and updates keep it that way.
+
+To repair a split install, remove every copy and install again:
+
+```sh
+rm -rf .claude/skills/delivery-* .agents/skills/delivery-*
+npx skills add https://github.com/ancelin-code/delivery-kit/tree/main \
+  --skill '*' -a claude-code -a github-copilot -y
+```
+
+Re-running `npx skills add` with `-a claude-code` alone is not a repair: it
+puts every skill back as a copy in `.claude/skills/`, and leaves the old
+`.agents/skills/` directories behind to go stale.
+
 Then commit what it produced, including `skills-lock.json` and the symlinks. Git
 stores symlinks natively, so **lanes running in worktrees get the kit without a
 second install**. Everyone else restores the pinned versions with:
