@@ -5,9 +5,10 @@ description: >-
   Part of Delivery Kit, invoked by delivery-orchestrator. Break approved requirements
   and their design spine into task files that parallel lanes can execute independently,
   with dependencies, file conflicts and tiers made explicit, then validate the set
-  deterministically. Use when work has been approved and needs splitting into tasks, or
-  when an existing task set needs checking before lanes start. Does not implement tasks or
-  decide requirements.
+  deterministically; for a large project, one milestone at a time, with a review note
+  closing each. Use when work has been approved and needs splitting into tasks, when an
+  existing task set needs checking before lanes start, or when a merged milestone needs
+  its review. Does not implement tasks or decide requirements.
 license: Apache-2.0
 repository: https://github.com/ancelin-code/delivery-kit.git
 product-version: delivery-kit@v0
@@ -18,6 +19,7 @@ keywords:
   - epics
   - dependencies
   - parallel-work
+  - milestones
 spec-version: "1.0"
 compatibility:
 metadata:
@@ -50,28 +52,39 @@ it directly. Splitting a one-task change into an epic costs more than it saves.
    the codebase too to know what already exists, including the project's other
    repositories when they are cloned beside this one. Decomposing from the
    requirements alone invents work that is already done.
-2. **Group work into epics**, as the delivery conventions,
+   On a project with milestones, also read the review notes in
+   `delivery/milestones/`: the last one says what to carry into this cut.
+2. **Decide whether to cut in milestones**, as the delivery conventions,
+   `<delivery-orchestrator>/references/conventions.md`, define them, when the
+   plan has none yet. Cut in milestones when the scope is too large or too
+   uncertain to cut at once, or when the riskiest parts should run end to end
+   before the rest is built. Order them so each is a working slice and the
+   riskiest come first, and write the plan into the summary's Milestones
+   section: every milestone, its exit criterion and the requirements it
+   targets. Then cut **only the current milestone**; the validator rejects
+   tasks of a later one. Without milestones, cut the whole approved scope.
+3. **Group work into epics**, as the delivery conventions,
    `<delivery-orchestrator>/references/conventions.md`, define them. A group
    that is more than one person can hold in their head, or that delivers two
    separate outcomes, is two epics, not one large one.
-3. **Write one task file per unit of work**, from
+4. **Write one task file per unit of work**, from
    [the template](assets/task.template.md), into `delivery/tasks/<id>.md`.
-4. **Derive the dependency edges.** A task depends on another only when it
+5. **Derive the dependency edges.** A task depends on another only when it
    genuinely cannot start without the other's merged output. Dependencies
    invented "to be safe" serialize work that could have run in parallel.
-5. **Derive the file conflicts.** List the files each task will touch, then
+6. **Derive the file conflicts.** List the files each task will touch, then
    record `conflicts_with` for any pair whose file sets intersect. Two tasks
    editing the same file are not parallel, however independent they look. Set
    `parallel: false` on a task whose shared ground is too wide to list, such as
    a lockfile, a migration or a repository-wide rename: it then runs alone.
-6. **Write the decomposition summary** to `delivery/decomposition.md`, from
+7. **Write the decomposition summary** to `delivery/decomposition.md`, from
    [the template](assets/decomposition.template.md). It states what each epic
    delivers, where the set serializes and why, and the critical path. When it
    serializes almost everywhere, say **Run as:** serially and mark every task
    `parallel: false`; the validator holds the two in step. The task files carry
    the work; this carries the reasoning behind the cut, which no later session
    can recover from them.
-7. **Validate the set** before anyone starts:
+8. **Validate the set** before anyone starts:
 
    ```sh
    sh <skill-root>/scripts/validate-tasks.sh
@@ -82,7 +95,31 @@ it directly. Splitting a one-task change into an epic costs more than it saves.
    1 is a usage error. Fix every reported failure. A set that fails validation
    stalls lanes hours later, when it is expensive to correct. It cross-checks the summary against the task
    files in both directions, so re-cutting tasks without revisiting the summary
-   fails here rather than at the approval gate.
+   fails here rather than at the approval gate. With milestones, it also checks
+   that every requirement the current milestone targets is covered by one of
+   its tasks.
+
+Cutting the next milestone revises an approved summary: set its status back to
+draft, add the new epics, and fill in the milestone's `**Epics:**` line. The
+human approves the new cut as they approved the first.
+
+## Closing a milestone
+
+When `where.sh` reports a milestone merged, draft its review note with the
+human, at `delivery/milestones/<slug>.md`, from
+[the template](assets/milestone-review.template.md). Start from the derived
+coverage:
+
+```sh
+sh <delivery-status>/scripts/coverage.sh --milestone <slug>
+```
+
+The human checks the exit criterion against the running system; record what
+they observed, not what the tasks claimed. Then write down what was learned,
+the decision, and what the next cut must carry over: above all, what remains
+of each requirement left partly covered. The human approves the note, which
+closes the milestone. Revising the requirements or a decision record is
+`delivery-spec`'s job; name what to revise and stop.
 
 ## Writing a task
 
@@ -115,6 +152,12 @@ as the conventions' section on several repositories describes. One task changes
 one repository; a change that needs two is two tasks with a dependency, usually
 through a contract.
 
+Fill `## Covers` when the requirements carry ids: every requirement the task
+delivers, with `(part)` and a note when it delivers only some of it. The note
+says what this task does and what it leaves, so a reader can tell what is left
+of the requirement without opening the code. A task that delivers no
+requirement, such as tooling, has no section.
+
 Set `review` to the lenses the task's change will need beyond the general
 review, taken from `delivery/review-lenses.conf` when the project has one: a
 task handling credentials needs `security`, one changing a table schema needs
@@ -139,3 +182,7 @@ rediscovered at run time by the lanes.
 - each task states observable acceptance criteria and its files in scope
 - `delivery/decomposition.md` exists, names what every epic delivers, and lists the same
   tasks under the same epics as the task files do
+- with milestones, only the current milestone has tasks, and they cover every
+  requirement it targets
+- a closed milestone has an approved review note recording its exit evidence,
+  what was learned and the decision

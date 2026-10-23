@@ -70,7 +70,8 @@ developer can ask rather than duplicate the work.
 
 Run the claim from the lane's worktree, on the branch `task/<id>`. On success
 the local branch is advanced to the claim commit so the lane builds on top of
-it. A worktree with uncommitted changes is never reset; the script reports that
+it, and its upstream is set to the claimed branch, so a plain `git push` goes
+there rather than to the branch it was started from. A worktree with uncommitted changes is never reset; the script reports that
 it left the branch alone.
 
 Pass `--remote <name>` when the shared remote is not `origin`, and
@@ -102,6 +103,12 @@ A lane opens its pull request as a draft and leaves it drafted while it works,
 so in review is reached by marking it ready for review. Nothing a lane does on
 its own moves a task out of in progress.
 
+When `delivery/decomposition.md` plans milestones, the output also carries one
+`MILESTONE` row per milestone, in plan order: its slug, its state (`closed`,
+`undecomposed`, `active`, `merged`, `reviewing` or `planned`, as the
+conventions define them), its epics and the requirement ids it targets. A
+filter leaves them out.
+
 Only **merged** work unblocks a dependent. A dependency that is claimed and
 under way still leaves its dependents blocked, because nothing has landed yet.
 
@@ -121,9 +128,24 @@ when task files are not in `delivery/tasks`,
 `--remote <name>` when the shared remote is not `origin`, and `--no-fetch` to
 read cached refs instead of refreshing from the remote.
 
+For how much of each requirement merged work covers, from the tasks' `## Covers`
+sections and the requirement ids in `delivery/prd.md`:
+
+```sh
+sh <skill-root>/scripts/coverage.sh [--milestone <slug>]
+```
+
+One `REQ` row per requirement: its id, its state (`covered`, `partly`,
+`planned` or `not-started`), the milestones that target it, the merged tasks
+and the open ones. A `PART` row follows for each partial cover of a
+requirement not yet covered, with the task's note on what it does of it. With
+`--milestone`, only the requirements that milestone targets. It takes the same
+options as `status.sh` and fails the same way.
+
 For a tool outside git, such as a Jira or Confluence connector, the same state
 as one JSON document, with each task's epic, repository, dependencies and pull
-request, what each epic delivers, and the project's documents:
+request, what each epic delivers, the milestones and the coverage of each
+requirement when the project has them, and the project's documents:
 
 ```sh
 sh <skill-root>/scripts/snapshot.sh

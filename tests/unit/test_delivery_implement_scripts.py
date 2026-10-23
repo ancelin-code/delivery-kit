@@ -170,5 +170,11 @@ class TestDetectRepoContract:
 
 def test_every_helper_script_is_present() -> None:
     """Guard against a script being renamed or removed without updating this suite."""
+    # Given the helpers this suite covers
     expected = {"detect-repo-contract.sh"}
-    assert expected == {path.name for path in SCRIPTS_DIR.iterdir()}
+
+    # When the scripts directory is listed
+    present = {path.name for path in SCRIPTS_DIR.iterdir()}
+
+    # Then it holds exactly those
+    assert present == expected

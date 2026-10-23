@@ -154,50 +154,62 @@ def claim_in(repo: Path, task_id: str) -> None:
 
 class TestStatusAcrossRepositories:
     def test_a_task_is_claimed_in_the_repository_it_lands_in(self, tmp_path: Path, use_case: tuple[Path, Path]) -> None:
+        # Given an api task claimed in the api clone
         home, api = use_case
         task(home, "h-001")
         task(home, "a-001", repo="api")
         claim_in(api, "a-001")
 
+        # When status is read from home
         result = run(STATUS, [], home, fake_gh(tmp_path))
 
+        # Then the api task is in progress there
         assert result.returncode == 0, result.stderr
         assert states(result.stdout) == {"a-001": "in-progress", "h-001": "ready"}
 
     def test_a_branch_of_the_same_name_in_another_repository_is_not_the_task(
         self, tmp_path: Path, use_case: tuple[Path, Path]
     ) -> None:
+        # Given a home task's branch claimed and merged in the api clone
         home, api = use_case
         task(home, "h-001")
         task(home, "a-001", repo="api")
         claim_in(api, "h-001")
 
+        # When status is read from home
         result = run(STATUS, [], home, fake_gh(tmp_path, merged={"api": ["h-001"]}))
 
+        # Then neither task takes that branch as its own
         assert states(result.stdout) == {"a-001": "ready", "h-001": "ready"}
 
     def test_a_merge_in_another_repository_unblocks_a_dependent_here(
         self, tmp_path: Path, use_case: tuple[Path, Path]
     ) -> None:
         """Dependencies cross repositories: the API contract lands before its consumer."""
+        # Given a home task that depends on an api task merged in api
         home, _ = use_case
         task(home, "a-001", repo="api")
         task(home, "h-001", depends_on="a-001")
 
+        # When status is read from home
         result = run(STATUS, ["--no-fetch"], home, fake_gh(tmp_path, merged={"api": ["a-001"]}))
 
+        # Then the dependent is ready
         assert states(result.stdout) == {"a-001": "done", "h-001": "ready"}
 
     def test_a_snapshot_names_the_repository_and_pull_request_of_each_task(
         self, tmp_path: Path, use_case: tuple[Path, Path]
     ) -> None:
         """A connector files each task under the repository it changes, not the plan's."""
+        # Given a merged api task and a home task depending on it
         home, _ = use_case
         task(home, "a-001", repo="api")
         task(home, "h-001", depends_on="a-001")
 
+        # When a snapshot is taken
         result = run(SNAPSHOT, ["--no-fetch"], home, fake_gh(tmp_path, merged={"api": ["a-001"]}))
 
+        # Then each task carries its repository, and the api one its pull request
         assert result.returncode == 0, result.stderr
         tasks = {t["id"]: t for t in json.loads(result.stdout)["tasks"]}
         assert (tasks["a-001"]["repo"], tasks["a-001"]["state"]) == ("api", "done")
@@ -207,23 +219,29 @@ class TestStatusAcrossRepositories:
     def test_a_task_in_a_repository_with_no_clone_is_an_error(
         self, tmp_path: Path, use_case: tuple[Path, Path]
     ) -> None:
+        # Given a task for a repository not cloned beside home
         home, _ = use_case
         task(home, "w-001", repo="webapp")
 
+        # When status is read
         result = run(STATUS, ["--no-fetch"], home, fake_gh(tmp_path))
 
+        # Then it fails, saying where to clone it
         assert result.returncode == ERROR
         assert "clone it beside home" in result.stderr
 
 
 class TestLaunchAcrossRepositories:
     def test_a_dry_run_names_the_repository_of_each_lane(self, tmp_path: Path, use_case: tuple[Path, Path]) -> None:
+        # Given one home task and one api task
         home, _ = use_case
         task(home, "h-001")
         task(home, "a-001", repo="api")
 
+        # When a dry run plans both
         result = run(LAUNCH, ["--dry-run", "h-001", "a-001"], home, fake_gh(tmp_path))
 
+        # Then each lane names its repository
         lanes = [line.split("\t") for line in result.stdout.splitlines() if line.startswith("WOULD-LAUNCH")]
         assert [(lane[1], lane[-1]) for lane in lanes] == [("h-001", "home"), ("a-001", "api")]
 
@@ -231,6 +249,7 @@ class TestLaunchAcrossRepositories:
     def test_a_lane_works_in_its_repository_and_reads_the_plan_here(
         self, tmp_path: Path, use_case: tuple[Path, Path], harness: str
     ) -> None:
+        # Given an api task planned in home, and a harness that logs where it runs
         home, api = use_case
         task(home, "a-001", repo="api")
         bin_dir = fake_gh(tmp_path)
@@ -241,6 +260,7 @@ class TestLaunchAcrossRepositories:
         (bin_dir / harness).chmod(0o755)
         lanes = tmp_path / "uc" / "lanes"
 
+        # When its lane is launched from home
         result = run(
             LAUNCH,
             ["--harness", harness, "--worktree-root", "../lanes", "a-001"],
@@ -249,6 +269,7 @@ class TestLaunchAcrossRepositories:
             FAKE_LOG=str(log),
         )
 
+        # Then the branch lives in api, and the harness runs there with home readable
         assert result.returncode == 0, result.stdout + result.stderr
         assert "task/a-001" in git(api, "branch", "--list", "task/a-001")
         assert "task/a-001" not in git(home, "branch", "--list", "task/a-001")
@@ -267,6 +288,7 @@ class TestLaunchAcrossRepositories:
     def test_a_lane_in_this_repository_gets_no_extra_directory(
         self, tmp_path: Path, use_case: tuple[Path, Path]
     ) -> None:
+        # Given a home task, and a harness that logs its arguments
         home, _ = use_case
         task(home, "h-001")
         git(home, "add", "-A")
@@ -277,8 +299,10 @@ class TestLaunchAcrossRepositories:
         (bin_dir / "claude").write_text('#!/usr/bin/env bash\nprintf "%s\\n" "$*" >> "$FAKE_LOG"\n', encoding="utf-8")
         (bin_dir / "claude").chmod(0o755)
 
+        # When its lane is launched
         run(LAUNCH, ["--harness", "claude", "--worktree-root", "../lanes", "h-001"], home, bin_dir, FAKE_LOG=str(log))
 
+        # Then the harness gets the plain skill prompt and no extra directory
         deadline = time.monotonic() + 10
         while not log.exists() or not log.read_text(encoding="utf-8").strip():
             assert time.monotonic() < deadline, "the harness was never invoked"
@@ -292,6 +316,7 @@ class TestPublishAcrossRepositories:
     def test_the_commit_and_pull_request_link_the_task_where_it_is_planned(
         self, tmp_path: Path, use_case: tuple[Path, Path]
     ) -> None:
+        # Given a claimed api lane with a change, planned in home
         home, api = use_case
         task(home, "a-001", repo="api")
         git(home, "remote", "set-url", "origin", "git@example.test:org/home.git")
@@ -301,8 +326,10 @@ class TestPublishAcrossRepositories:
         (api / ".lane-report.md").write_text("Did it.\n", encoding="utf-8")
         bin_dir = fake_gh(tmp_path)
 
+        # When it is published
         result = run(PUBLISH, [str(home / "delivery" / "tasks" / "a-001.md")], api, bin_dir)
 
+        # Then the commit and the body link the task file in home
         assert result.returncode == 0, result.stderr
         link = "https://example.test/org/home/blob/HEAD/delivery/tasks/a-001.md"
         assert f"Task: {link}" in git(api, "log", "-1", "--format=%b")
@@ -311,25 +338,41 @@ class TestPublishAcrossRepositories:
 
 class TestValidateAcrossRepositories:
     def test_a_repo_with_a_clone_beside_this_one_is_valid(self, use_case: tuple[Path, Path]) -> None:
+        # Given an api task, with api cloned beside home
         home, _ = use_case
         task(home, "a-001", repo="api")
         write_summary(home / "delivery" / "tasks")
-        assert validate(home / "delivery" / "tasks").returncode == 0
+
+        # When the task set is validated
+        result = validate(home / "delivery" / "tasks")
+
+        # Then it is valid
+        assert result.returncode == 0
 
     def test_a_repo_with_no_clone_is_rejected(self, use_case: tuple[Path, Path]) -> None:
+        # Given a task for a repository not cloned beside home
         home, _ = use_case
         task(home, "w-001", repo="webapp")
         write_summary(home / "delivery" / "tasks")
+
+        # When the task set is validated
         result = validate(home / "delivery" / "tasks")
+
+        # Then it is rejected, saying where to clone it
         assert result.returncode == INVALID
         assert "clone it beside home" in result.stdout + result.stderr
 
     @pytest.mark.parametrize("bad", ["../api", "org/api", ".."])
     def test_a_repo_must_be_a_plain_directory_name(self, use_case: tuple[Path, Path], bad: str) -> None:
+        # Given a task whose repo is a path, not a name
         home, _ = use_case
         task(home, "a-001", repo=bad)
         write_summary(home / "delivery" / "tasks")
+
+        # When the task set is validated
         result = validate(home / "delivery" / "tasks")
+
+        # Then it is rejected
         assert result.returncode == INVALID
         assert "directory name of a sibling clone" in result.stdout + result.stderr
 
@@ -338,6 +381,7 @@ class TestReviewAcrossRepositories:
     def test_a_pull_request_is_read_from_its_repository_and_named_with_it(
         self, tmp_path: Path, use_case: tuple[Path, Path]
     ) -> None:
+        # Given a task in review in api and another in home
         home, _ = use_case
         (home / "delivery").mkdir(exist_ok=True)
         (home / "delivery" / "prd.md").write_text("# PRD\n\n**Status:** approved\n", encoding="utf-8")
@@ -348,8 +392,10 @@ class TestReviewAcrossRepositories:
         task(home, "h-001")
         bin_dir = fake_gh(tmp_path, in_review={"api": {"a-001": 7}, "home": {"h-001": 3}})
 
+        # When where.sh runs from home
         result = run(WHERE, ["--no-fetch"], home, bin_dir)
 
+        # Then the api pull request is named with its repository
         assert result.returncode == 0, result.stderr
         reviews = [line.split("\t")[1:3] for line in result.stdout.splitlines() if line.startswith("REVIEW\t")]
         assert reviews == [["a-001", "api#7"], ["h-001", "#3"]]

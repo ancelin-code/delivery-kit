@@ -1,9 +1,18 @@
 # Delivery Kit
 
-Agent Skills for AI-native delivery: requirements and design spine,
-decomposition, parallel implementation lanes, review.
+[![CI](https://github.com/ancelin-code/delivery-kit/actions/workflows/ci.yaml/badge.svg?branch=develop)](https://github.com/ancelin-code/delivery-kit/actions/workflows/ci.yaml)
+[![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 
-**This repository is the kit.** The five Delivery Kit skills are one workflow,
+Agent Skills for AI-native delivery: requirements and design spine,
+decomposition, parallel implementation lanes, review. Git is the only state:
+no server, no database, no status file.
+
+> **Status: early.** The kit is used on real projects, and `v0.1.0` is its first
+> release. Conventions may still change between versions. Install from `main`,
+> read [CHANGELOG.md](CHANGELOG.md) before updating, and expect breaking
+> changes to be called out there rather than migrated.
+
+**This repository is the kit.** The six Delivery Kit skills are one workflow,
 not a catalogue you pick from. Each phase consumes the file the previous phase
 wrote, so a single skill installed alone is a phase with no input and no
 consumer. Install them together.
@@ -24,11 +33,23 @@ and one pull request.
 | Unit | Written as |
 |---|---|
 | Project | `delivery/prd.md`, with its decision records and `delivery/contracts/` |
+| Milestone, optional | the Milestones section of `delivery/decomposition.md`, and a review note `delivery/milestones/<slug>.md` |
 | Epic | a section of `delivery/decomposition.md` |
 | Task | `delivery/tasks/<id>.md` |
 
 Every artifact lives under `delivery/` at the repository root, so no agent has
 to search for one.
+
+A project too large or too uncertain to cut at once is delivered in
+**milestones**: ordered end-to-end slices, each with an exit criterion. The
+requirements and the design stay whole. Only the current milestone is cut into
+tasks, and once its tasks are merged a person reviews it in a short note:
+whether the exit held, what was learned, and whether to continue or to revise
+the requirements or a decision first. Approving the note lets the next
+milestone be cut. Tasks name the requirement ids they cover, in full or in
+part, so `delivery-status/scripts/coverage.sh` can say what is left of each
+requirement. A project without milestones runs as one flat set, exactly as
+before.
 
 The definitions the agents apply are in
 [delivery conventions](.agents/skills/delivery-orchestrator/references/conventions.md#projects-epics-and-tasks).
@@ -49,7 +70,8 @@ flowchart TD
 
         LAUNCH -->|claims via| ST["/delivery-status"]
         LAUNCH -->|one worktree per task| IMP["/delivery-implement"]
-        IMP -->|draft pull request| G3{{Human approves the merge}}
+        IMP -->|the change, uncommitted| REF["/delivery-refine<br/>one tier up"]
+        REF -->|draft pull request| G3{{Human approves the merge}}
     end
 
     O -.->|direct implement:<br/>one task file, merge gate only| IMP
@@ -57,7 +79,7 @@ flowchart TD
 
     classDef skill fill:#e8f0fe,stroke:#3367d6,color:#111
     classDef gate fill:#fff4e5,stroke:#e8710a,color:#111
-    class O,SPEC,DEC,IMP,ST skill
+    class O,SPEC,DEC,IMP,REF,ST skill
     class G1,G2,G3 gate
 ```
 
@@ -72,13 +94,13 @@ of the route to use:
 
 | Path | When | What runs |
 |---|---|---|
-| Direct implement | One well-understood change with obvious acceptance criteria | one task file, then `delivery-implement` in the ordinary checkout; no claim, no worktree, only the merge gate |
+| Direct implement | One well-understood change with obvious acceptance criteria | one task file, then `delivery-implement` and `delivery-refine` in the ordinary checkout; no claim, no worktree, only the merge gate |
 | Full route | Several tasks, contracts to keep parallel work consistent, or a decision worth recording | every phase and every gate, up to three lanes at once |
 
 How much of a full route runs in parallel is decomposition's finding, not a
 choice made up front; see [Parallel or serial](#parallel-or-serial).
 
-## The five skills
+## The six skills
 
 | Skill | Owns | Produces | Runs as |
 |---|---|---|---|
@@ -87,9 +109,19 @@ choice made up front; see [Parallel or serial](#parallel-or-serial).
 | `delivery-decompose` | Splitting approved work into epics and independent tasks | `delivery/decomposition.md` and `delivery/tasks/<id>.md`, validated | a human's session |
 | `delivery-status` | Claims and run state, read from git | exit codes and tab-separated rows | `sh`, no model |
 | `delivery-implement` | One task into one validated change | a working tree and a handoff report | an unattended lane |
+| `delivery-refine` | Reviewing that change, fixing what the review finds, and simplifying it | the same working tree, and a Refinement section in the report | the same lane, a second session on a stronger model |
 
 Only `delivery-orchestrator` is invoked by a human directly. The rest are reached
 through it, or through `launch-lanes.sh`.
+
+`delivery-refine` is the second session of every lane. It did not write the
+change, it runs on the tier above the task's, and it works in one pass: review
+the change against the task's acceptance criteria, fix what that finds, then
+simplify the lines the change added without altering their behaviour, and
+re-run validation. Simplifying last means the fixes get tidied too, and no
+effort goes into polishing code about to change. A failed refinement never
+loses the implementation: the change is published as it was, and the report
+says so. `--no-refine` on the launcher skips it.
 
 `delivery-spec` covers two stages rather than shipping as two skills: they are
 written in one sitting from the same source material, and the design spine is
@@ -125,7 +157,7 @@ flowchart LR
     T --> L
     L -->|create-only push| C
     L -->|on a won claim| W1 & W2 & W3
-    W1 & W2 & W3 -->|draft PR| PR([review])
+    W1 & W2 & W3 -->|implement, refine, draft PR| PR([review])
 ```
 
 A claim is a create-only push of `task/<id>`: the first push wins, the loser is
@@ -135,10 +167,16 @@ from git refs and pull request state on every read.
 The lane cap is three because three is roughly what one person can review, not
 what the machine can run.
 
+A lane is two sessions in its worktree: `delivery-implement` writes the change,
+then `delivery-refine` reviews and tidies it on a stronger model. The launcher
+then commits, pushes and opens the draft pull request. The lane's branch pushes
+to itself, so a plain `git push` from the worktree reaches `task/<id>` and never
+the default branch.
+
 Each lane's worktree goes in `../lanes/<repository>/<task-id>`, beside the
 checkout the launcher runs from, where `<repository>` is that checkout's
-directory name. The extra level matters because task ids repeat from one use
-case to the next: two repositories cloned side by side would otherwise both put
+directory name. The extra level matters because task ids repeat from one
+project to the next: two repositories cloned side by side would otherwise both put
 their `a-001` in `../lanes/a-001`. Nothing under `lanes/` is tracked by git:
 each directory is a `git worktree` registered with its own clone, holding that
 clone's task branch.
@@ -187,8 +225,8 @@ each merge to start the next task.
 A serial set still goes through every phase and every gate: the requirements,
 contracts and task files are what stop the work encoding guesses, whether or
 not it runs concurrently. What changes is who needs the lanes. When one person
-holds the whole set, skip the launcher and invoke `delivery-implement` per task
-in dependency order; the claim only earns its keep when several people pick
+holds the whole set, skip the launcher and invoke `delivery-implement`, then
+`delivery-refine`, per task in dependency order; the claim only earns its keep when several people pick
 from the same tasks.
 
 ### Which model runs a lane
@@ -229,6 +267,21 @@ developer's own file wins, tier by tier. The full rules are in the
 A lane runs on the first of: `--harness`, the harness its tier maps to,
 `$DELIVERY_HARNESS`, then the first harness found installed. `--harness` moves a
 whole launch on purpose, for example to the one whose allowance still has room.
+
+A lane's refinement session runs one tier up: a `chore` task is reviewed as a
+`build` one, a `build` task as a `plan` one, and a `plan` task by `plan`. With
+the mapping above, a `build` lane is written by `sonnet` and reviewed by `opus`,
+because a reviewer no stronger than the author finds little the author would
+not. When the tier above maps to another harness, the review runs there, which
+also gives the change a second model's view. A tier can name its own
+`reviewer` instead, a model for the tier's own harness:
+
+```ini
+[chore]
+    harness = claude
+    model = haiku
+    reviewer = sonnet
+```
 
 ### Harnesses
 
@@ -388,17 +441,46 @@ dash, BusyBox ash and macOS's own `sh`.
 
 ### 1. Install the kit into a target repository
 
-Use the `skills` CLI. It installs all five skills, writes each one to
+Use the `skills` CLI. It installs all six skills, writes each one to
 `.agents/skills/` and symlinks it into `.claude/skills/`, and records a
 `skills-lock.json` so every developer restores the same version.
 
 ```sh
-npx skills add https://github.com/ancelin-code/delivery-kit.git \
+npx skills add https://github.com/ancelin-code/delivery-kit/tree/main \
   --skill '*' -a claude-code -a github-copilot -y
 ```
 
+The `/tree/main` suffix installs what has been released to `main`. Without it,
+you get the default branch, `develop`, where unreleased work lands first.
+
+To install a release instead of the tip of `main`, name its tag:
+`…/delivery-kit/tree/v0.1.0`. The lock file then records that version, and
+`CHANGELOG.md` lists what each one changed.
+
 Add an `-a <agent>` for each other harness your team uses; `npx skills add
 --help` lists the names it knows.
+
+Keep `-a github-copilot`, or another agent that reads `.agents/skills/`, even
+if your team uses only Claude Code. With `-a claude-code` alone, the CLI copies
+each skill into `.claude/skills/` and creates no `.agents/`. A later
+`npx skills update` then moves the skills it updates to `.agents/skills/` with
+links, and leaves the ones it finds up to date as copies. The kit's skills find
+each other as siblings, so that split install loses `delivery-implement`, and
+lanes would run without it. `where.sh` reports a split install as
+`NEXT repair-install`, and the launcher refuses to start. Installed with both
+agents, every skill is linked from the start and updates keep it that way.
+
+To repair a split install, remove every copy and install again:
+
+```sh
+rm -rf .claude/skills/delivery-* .agents/skills/delivery-*
+npx skills add https://github.com/ancelin-code/delivery-kit/tree/main \
+  --skill '*' -a claude-code -a github-copilot -y
+```
+
+Re-running `npx skills add` with `-a claude-code` alone is not a repair: it
+puts every skill back as a copy in `.claude/skills/`, and leaves the old
+`.agents/skills/` directories behind to go stale.
 
 Then commit what it produced, including `skills-lock.json` and the symlinks. Git
 stores symlinks natively, so **lanes running in worktrees get the kit without a
@@ -523,7 +605,9 @@ sh .agents/skills/delivery-orchestrator/scripts/follow.sh -- --no-web
 
 Options after `--` go to the launcher. Your part is reviewing and merging the
 pull requests it reports; it never merges, and it exits once every task is
-merged, or when the remaining tasks can never become ready. The orchestrator
+merged, or when the remaining tasks can never become ready. With milestones, it
+stops at the end of each one with a `MILESTONE` line, and never starts the
+next. The orchestrator
 starts it for you after the first launch.
 
 ### 4. Watch a running lane
@@ -531,6 +615,10 @@ starts it for you after the first launch.
 Lanes run detached, one process per task, with no terminal attached. Each writes
 everything it does to `.lanes/logs/<task-id>.log` under the main checkout
 (`--log-dir` moves it).
+
+A lane's log prints `REFINE` when its second session starts, `PUBLISHED` with
+the pull request URL when it ends well, and `REFINE-FAILED` if the review
+session failed and the change was published as the first session left it.
 
 ```sh
 tail -f .lanes/logs/a-001.log          # follow one lane
@@ -601,6 +689,10 @@ file and the branch:
 cd "$lane" && claude "/delivery-implement $home/delivery/tasks/a-001.md"
 ```
 
+To redo only the review of a change the first session already left in the
+worktree, run `/delivery-refine` on the same task file and `--report
+.lane-report.md` instead.
+
 Claude Code can also run lanes as attachable background sessions
 (`claude --bg`, then `claude attach <id>`), which would remove this asymmetry on
 the Claude side. The launcher does not use it: Copilot CLI has no equivalent, the
@@ -618,9 +710,9 @@ match it. Connectors live in their own repositories, with their own credentials
 and configuration, so the kit holds nothing tool-specific.
 
 The kit's side is one command. From the planning repository, it prints the
-whole project as JSON: epics and what each delivers, tasks with the state
-`status.sh` gives them, their repository and pull request, and the planning
-documents.
+whole project as JSON: milestones, epics and what each delivers, tasks with
+the state `status.sh` gives them, their repository and pull request, the
+coverage of each requirement, and the planning documents.
 
 ```sh
 sh .agents/skills/delivery-status/scripts/snapshot.sh
@@ -666,6 +758,25 @@ mise run dev     # local environment and git hooks
 mise run lint    # ruff, shellcheck, rumdl, actionlint, Vale, skillcheck, security scan
 mise run test    # behavioural tests
 ```
+
+### Contributing
+
+Issues and pull requests are welcome. Read [AGENTS.md](AGENTS.md) first: it
+holds the rules every change is checked against, above all that a rule stays in
+the kit only if removing it measurably degrades results.
+
+- Branch from `develop` and open the pull request against it. Pull requests are
+  squash-merged, so the title is a Conventional Commits line.
+- `main` holds released work only. It moves forward by merging `develop` into
+  it, and every release tag `vX.Y.Z` is cut on it.
+- Both branches are protected. A change reaches them only through a pull
+  request whose `lint` and `test` checks pass on Linux, macOS and Alpine.
+  Neither branch can be force-pushed or deleted, and a release tag cannot be
+  moved or deleted.
+- Work done with an agent is labelled `ai-assisted`; see
+  [AGENTS.md](AGENTS.md#pull-requests).
+- Each test marks its steps with `# Given`, `# When` and `# Then` comments; see
+  [AGENTS.md](AGENTS.md#validation).
 
 ## Maintenance
 

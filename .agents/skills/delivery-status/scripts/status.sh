@@ -21,7 +21,17 @@ usage() {
   cat <<'USAGE'
 usage: sh status.sh [--tasks-dir <dir>] [--remote <name>] [filter]
 
-Prints one TASK row per task: id, state, holder, title.
+Prints one TASK row per task: id, state, holder, title. When the
+decomposition summary has a Milestones section, also one MILESTONE row per
+milestone, in plan order: slug, state, epics, targeted requirement ids.
+
+Milestone states:
+  closed        its review note is approved
+  undecomposed  the current milestone, with no epics cut yet
+  active        the current milestone, with tasks not yet merged
+  merged        the current milestone, every task merged, no review note
+  reviewing     the current milestone, every task merged, review note in draft
+  planned       a milestone after the current one
 
 Filters (optional, choose one):
   --ready         Only tasks whose dependencies are all done and unclaimed.
@@ -106,6 +116,7 @@ for file in "$tasks_dir"/*.md; do
 "
   put depends_of "$id" "$(field "$file" depends_on)"
   put title_of "$id" "$(field "$file" title)"
+  put epic_of "$id" "$(field "$file" epic)"
   repo="$(field "$file" repo)"
   if [ -n "$repo" ]; then put repo_of "$id" "$(dirname "$home")/$repo"; else put repo_of "$id" "$home"; fi
 done
@@ -215,6 +226,71 @@ for id in $(printf '%s' "$ids" | sort); do
   who="$(get holder "$id")"
   printf 'TASK\t%s\t%s\t%s\t%s\n' "$id" "$state" "${who:--}" "$(get title_of "$id")"
 done
+
+# Milestones, when the plan has them. The current milestone is the first one
+# whose review note is not approved: only it has tasks still to merge, so its
+# state is read from theirs. The parsing mirrors the Milestones section of the
+# decomposition template: a "### <slug>" heading per milestone, then
+# "**Epics:**" and "**Requirements:**" lines, either of which may wrap.
+plan_dir="$(dirname "$tasks_dir")"
+milestones="$(awk '
+  # An empty list is written "-": read splits on tabs as whitespace, and would
+  # otherwise shift the fields after it.
+  function flush() { if (slug != "") printf "%s\t%s\t%s\n", slug, (epics == "" ? "-" : epics), (targets == "" ? "-" : targets) }
+  function ids(s) {
+    sub(/^\*\*[A-Za-z]+:\*\*/, "", s); gsub(/\([^)]*\)/, " ", s); gsub(/,/, " ", s)
+    gsub(/[ \t]+/, " ", s); sub(/^ /, "", s); sub(/ $/, "", s); return s
+  }
+  /^##[[:space:]]/ { flush(); slug = ""; in_plan = ($0 ~ /^##[[:space:]]+Milestones[[:space:]]*$/); next }
+  !in_plan { next }
+  /^###[[:space:]]/ {
+    flush(); slug = $0; sub(/^###[[:space:]]+/, "", slug); sub(/[[:space:]]+$/, "", slug)
+    epics = ""; targets = ""; open = ""; next
+  }
+  slug == "" { next }
+  /^\*\*Epics:\*\*/ { epics = ids($0); open = "epics"; next }
+  /^\*\*Requirements:\*\*/ { targets = ids($0); open = "targets"; next }
+  /^[ \t]*$/ || /^\*\*/ { open = ""; next }
+  open == "epics" { epics = ids(epics " " $0) }
+  open == "targets" { targets = ids(targets " " $0) }
+  END { flush() }
+' "$plan_dir/decomposition.md" 2>/dev/null || true)"
+
+# reviewed <slug>: the review note's status, empty when there is no note.
+reviewed() {
+  [ -f "$plan_dir/milestones/$1.md" ] || return 0
+  awk '/^\*\*Status:\*\*/ { sub(/^\*\*Status:\*\*[ \t]*/, ""); sub(/[ \t]+$/, ""); print tolower($0); exit }' \
+    "$plan_dir/milestones/$1.md"
+}
+
+if [ -z "$filter" ] && [ -n "$milestones" ]; then
+  current=""
+  while IFS="$tab" read -r slug epics targets; do
+    [ "$epics" != - ] || epics=""
+    [ "$targets" != - ] || targets=""
+    review="$(reviewed "$slug")"
+    if [ "$review" = approved ]; then
+      state=closed
+    elif [ -n "$current" ]; then
+      state=planned
+    else
+      current="$slug"
+      if [ -z "$epics" ]; then
+        state=undecomposed
+      else
+        state=merged
+        for id in $ids; do
+          case " $epics " in *" $(get epic_of "$id") "*) ;; *) continue ;; esac
+          [ "$(state_of "$id")" = "done" ] || state=active
+        done
+        [ "$state" != merged ] || [ -z "$review" ] || state=reviewing
+      fi
+    fi
+    printf 'MILESTONE\t%s\t%s\t%s\t%s\n' "$slug" "$state" "${epics:--}" "${targets:--}"
+  done <<EOF_MILESTONES
+$milestones
+EOF_MILESTONES
+fi
 
 printf 'SUMMARY\tdone=%s\tin-review=%s\tin-progress=%s\tready=%s\tblocked=%s\n' \
   "$counted_done" "$counted_review" "$counted_prog" "$counted_ready" "$counted_blocked"

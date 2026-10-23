@@ -67,7 +67,10 @@ Concretely:
 
 - `mise run lint` runs ruff, shellcheck, rumdl, actionlint, Vale, skillcheck,
   the helper-mode check, and the skill security scanner
-- `mise run test` runs the behavioural test suite
+- `mise run test` runs the behavioural test suite. Each test marks its steps
+  with `# Given`, `# When` and `# Then` comments, each followed by a short
+  phrase saying what that step sets up, does or checks; `# Given` is left out
+  when there is nothing to set up
 - The kit's helpers are POSIX `sh` and POSIX `awk`, held to it by ShellCheck's
   shebang dialect: no arrays, `[[ ]]`, `local` or `pipefail`. See
   [ADR-007](docs/decisions/ADR-007-posix-sh-helpers.md) for what replaces them.
@@ -84,6 +87,12 @@ in a trailing comment; Dependabot keeps both current. Tests run on Linux (dash),
 macOS (its own `sh`) and Alpine (BusyBox); lint runs on Linux only.
 
 ## Pull requests
+
+Branch from `develop` and open the pull request against it; it is squash-merged.
+`main` receives `develop` through a merge pull request and carries the release
+tags, which `release.yaml` refuses anywhere else. Both branches are protected by
+rulesets: a pull request with passing `lint` and `test` checks, no force-push,
+no deletion. Release tags `v*` cannot be moved or deleted.
 
 Pull requests that agents worked on carry the `ai-assisted` label. A workflow
 adds it when a commit has a `Co-authored-by` or `Assisted-by` trailer naming an

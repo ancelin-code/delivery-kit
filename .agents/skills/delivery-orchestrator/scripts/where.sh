@@ -22,11 +22,15 @@ Run from the repository root. Prints, tab-separated:
   ROUTING  present | missing          the AGENTS.md block that routes requests here
   PHASE    <phase> <state> <path>     requirements, design, decomposition
   TASK     ...                        one row per task, as delivery-status prints it
+  MILESTONE ...                       one row per milestone when the plan has them,
+                                      as delivery-status prints it
   SUMMARY  ...                        task counts, as delivery-status prints it
   REVIEW   <id> <pr> <lens> <skill> <why>
                                       per task in review, one row per lens; skill
                                       is - when no skill is mapped to the lens
-  NEXT     <action> <detail>          what to do now; more than one when both apply
+  NEXT     <action> <detail>          what to do now; more than one when both apply.
+                                      repair-install, alone, when a kit skill is
+                                      missing beside this one
 
 Options:
   --remote <name>   Shared remote, when it is not origin.
@@ -54,10 +58,22 @@ done
 git rev-parse --is-inside-work-tree >/dev/null 2>&1 || die "not inside a git repository"
 [ "$(git rev-parse --show-toplevel)" = "$(pwd -P)" ] || die "run from the repository root"
 
-# The kit installs as a whole, so delivery-status sits beside this skill, the
-# same assumption launch-lanes.sh makes for claim.sh.
+# The kit installs as a whole: its skills find each other as siblings, the way
+# launch-lanes.sh finds claim.sh and delivery-implement. An install whose skills
+# are split between two directories, as an update that relinks some skills and
+# leaves others copied produces, loses its siblings, so it is the first thing
+# to fix: nothing after it can be trusted.
 here="$(cd "$(dirname "$0")" && pwd)"
-status_script="$here/../../delivery-status/scripts/status.sh"
+missing=""
+for skill in delivery-spec delivery-decompose delivery-implement delivery-refine delivery-status; do
+  [ -f "$here/../../$skill/SKILL.md" ] || missing="$missing${missing:+ }$skill"
+done
+if [ -n "$missing" ]; then
+  printf 'NEXT\trepair-install\t%s\n' "not beside delivery-orchestrator in $(cd -P "$here/../.." && pwd -P): $missing. The kit installs whole: remove every delivery-* skill directory, then reinstall them all in one 'npx skills add', naming at least one agent that reads .agents/skills"
+  exit 0
+fi
+status_dir="$(cd "$here/../../delivery-status/scripts" && pwd)"
+status_script="$status_dir/status.sh"
 [ -f "$status_script" ] || die "delivery-status is not installed beside delivery-orchestrator"
 
 # The value of the "**Status:**" line, lowercased; empty when there is none.
@@ -127,10 +143,13 @@ printf 'PHASE\tdecomposition\t%s\t%s\n' "$decomposition_state" "$decomposition"
 # Scripts are named by a path runnable from the repository root, so an agent can
 # act on a NEXT line without looking for them.
 root="$(pwd -P)"
-case "$here" in
-  "$root"/*) shown="${here#"$root"/}" ;;
-  *) shown="$here" ;;
-esac
+shown_path() {
+  case "$1" in
+    "$root"/*) printf '%s' "${1#"$root"/}" ;;
+    *) printf '%s' "$1" ;;
+  esac
+}
+shown="$(shown_path "$here")"
 
 next() {
   printf 'NEXT\t%s\t%s\n' "$1" "$2"
@@ -282,6 +301,26 @@ EOF_TABLE
 done
 
 [ -z "$in_review" ] || next review "pull requests await review, one pass per REVIEW row: $in_review"
+
+# Milestones. Only the current one, the first whose review note is not
+# approved, has work left; its state says whether that work is lanes, a cut,
+# or a review. A plan without milestones prints no MILESTONE row.
+current="$(printf '%s\n' "$rows" | awk -F'\t' '$1 == "MILESTONE" && $3 != "closed" && $3 != "planned" { print $2 "\t" $3; exit }')"
+milestone="${current%%"$tab"*}"
+case "${current#*"$tab"}" in
+  undecomposed)
+    next decompose-milestone "$milestone: decompose it with delivery-decompose, from delivery/milestones/ and the plan in delivery/decomposition.md"
+    exit 0
+    ;;
+  merged)
+    next review-milestone "every task of $milestone is merged: check its exit criterion, then write delivery/milestones/$milestone.md with delivery-decompose (coverage: sh $(shown_path "$status_dir")/coverage.sh --milestone $milestone)"
+    exit 0
+    ;;
+  reviewing)
+    next approve-milestone-review "delivery/milestones/$milestone.md awaits human approval"
+    exit 0
+    ;;
+esac
 
 # A task with "parallel: false" runs alone: nothing else of the set in flight
 # while it runs. A set that serializes is one where every task says so.

@@ -63,6 +63,10 @@ a skill can be mapped in `delivery/review-lenses.conf`. When a named skill is no
 installed, say so by name rather than substituting another. The file's format
 is in the [review lenses](references/conventions.md#review-lenses) convention.
 
+A `NEXT repair-install` line means the kit's skills are not all installed side
+by side, so a phase would run without one of its siblings. Stop, and show the
+user that line: repairing the install is theirs to do.
+
 A `NEXT install-routing` line means this project's `AGENTS.md` does not yet send
 requests here. Run the command it names once, and mention it in the answer.
 
@@ -84,12 +88,22 @@ fresh context, so a long session never has to stay alive to carry state.
 | Requirements | `delivery/prd.md` | `delivery-spec` (stage A) | **Human approves** |
 | Design spine | decision records in `docs/adr/`, `docs/decisions/` or `delivery/decisions/`, and `delivery/contracts/<interface>.md` | `delivery-spec` (stage B) | **Human approves** |
 | Decomposition | `delivery/decomposition.md`, plus `delivery/tasks/<id>.md` per task | `delivery-decompose` | **Human approves** |
-| Lanes | a draft pull request per task | `delivery-status`, then `delivery-implement` | none, runs unattended |
+| Lanes | a draft pull request per task | `delivery-status`, then `delivery-implement`, then `delivery-refine` | none, runs unattended |
 | Review | findings on the pull request | the review skill each `REVIEW` row names, else the harness review | **Human approves the merge** |
+| Milestone review, when the plan has milestones | `delivery/milestones/<slug>.md` | `delivery-decompose` | **Human approves** |
 
 Approval gates sit on **artifacts**, not on steps. Once decomposition is
 approved, lanes run unattended up to a draft pull request. Pull request review is
 the final gate.
+
+A plan cut in milestones goes round the last three phases once per milestone,
+as the [delivery conventions](references/conventions.md#milestones) define.
+`where.sh` prints a `MILESTONE` row for each, and `NEXT review-milestone`,
+`approve-milestone-review` or `decompose-milestone` at the boundary. Never cut
+or start the next milestone before its predecessor's review note is approved:
+that stop is the point of having milestones. When the review decides to
+revise, route the revision to `delivery-spec`; the gates it reopens hold the
+next cut back by themselves.
 
 ## Choosing the ceremony
 
@@ -107,14 +121,16 @@ Whether a full-route set runs in parallel is decomposition's finding, not a
 choice made here: tasks marked `parallel: false` run alone, and a set that
 serializes marks them all. The phases and gates are the same either way. When
 one person holds a serial set, skip the launcher and invoke `delivery-implement`
-per task in dependency order; the claim only earns its keep when several people
+then `delivery-refine` per task in dependency order; the claim only earns its keep when several people
 pick from the same tasks.
 
 ### Direct implement
 
 Write one task file, `delivery/tasks/<id>.md`, from
 `<delivery-decompose>/assets/task.template.md`, then invoke `delivery-implement`
-on it in the ordinary checkout. Nothing else in this skill applies.
+on it in the ordinary checkout, and `delivery-refine` on the same task file
+after it, on a stronger model when the harness lets you choose one. Nothing else
+in this skill applies.
 
 Skip the claim, the worktree, the launcher, `delivery-status` and all three
 approval gates. Those coordinate concurrent lanes and guard artifacts this path
@@ -168,7 +184,8 @@ sh <skill-root>/scripts/follow.sh -- <the launcher options you used>
 
 It launches each task as the merges it depends on land, within the same limits,
 and prints one line per event: `PUBLISHED`, `MERGED`, `LAUNCHED`, `LANE-FAILED`,
-and `COMPLETE` or `STUCK` when it exits. Run it in the background where the
+and `COMPLETE`, `MILESTONE` or `STUCK` when it exits. `MILESTONE` means the
+current milestone needs a person: tell the user, and take up its review. Run it in the background where the
 harness reports a background command's output as it arrives, and tell the user
 about the lines that need them: a pull request to review, a failed lane, a stuck
 set. Merging stays with the user; the loop never merges.
@@ -214,6 +231,6 @@ request commands the harness already performs well.
 ## Acceptance Criteria
 
 - every phase transition happened through a file, not a live session
-- each of the three artifact gates was approved by a human before the next phase
+- each artifact gate, including a milestone's review note, was approved by a human before the next phase
 - no lane ran on a task claimed by somebody else, and no two conflicting tasks ran together
 - a missing delegate skill was reported by name instead of being improvised

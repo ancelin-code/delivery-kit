@@ -17,8 +17,10 @@ usage() {
   cat <<'USAGE'
 usage: sh snapshot.sh [options]
 
-Prints the project, its epics, its tasks with their derived state and pull
-request, and its documents, as one JSON document (schema 1) on stdout.
+Prints the project, its milestones, its epics, its tasks with their derived
+state and pull request, the coverage of its requirements, and its documents,
+as one JSON document (schema 1) on stdout. A project without milestones, or
+whose requirements carry no ids, has an empty list for them.
 
 Options:
   --tasks-dir <dir>   Directory holding <id>.md task files (default: delivery/tasks).
@@ -208,6 +210,61 @@ while IFS="$tab" read -r epic _; do
   add epics_json "$(printf '    {"id": %s, "delivers": %s}' "$(json_str "$epic")" "$(json_or_null "$(epic_delivers "$epic")")")"
 done <"$store/epics"
 
+# Milestones, in plan order, with the state status.sh derives and the exit
+# line from the decomposition summary, which may wrap.
+: >"$store/exits"
+if [ -f "$decomposition" ]; then
+  awk '
+    function flush() { if (slug != "" && text != "") { gsub(/^ +| +$/, "", text); printf "%s\t%s\n", slug, text } }
+    /^##[[:space:]]/ { flush(); slug = ""; in_plan = ($0 ~ /^##[[:space:]]+Milestones[[:space:]]*$/); next }
+    !in_plan { next }
+    /^###[[:space:]]/ { flush(); slug = $0; sub(/^###[[:space:]]+/, "", slug); sub(/[[:space:]]+$/, "", slug); text = ""; open = 0; next }
+    /^\*\*Exit:\*\*/ { text = $0; sub(/^\*\*Exit:\*\*[ \t]*/, "", text); open = 1; next }
+    /^[ \t]*$/ || /^\*\*/ { open = 0; next }
+    open { gsub(/\t/, " "); text = text " " $0 }
+    END { flush() }
+  ' "$decomposition" >"$store/exits"
+fi
+while IFS="$tab" read -r kind slug state epics targets; do
+  [ "$kind" = MILESTONE ] || continue
+  [ "$epics" != - ] || epics=""
+  [ "$targets" != - ] || targets=""
+  exit_text="$(K="$slug" awk -F'\t' '$1 == ENVIRON["K"] { print substr($0, length($1) + 2); exit }' "$store/exits")"
+  add milestones_json "$(
+    printf '    {"id": %s, "state": %s, "exit": %s,\n' \
+      "$(json_str "$slug")" "$(json_str "$state")" "$(json_or_null "$exit_text")"
+    printf '     "epics": %s, "requirements": %s}' "$(json_list "$epics")" "$(json_list "$targets")"
+  )"
+done <<EOF_MILESTONES
+$status_out
+EOF_MILESTONES
+
+# Coverage of each requirement, as coverage.sh reports it, when the
+# requirements carry ids. Its failure is this script's failure, as status.sh's is.
+if [ -f "$delivery/prd.md" ] && grep -Eq '^[-*][[:space:]]+\*\*[A-Za-z0-9][A-Za-z0-9-]*\.\*\*' "$delivery/prd.md"; then
+  coverage_out="$(sh "$(dirname "$0")/coverage.sh" "$@")" || exit $?
+  # comma lists, "-" when empty, as JSON arrays
+  csv_list() { if [ "$1" = - ]; then printf '[]'; else json_list "$(printf '%s' "$1" | tr ',' ' ')"; fi; }
+  while IFS="$tab" read -r kind req state milestones merged open; do
+    [ "$kind" = REQ ] || continue
+    parts=""
+    while IFS="$tab" read -r pkind preq ptask pstate pnote; do
+      [ "$pkind" = PART ] && [ "$preq" = "$req" ] || continue
+      parts="${parts:+$parts, }$(printf '{"task": %s, "state": %s, "note": %s}' \
+        "$(json_str "$ptask")" "$(json_str "$pstate")" "$(json_str "$pnote")")"
+    done <<EOF_PARTS
+$coverage_out
+EOF_PARTS
+    add requirements_json "$(
+      printf '    {"id": %s, "state": %s, "milestones": %s,\n' \
+        "$(json_str "$req")" "$(json_str "$state")" "$(csv_list "$milestones")"
+      printf '     "merged": %s, "open": %s, "parts": [%s]}' "$(csv_list "$merged")" "$(csv_list "$open")" "$parts"
+    )"
+  done <<EOF_COVERAGE
+$coverage_out
+EOF_COVERAGE
+fi
+
 # The documents a reader outside git would want, with the title of each, so a
 # connector can publish them without parsing markdown itself.
 add_doc() {
@@ -229,7 +286,9 @@ printf '{\n'
 printf '  "schema": %s,\n' "$schema"
 printf '  "use_case": {"repo": %s, "commit": %s},\n' \
   "$(json_str "$(basename "$home")")" "$(json_str "$(git rev-parse HEAD)")"
+printf '  "milestones": [\n'; print_list milestones_json; printf '  ],\n'
 printf '  "epics": [\n'; print_list epics_json; printf '  ],\n'
 printf '  "tasks": [\n'; print_list tasks_json; printf '  ],\n'
+printf '  "requirements": [\n'; print_list requirements_json; printf '  ],\n'
 printf '  "documents": [\n'; print_list docs_json; printf '  ]\n'
 printf '}\n'

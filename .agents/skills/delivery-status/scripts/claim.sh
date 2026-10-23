@@ -123,6 +123,16 @@ if [ "$push_rc" -eq 0 ]; then
   printf 'COMMIT\t%s\n' "$claim_commit"
   printf 'CLAIMANT\t%s\n' "$claimant"
 
+  # The branch was usually created from the default branch on the remote, which
+  # git then sets as its upstream: a plain push is refused, or with
+  # push.default=upstream it lands on the default branch. Its upstream is the
+  # branch just claimed. Set in config, it needs no remote-tracking ref.
+  if [ "$(git branch --show-current 2>/dev/null || true)" = "$branch" ]; then
+    git config "branch.$branch.remote" "$remote"
+    git config "branch.$branch.merge" "$ref"
+    printf 'UPSTREAM\t%s/%s\n' "$remote" "$branch"
+  fi
+
   if [ "$advance" -eq 1 ] && [ "$(git branch --show-current 2>/dev/null || true)" = "$branch" ]; then
     if [ -n "$(git status --porcelain)" ]; then
       printf 'NOTE\t%s\n' "local branch left in place: worktree has uncommitted changes"

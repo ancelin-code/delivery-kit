@@ -108,11 +108,14 @@ def remote_subject(tmp_path: Path) -> str:
 
 class TestPublishing:
     def test_a_finished_lane_becomes_a_draft_pull_request(self, tmp_path: Path) -> None:
+        # Given a claimed lane with an uncommitted change
         lane = claimed_lane(tmp_path)
         (lane / "widget.py").write_text("print('widget')\n", encoding="utf-8")
 
+        # When it is published
         result = publish(lane, tmp_path)
 
+        # Then the change is pushed and a labelled draft pull request opens
         assert result.returncode == OK, result.stderr
         assert result.stdout == f"PUBLISHED\ta-001\t{URL}\n"
         assert remote_subject(tmp_path) == "feat(a): do a-001"
@@ -122,24 +125,30 @@ class TestPublishing:
 
     def test_the_body_carries_the_criteria_and_the_report(self, tmp_path: Path) -> None:
         """The reviewer checks the diff against the criteria, and the report says what was run."""
+        # Given a lane with a change and a report
         lane = claimed_lane(tmp_path)
         (lane / "widget.py").write_text("print('widget')\n", encoding="utf-8")
         (lane / ".lane-report.md").write_text("Validation run: pytest, 3 passed.\n", encoding="utf-8")
 
+        # When it is published
         publish(lane, tmp_path)
 
+        # Then the body has the criteria and the report, and nothing after the criteria
         body = (tmp_path / "body.md").read_text(encoding="utf-8")
         assert "- the widget renders" in body
         assert "Validation run: pytest, 3 passed." in body
         assert "Run it." not in body, "the section after the criteria leaked into the body"
 
     def test_the_report_is_never_committed(self, tmp_path: Path) -> None:
+        # Given a lane with a change and a report
         lane = claimed_lane(tmp_path)
         (lane / "widget.py").write_text("print('widget')\n", encoding="utf-8")
         (lane / ".lane-report.md").write_text("report\n", encoding="utf-8")
 
+        # When it is published
         publish(lane, tmp_path)
 
+        # Then the change is pushed without the report
         files = git(tmp_path / "origin.git", "ls-tree", "-r", "--name-only", "task/a-001").stdout.split()
         assert "widget.py" in files
         assert ".lane-report.md" not in files
@@ -154,6 +163,7 @@ class TestPublishing:
     )
     def test_a_repository_template_makes_the_report_the_whole_body(self, tmp_path: Path, template: str) -> None:
         """The lane fills the template; wrapping it in the kit's own sections would break it."""
+        # Given a repository pull request template, and a report that fills it
         lane = claimed_lane(tmp_path)
         (lane / template).parent.mkdir(parents=True, exist_ok=True)
         (lane / template).write_text("## Summary\n\n## Testing\n", encoding="utf-8")
@@ -161,120 +171,155 @@ class TestPublishing:
         filled = "## Summary\n\nAdds the widget. Task: delivery/tasks/a-001.md\n\n## Testing\n\npytest\n"
         (lane / ".lane-report.md").write_text(filled, encoding="utf-8")
 
+        # When the lane is published
         publish(lane, tmp_path)
 
+        # Then the body is the report, unwrapped
         assert (tmp_path / "body.md").read_text(encoding="utf-8") == filled
 
     def test_without_a_report_the_template_does_not_hide_the_criteria(self, tmp_path: Path) -> None:
+        # Given a repository template but no report
         lane = claimed_lane(tmp_path)
         (lane / ".github").mkdir()
         (lane / ".github" / "pull_request_template.md").write_text("## Summary\n", encoding="utf-8")
         (lane / "widget.py").write_text("print('widget')\n", encoding="utf-8")
 
+        # When the lane is published
         publish(lane, tmp_path)
 
+        # Then the body still has the criteria and says no report was written
         body = (tmp_path / "body.md").read_text(encoding="utf-8")
         assert "- the widget renders" in body
         assert "wrote no report" in body
 
     def test_says_when_the_lane_wrote_no_report(self, tmp_path: Path) -> None:
+        # Given a lane with a change and no report
         lane = claimed_lane(tmp_path)
         (lane / "widget.py").write_text("print('widget')\n", encoding="utf-8")
 
+        # When it is published
         publish(lane, tmp_path)
 
+        # Then the body says no report was written
         assert "wrote no report" in (tmp_path / "body.md").read_text(encoding="utf-8")
 
     def test_a_lane_that_left_no_change_publishes_nothing(self, tmp_path: Path) -> None:
         """A lane that stopped on a bad task reverts its attempt; no pull request may open."""
+        # Given a lane with a report but no change
         lane = claimed_lane(tmp_path)
         (lane / ".lane-report.md").write_text("Stopped: the task is wrong.\n", encoding="utf-8")
 
+        # When it is published
         result = publish(lane, tmp_path)
 
+        # Then nothing is pushed and gh is never called
         assert result.returncode == NOTHING
         assert result.stdout.startswith("NOTHING\ta-001")
         assert not (tmp_path / "gh.log").read_text(), "gh must not be called"
 
     def test_publishes_commits_the_lane_made_itself(self, tmp_path: Path) -> None:
+        # Given a lane that committed its own change
         lane = claimed_lane(tmp_path)
         (lane / "widget.py").write_text("print('widget')\n", encoding="utf-8")
         git(lane, "add", "widget.py")
         git(lane, "commit", "-q", "-m", "feat(a): add the widget")
 
+        # When it is published
         result = publish(lane, tmp_path)
 
+        # Then that commit is pushed as it is
         assert result.returncode == OK, result.stderr
         assert remote_subject(tmp_path) == "feat(a): add the widget"
 
 
 class TestCommitSubject:
     def test_uses_the_task_type(self, tmp_path: Path) -> None:
+        # Given a fix task
         lane = claimed_lane(tmp_path, title="Stop the loader dropping footnotes", task_type="fix")
         (lane / "loader.py").write_text("x = 1\n", encoding="utf-8")
 
+        # When its lane is published
         publish(lane, tmp_path)
 
+        # Then the subject is a fix with the title in lower case
         assert remote_subject(tmp_path) == "fix(a): stop the loader dropping footnotes"
 
     def test_leaves_a_leading_acronym_alone(self, tmp_path: Path) -> None:
+        # Given a title starting with an acronym
         lane = claimed_lane(tmp_path, title="DITA conrefs resolve")
         (lane / "loader.py").write_text("x = 1\n", encoding="utf-8")
 
+        # When its lane is published
         publish(lane, tmp_path)
 
+        # Then the acronym keeps its case
         assert remote_subject(tmp_path) == "feat(a): DITA conrefs resolve"
 
 
 class TestPullRequest:
     def test_a_rerun_pushes_without_opening_a_second_pull_request(self, tmp_path: Path) -> None:
+        # Given a lane whose pull request is already open
         lane = claimed_lane(tmp_path)
         (lane / "widget.py").write_text("print('widget')\n", encoding="utf-8")
 
+        # When it is published again
         result = publish(lane, tmp_path, GH_EXISTING=URL)
 
+        # Then the open pull request is reported and no other is created
         assert result.stdout == f"PUBLISHED\ta-001\t{URL}\n"
         assert "pr create" not in (tmp_path / "gh.log").read_text()
 
     def test_a_rerun_opens_a_pull_request_that_is_missing(self, tmp_path: Path) -> None:
         """Re-running is the recovery path, so an already pushed lane must still publish."""
+        # Given a lane already pushed but with no pull request
         lane = claimed_lane(tmp_path)
         (lane / "widget.py").write_text("print('widget')\n", encoding="utf-8")
         git(lane, "add", "widget.py")
         git(lane, "commit", "-q", "-m", "feat(a): add the widget")
         git(lane, "push", "-q", "origin", "HEAD:refs/heads/task/a-001")
 
+        # When it is published again
         result = publish(lane, tmp_path)
 
+        # Then the pull request is created
         assert result.stdout == f"PUBLISHED\ta-001\t{URL}\n"
         assert "pr create" in (tmp_path / "gh.log").read_text()
 
     def test_a_closed_pull_request_is_not_reused(self, tmp_path: Path) -> None:
         """A relaunched task needs a new pull request, not the one that was closed."""
+        # Given a lane whose earlier pull request was closed
         lane = claimed_lane(tmp_path)
         (lane / "widget.py").write_text("print('widget')\n", encoding="utf-8")
 
+        # When it is published
         result = publish(lane, tmp_path, GH_EXISTING="https://example.test/pr/2", GH_EXISTING_STATE="CLOSED")
 
+        # Then a new pull request is created
         assert result.stdout == f"PUBLISHED\ta-001\t{URL}\n"
         assert "pr create" in (tmp_path / "gh.log").read_text()
 
     def test_opens_the_pull_request_without_a_missing_label(self, tmp_path: Path) -> None:
         """The pull request is the point; a repository without the label must not block it."""
+        # Given a repository without the ai-assisted label
         lane = claimed_lane(tmp_path)
         (lane / "widget.py").write_text("print('widget')\n", encoding="utf-8")
 
+        # When a lane is published
         result = publish(lane, tmp_path, GH_NO_LABEL="1")
 
+        # Then the pull request opens anyway, with a warning
         assert result.returncode == OK, result.stderr
         assert result.stdout == f"PUBLISHED\ta-001\t{URL}\n"
         assert "ai-assisted label could not be applied" in result.stderr
 
     def test_refuses_to_run_off_the_task_branch(self, tmp_path: Path) -> None:
+        # Given a lane switched to another branch
         lane = claimed_lane(tmp_path)
         git(lane, "checkout", "-q", "-b", "elsewhere")
 
+        # When it is published
         result = publish(lane, tmp_path)
 
+        # Then it refuses
         assert result.returncode == USAGE_ERROR
         assert "not on task/a-001" in result.stderr
