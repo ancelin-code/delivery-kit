@@ -67,7 +67,10 @@ Concretely:
 
 - `mise run lint` runs ruff, shellcheck, rumdl, actionlint, Vale, skillcheck,
   the helper-mode check, and the skill security scanner
-- `mise run test` runs the behavioural test suite
+- `mise run test` runs the behavioural test suite. Each test marks its steps
+  with `# Given`, `# When` and `# Then` comments, each followed by a short
+  phrase saying what that step sets up, does or checks; `# Given` is left out
+  when there is nothing to set up
 - The kit's helpers are POSIX `sh` and POSIX `awk`, held to it by ShellCheck's
   shebang dialect: no arrays, `[[ ]]`, `local` or `pipefail`. See
   [ADR-007](docs/decisions/ADR-007-posix-sh-helpers.md) for what replaces them.

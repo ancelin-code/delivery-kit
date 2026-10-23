@@ -45,48 +45,61 @@ def remote_has_claim(tmp_path: Path) -> bool:
 class TestRelease:
     def test_an_untouched_lane_gives_its_task_back(self, tmp_path: Path) -> None:
         """A session that died at startup must not hold the task until someone notices."""
+        # Given a claimed lane where nothing was done
         lane = claimed_lane(tmp_path)
 
+        # When it is released
         result = release(lane)
 
+        # Then the claim is gone from the remote
         assert result.returncode == RELEASED, result.stderr
         assert result.stdout == "RELEASED\ta-001\n"
         assert not remote_has_claim(tmp_path)
 
     def test_removes_the_worktree_and_local_branch(self, tmp_path: Path) -> None:
         """Otherwise the next launch finds the path taken and skips the task."""
+        # Given a claimed lane where nothing was done
         lane = claimed_lane(tmp_path)
 
+        # When it is released
         release(lane)
 
+        # Then its worktree and local branch are gone too
         assert not lane.exists()
         assert "task/a-001" not in git(tmp_path / "dev", "branch", "--list").stdout
 
     def test_keeps_a_lane_with_uncommitted_work(self, tmp_path: Path) -> None:
+        # Given a lane with an uncommitted file
         lane = claimed_lane(tmp_path)
         (lane / "widget.py").write_text("print('half done')\n", encoding="utf-8")
 
+        # When it is released
         result = release(lane)
 
+        # Then the claim and the work are kept
         assert result.returncode == KEPT
         assert "has changes" in result.stdout
         assert remote_has_claim(tmp_path)
         assert (lane / "widget.py").exists()
 
     def test_keeps_a_lane_that_committed(self, tmp_path: Path) -> None:
+        # Given a lane that committed past its claim
         lane = claimed_lane(tmp_path)
         (lane / "widget.py").write_text("print('widget')\n", encoding="utf-8")
         git(lane, "add", "widget.py")
         git(lane, "commit", "-q", "-m", "feat(a): add the widget")
 
+        # When it is released
         result = release(lane)
 
+        # Then the claim is kept
         assert result.returncode == KEPT
         assert "commits past the claim" in result.stdout
         assert remote_has_claim(tmp_path)
 
     def test_never_deletes_a_branch_that_moved_on(self, tmp_path: Path) -> None:
         """The remote is the truth: someone may have pushed to the task since."""
+        # Given someone else pushed to the task branch since the claim
         lane = claimed_lane(tmp_path)
         other = tmp_path / "other"
         subprocess.run(["git", "clone", "-q", str(tmp_path / "origin.git"), str(other)], check=True)  # noqa: S603, S607
@@ -96,17 +109,22 @@ class TestRelease:
         git(other, "commit", "-q", "--allow-empty", "-m", "feat(a): someone else's work")
         git(other, "push", "-q", "origin", "task/a-001")
 
+        # When the lane is released
         result = release(lane)
 
+        # Then the remote branch is left alone
         assert result.returncode == KEPT
         assert "no longer this claim" in result.stdout
         assert remote_has_claim(tmp_path)
 
     def test_refuses_to_run_off_the_task_branch(self, tmp_path: Path) -> None:
+        # Given a lane switched to another branch
         lane = claimed_lane(tmp_path)
         git(lane, "checkout", "-q", "-b", "elsewhere")
 
+        # When it is released
         result = release(lane)
 
+        # Then it refuses, and the claim stays
         assert result.returncode == USAGE_ERROR
         assert remote_has_claim(tmp_path)
