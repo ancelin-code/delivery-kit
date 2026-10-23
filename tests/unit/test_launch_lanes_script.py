@@ -368,7 +368,10 @@ class TestTiers:
         ("text", "message"),
         [
             ("[buidl]\nmodel = x\n", "t.conf: unknown tier 'buidl' (expected plan, build, or chore)"),
-            ("[build]\nmodle = x\n", "t.conf: unknown key 'build.modle' (expected harness, model, or advisor)"),
+            (
+                "[build]\nmodle = x\n",
+                "t.conf: unknown key 'build.modle' (expected harness, model, advisor, or reviewer)",
+            ),
             (
                 "[build]\nharness = gemini\n",
                 f"t.conf: unknown harness 'gemini' (expected one of: {ALL_HARNESSES} custom)",
@@ -483,6 +486,7 @@ def fake_harness(
     *,
     edits: bool = False,
     fails: bool = False,
+    fails_on: str | None = None,
 ) -> Path:
     """A stand-in for claude/copilot that records how it was invoked.
 
@@ -491,7 +495,8 @@ def fake_harness(
     silently starts a billed session; a single name simulates a machine that
     only has one harness installed. With ``edits`` the session leaves a change
     behind, which the launcher then publishes; with ``fails`` it exits 1, as a
-    session does on an expired login or a model the account cannot use.
+    session does on an expired login or a model the account cannot use, and with
+    ``fails_on`` it exits 1 only when its arguments contain that text.
 
     A ``gh`` stub is always installed, so a published lane never reaches the
     real forge.
@@ -504,7 +509,8 @@ def fake_harness(
         stub.write_text(
             '#!/bin/sh\nprintf "%s\\n" "$PWD" >> "$FAKE_LOG"\nprintf "%s\\n" "$*" >> "$FAKE_LOG"\n'
             + edit
-            + ("exit 1\n" if fails else ""),
+            + ("exit 1\n" if fails else "")
+            + (f'case "$*" in *{fails_on}*) exit 1 ;; esac\n' if fails_on else ""),
             encoding="utf-8",
         )
         stub.chmod(0o755)
@@ -1065,3 +1071,172 @@ def test_refuses_to_launch_without_delivery_implement_beside_it(tmp_path: Path) 
     )
     assert result.returncode == 1
     assert "delivery-implement is not installed beside delivery-orchestrator" in result.stderr
+
+
+REFINE_HARNESS, REFINE_MODEL = 4, 5
+
+
+class TestRefineSelection:
+    """The refinement session reviews on a stronger model than the one that wrote the change."""
+
+    def rows(self, repo: Path, tmp_path: Path, mapping: str, *args: str) -> list[list[str]]:
+        tiers = write_tiers(tmp_path / "tiers.conf", mapping)
+        result = launch(repo, ["--dry-run", *args], env_extra={"DELIVERY_TIERS": str(tiers)})
+        assert result.returncode == OK, result.stderr
+        return [line.split("\t") for line in result.stdout.splitlines() if line.startswith("WOULD-LAUNCH")]
+
+    def test_each_tier_is_reviewed_one_tier_up(self, tmp_path: Path) -> None:
+        repo = make_repo(tmp_path)
+        add_task(repo, "a-001", tier="chore")
+        add_task(repo, "a-002", tier="build")
+        add_task(repo, "a-003", tier="plan")
+        mapping = conf(
+            chore={"harness": "claude", "model": "haiku"},
+            build={"harness": "claude", "model": "sonnet"},
+            plan={"harness": "claude", "model": "opus"},
+        )
+        rows = self.rows(repo, tmp_path, mapping, "a-001", "a-002", "a-003")
+        assert [r[MODEL : REFINE_MODEL + 1] for r in rows] == [
+            ["haiku", "claude", "sonnet"],
+            ["sonnet", "claude", "opus"],
+            ["opus", "claude", "opus"],
+        ]
+
+    def test_the_tier_above_may_review_on_another_harness(self, tmp_path: Path) -> None:
+        repo = make_repo(tmp_path)
+        add_task(repo, "a-001", tier="build")
+        mapping = conf(build={"harness": "copilot", "model": "gpt-6"}, plan={"harness": "claude", "model": "opus"})
+        row = self.rows(repo, tmp_path, mapping, "a-001")[0]
+        assert row[HARNESS : REFINE_MODEL + 1] == ["copilot", "gpt-6", "claude", "opus"]
+
+    def test_a_tier_s_own_reviewer_wins_on_its_harness(self, tmp_path: Path) -> None:
+        repo = make_repo(tmp_path)
+        add_task(repo, "a-001", tier="build")
+        mapping = conf(
+            build={"harness": "copilot", "model": "gpt-6", "reviewer": "gpt-6-pro"},
+            plan={"harness": "claude", "model": "opus"},
+        )
+        row = self.rows(repo, tmp_path, mapping, "a-001")[0]
+        assert row[REFINE_HARNESS : REFINE_MODEL + 1] == ["copilot", "gpt-6-pro"]
+
+    def test_unmapped_tiers_review_on_the_harness_default(self, tmp_path: Path) -> None:
+        repo = make_repo(tmp_path)
+        add_task(repo, "a-001", tier="build")
+        result = launch(repo, ["--dry-run", "a-001"])
+        assert fields(result.stdout)[REFINE_HARNESS : REFINE_MODEL + 1] == ["auto", "default"]
+
+    def test_the_harness_flag_holds_for_the_review_too(self, tmp_path: Path) -> None:
+        repo = make_repo(tmp_path)
+        add_task(repo, "a-001", tier="build")
+        mapping = conf(plan={"harness": "claude", "model": "opus"})
+        row = self.rows(repo, tmp_path, mapping, "--harness", "copilot", "a-001")[0]
+        assert row[REFINE_HARNESS : REFINE_MODEL + 1] == ["copilot", "default"]
+
+    def test_no_refine_turns_it_off(self, tmp_path: Path) -> None:
+        repo = make_repo(tmp_path)
+        add_task(repo, "a-001")
+        result = launch(repo, ["--dry-run", "--no-refine", "a-001"])
+        assert fields(result.stdout)[REFINE_HARNESS : REFINE_MODEL + 1] == ["-", "-"]
+
+
+class TestRefineSession:
+    """A lane is two sessions: delivery-implement, then delivery-refine on its change."""
+
+    def run(
+        self,
+        tmp_path: Path,
+        *extra: str,
+        mapping: str | None = None,
+        forced: str | None = "claude",
+        **harness: object,
+    ) -> tuple[Path, Path]:
+        """Run one lane; ``forced`` is the --harness value, and None leaves the choice to the tiers alone."""
+        origin_path = make_shared_origin(tmp_path)
+        dev = clone_of(tmp_path, origin_path, "devA")
+        log = tmp_path / "agent.log"
+        logs = tmp_path / "lanelogs"
+        env = {}
+        if mapping is not None:
+            env["DELIVERY_TIERS"] = str(write_tiers(tmp_path / "tiers.conf", mapping))
+        launch_live(
+            dev,
+            [
+                "--claim-script", str(CLAIM), "--worktree-root", str(tmp_path / "lanes"),
+                "--log-dir", str(logs), *(["--harness", forced] if forced else []), *extra, "a-001",
+            ],
+            fake_harness(tmp_path, log, **harness),
+            log,
+            isolated=forced is None,
+            env_extra=env,
+        )  # fmt: skip
+        lane_log = logs / "a-001.log"
+        wait_for(lambda: lane_log.exists() and any(
+            word in lane_log.read_text(encoding="utf-8") for word in ("PUBLISHED", "NOTHING", "RELEASED", "ERROR")
+        ))  # fmt: skip
+        return log, lane_log
+
+    @staticmethod
+    def prompts(log: Path) -> list[str]:
+        return [line for line in log.read_text(encoding="utf-8").splitlines() if line.startswith("-p /delivery")]
+
+    def test_the_change_is_refined_on_the_tier_above_before_it_is_published(self, tmp_path: Path) -> None:
+        mapping = conf(build={"harness": "claude", "model": "sonnet"}, plan={"harness": "claude", "model": "opus"})
+        log, lane_log = self.run(tmp_path, mapping=mapping, edits=True)
+        prompts = self.prompts(log)
+        assert [p.split()[1] for p in prompts] == ["/delivery-implement", "/delivery-refine"]
+        assert prompts[0].startswith("-p /delivery-implement delivery/tasks/a-001.md --report .lane-report.md")
+        assert "--model sonnet" in prompts[0]
+        assert prompts[1].startswith("-p /delivery-refine delivery/tasks/a-001.md --report .lane-report.md")
+        assert "--model opus" in prompts[1]
+        assert "REFINE\tclaude\topus" in lane_log.read_text(encoding="utf-8")
+        assert "PUBLISHED" in lane_log.read_text(encoding="utf-8")
+
+    def test_an_advisor_without_a_model_stays_an_advisor(self, tmp_path: Path) -> None:
+        mapping = conf(build={"harness": "claude", "model": "sonnet"}, plan={"harness": "claude", "advisor": "opus"})
+        log, _ = self.run(tmp_path, mapping=mapping, edits=True)
+        refine = self.prompts(log)[1]
+        assert "--advisor opus" in refine
+        assert "--model" not in refine
+
+    @pytest.mark.parametrize("above", ["copilot", "custom"])
+    def test_the_lane_harness_reviews_when_the_tier_above_cannot_run(self, tmp_path: Path, above: str) -> None:
+        """copilot is not installed, and custom has no DELIVERY_LANE_CMD."""
+        mapping = conf(build={"harness": "claude", "model": "sonnet"}, plan={"harness": above, "model": "opus"})
+        log, lane_log = self.run(tmp_path, mapping=mapping, forced=None, names=("claude",), edits=True)
+        assert [p.split()[1] for p in self.prompts(log)] == ["/delivery-implement", "/delivery-refine"]
+        assert "REFINE\tclaude\tdefault" in lane_log.read_text(encoding="utf-8")
+
+    def test_nothing_to_refine_when_the_implementation_left_no_change(self, tmp_path: Path) -> None:
+        log, lane_log = self.run(tmp_path)
+        assert [p.split()[1] for p in self.prompts(log)] == ["/delivery-implement"]
+        assert "REFINE" not in lane_log.read_text(encoding="utf-8")
+
+    def test_no_refine_publishes_the_implementation_as_it_is(self, tmp_path: Path) -> None:
+        log, lane_log = self.run(tmp_path, "--no-refine", edits=True)
+        assert [p.split()[1] for p in self.prompts(log)] == ["/delivery-implement"]
+        assert "PUBLISHED" in lane_log.read_text(encoding="utf-8")
+
+    def test_a_failed_refinement_still_publishes_and_says_so(self, tmp_path: Path) -> None:
+        """The implementation was validated; losing it to a failed review would waste it."""
+        _, lane_log = self.run(tmp_path, edits=True, fails_on="delivery-refine")
+        text = lane_log.read_text(encoding="utf-8")
+        assert "REFINE-FAILED\t1" in text
+        assert "PUBLISHED" in text
+        report = (tmp_path / "lanes" / "a-001" / ".lane-report.md").read_text(encoding="utf-8")
+        assert "## Refinement" in report
+        assert "failed (exit 1)" in report
+
+
+def test_refuses_to_launch_without_delivery_refine_beside_it(tmp_path: Path) -> None:
+    skills = tmp_path / "skills"
+    shutil.copytree(SKILLS, skills)
+    shutil.rmtree(skills / "delivery-refine")
+    result = subprocess.run(  # noqa: S603
+        [SH, str(skills / "delivery-orchestrator" / "scripts" / "launch-lanes.sh"), "--dry-run", "a-001"],
+        cwd=tmp_path,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert result.returncode == 1
+    assert "delivery-refine is not installed beside delivery-orchestrator" in result.stderr

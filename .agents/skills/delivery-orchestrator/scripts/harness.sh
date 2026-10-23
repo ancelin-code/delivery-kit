@@ -22,15 +22,15 @@ is_harness() {
   case " $HARNESSES custom " in *" $1 "*) return 0 ;; *) return 1 ;; esac
 }
 
-# The prompt that starts a lane. Claude Code, and Copilot CLI inside the
-# repository that holds the skills, resolve "/<skill> <args>". Every other case
-# is told to read the skill file, which needs no skill discovery from the
-# harness: the lane may be in another repository, and not every harness reads
-# every skills directory.
+# The prompt that starts one of a lane's sessions. Claude Code, and Copilot CLI
+# inside the repository that holds the skills, resolve "/<skill> <args>", the
+# skill being named by its directory. Every other case is told to read the skill
+# file, which needs no skill discovery from the harness: the lane may be in
+# another repository, and not every harness reads every skills directory.
 #   harness_prompt <harness> <cross-repo: 0|1> <skill file> <arguments>
 harness_prompt() {
   case "$1:$2" in
-    claude:* | copilot:0) printf '/delivery-implement %s' "$4" ;;
+    claude:* | copilot:0) printf '/%s %s' "$(basename "$(dirname "$3")")" "$4" ;;
     *) printf 'Read %s and follow it as a skill, with the arguments: %s' "$3" "$4" ;;
   esac
 }

@@ -14,8 +14,13 @@ them.
    `<repository>` is the directory name of the checkout the launcher ran from,
    or `<dir>/<id>` when `DELIVERY_WORKTREE_ROOT=<dir>` is set in the
    environment or `--worktree-root <dir>` is given.
-4. A **session** runs in that worktree, unattended, to a validated working tree.
-5. When the session exits cleanly, the launcher runs
+4. A **session** runs `delivery-implement` in that worktree, unattended, to a
+   validated working tree. When it left a change, a second session runs
+   `delivery-refine` on it, one tier up: it reviews the change, fixes what it
+   finds, simplifies it and re-validates. A refinement that fails takes nothing
+   away: the change goes on as the first session left it, and the report says
+   the review did not run. `--no-refine` skips the second session.
+5. When the first session exits cleanly, the launcher runs
    `sh <skill-root>/scripts/publish-lane.sh`, which commits the change, pushes
    it, and opens a **draft pull request** whose body is the lane's handoff
    report, in the repository's pull request template when it has one. A session
@@ -87,7 +92,8 @@ cannot be reviewed against either one's acceptance criteria.
 
 The task's `tier` says how much capability the lane needs, and a `tiers.conf`
 maps it to a model when the developer has one; otherwise the harness picks its
-default, as the [delivery conventions](conventions.md#tiers) define. `--harness`
+default, as the [delivery conventions](conventions.md#tiers) define. The
+refinement session runs one tier up, or on the tier's own `reviewer`. `--harness`
 overrides a whole batch, for example to move a launch to a harness whose
 allowance still has room.
 

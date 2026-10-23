@@ -88,7 +88,7 @@ fresh context, so a long session never has to stay alive to carry state.
 | Requirements | `delivery/prd.md` | `delivery-spec` (stage A) | **Human approves** |
 | Design spine | decision records in `docs/adr/`, `docs/decisions/` or `delivery/decisions/`, and `delivery/contracts/<interface>.md` | `delivery-spec` (stage B) | **Human approves** |
 | Decomposition | `delivery/decomposition.md`, plus `delivery/tasks/<id>.md` per task | `delivery-decompose` | **Human approves** |
-| Lanes | a draft pull request per task | `delivery-status`, then `delivery-implement` | none, runs unattended |
+| Lanes | a draft pull request per task | `delivery-status`, then `delivery-implement`, then `delivery-refine` | none, runs unattended |
 | Review | findings on the pull request | the review skill each `REVIEW` row names, else the harness review | **Human approves the merge** |
 | Milestone review, when the plan has milestones | `delivery/milestones/<slug>.md` | `delivery-decompose` | **Human approves** |
 
@@ -121,14 +121,16 @@ Whether a full-route set runs in parallel is decomposition's finding, not a
 choice made here: tasks marked `parallel: false` run alone, and a set that
 serializes marks them all. The phases and gates are the same either way. When
 one person holds a serial set, skip the launcher and invoke `delivery-implement`
-per task in dependency order; the claim only earns its keep when several people
+then `delivery-refine` per task in dependency order; the claim only earns its keep when several people
 pick from the same tasks.
 
 ### Direct implement
 
 Write one task file, `delivery/tasks/<id>.md`, from
 `<delivery-decompose>/assets/task.template.md`, then invoke `delivery-implement`
-on it in the ordinary checkout. Nothing else in this skill applies.
+on it in the ordinary checkout, and `delivery-refine` on the same task file
+after it, on a stronger model when the harness lets you choose one. Nothing else
+in this skill applies.
 
 Skip the claim, the worktree, the launcher, `delivery-status` and all three
 approval gates. Those coordinate concurrent lanes and guard artifacts this path

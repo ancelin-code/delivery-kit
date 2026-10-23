@@ -8,12 +8,15 @@ belongs.
 """
 
 import json
+import subprocess
 from pathlib import Path
 
 import pytest
 
+from tests.conftest import SH
 from tests.unit.test_launch_lanes_script import (
     CLAIM,
+    SKILLS,
     add_task,
     clone_of,
     conf,
@@ -227,3 +230,36 @@ class TestCustomCommand:
             isolated=True,
         )
         assert "SKIP\ta-001\tcustom needs DELIVERY_LANE_CMD to be set" in result.stdout
+
+
+class TestPrompt:
+    """A session is started on a skill by its directory name, so one adapter serves both of a lane's skills."""
+
+    @pytest.mark.parametrize(
+        ("harness", "cross", "expected"),
+        [
+            ("claude", "0", "/delivery-refine t.md --report r.md"),
+            ("copilot", "0", "/delivery-refine t.md --report r.md"),
+            ("copilot", "1", "Read {skill} and follow it as a skill, with the arguments: t.md --report r.md"),
+            ("codex", "0", "Read {skill} and follow it as a skill, with the arguments: t.md --report r.md"),
+        ],
+    )
+    def test_names_the_skill_it_is_given(self, harness: str, cross: str, expected: str) -> None:
+        skill = str(SKILLS / "delivery-orchestrator" / "scripts" / ".." / ".." / "delivery-refine" / "SKILL.md")
+        lib = SKILLS / "delivery-orchestrator" / "scripts" / "harness.sh"
+        result = subprocess.run(  # noqa: S603
+            [
+                SH,
+                "-c",
+                '. "$1"; harness_prompt "$2" "$3" "$4" "t.md --report r.md"',
+                "sh",
+                str(lib),
+                harness,
+                cross,
+                skill,
+            ],
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        assert result.stdout == expected.format(skill=skill)

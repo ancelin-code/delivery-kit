@@ -288,13 +288,14 @@ one section per tier, read with `git config`:
     harness = claude
     model = sonnet
     advisor = opus
+    reviewer = opus
 
 [chore]
     harness = copilot
     model = gpt-6-luna
 ```
 
-`harness`, `model` and `advisor` are all optional: a missing `harness` means
+`harness`, `model`, `advisor` and `reviewer` are all optional: a missing `harness` means
 any, and a missing `model` means the harness's own default. `advisor` names a
 stronger model the lane may consult at its own decision points; only Claude
 Code has one, and it must be at least as capable as `model`. Without it, a
@@ -312,6 +313,13 @@ Two files are read, and the first to name a tier decides all of it:
 
 A lane runs on the first of: `--harness`, the harness its tier maps to,
 `$DELIVERY_HARNESS`, then the first harness found installed.
+
+A lane's second session, `delivery-refine`, reviews on a stronger model than
+the one that wrote the change. It runs on the tier's `reviewer`, a model for the
+tier's own harness, when the tier names one. Otherwise it runs as the tier
+above would: `chore` as `build`, `build` as `plan`, `plan` as `plan`, on that
+tier's harness when it is installed and with its model and advisor.
+`--harness` moves the review with the rest of the launch.
 
 ## Review lenses
 
@@ -342,7 +350,9 @@ the file, only the general review is suggested, and it is the harness's own.
 
 ## Commits and pull requests
 
-A lane does not commit. When its session exits cleanly,
+A lane does not commit. Its two sessions, `delivery-implement` then
+`delivery-refine`, leave the change in the worktree. When the first exits
+cleanly,
 `<delivery-orchestrator>/scripts/publish-lane.sh` commits the worktree as
 `<type>(<epic>): <title>`, pushes it, and opens the draft pull request. The body
 is the lane's handoff report, written in the repository's pull request template

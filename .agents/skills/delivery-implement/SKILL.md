@@ -144,7 +144,8 @@ Report, in this shape, so the next step needs no rebuilt context:
 - the remaining open items or blockers
 
 Write it to the `--report` file when one was given, then stop, leaving the change
-uncommitted.
+uncommitted. In a lane, `delivery-refine` reviews and simplifies the change next,
+from this report: the validation commands it names are the ones it re-runs.
 
 ## When to stop instead
 
