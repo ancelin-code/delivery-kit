@@ -94,7 +94,7 @@ of the route to use:
 
 | Path | When | What runs |
 |---|---|---|
-| Direct implement | One well-understood change with obvious acceptance criteria | one task file, then `delivery-implement` in the ordinary checkout; no claim, no worktree, only the merge gate |
+| Direct implement | One well-understood change with obvious acceptance criteria | one task file, then `delivery-implement` and `delivery-refine` in the ordinary checkout; no claim, no worktree, only the merge gate |
 | Full route | Several tasks, contracts to keep parallel work consistent, or a decision worth recording | every phase and every gate, up to three lanes at once |
 
 How much of a full route runs in parallel is decomposition's finding, not a
@@ -157,7 +157,7 @@ flowchart LR
     T --> L
     L -->|create-only push| C
     L -->|on a won claim| W1 & W2 & W3
-    W1 & W2 & W3 -->|draft PR| PR([review])
+    W1 & W2 & W3 -->|implement, refine, draft PR| PR([review])
 ```
 
 A claim is a create-only push of `task/<id>`: the first push wins, the loser is
@@ -167,10 +167,16 @@ from git refs and pull request state on every read.
 The lane cap is three because three is roughly what one person can review, not
 what the machine can run.
 
+A lane is two sessions in its worktree: `delivery-implement` writes the change,
+then `delivery-refine` reviews and tidies it on a stronger model. The launcher
+then commits, pushes and opens the draft pull request. The lane's branch pushes
+to itself, so a plain `git push` from the worktree reaches `task/<id>` and never
+the default branch.
+
 Each lane's worktree goes in `../lanes/<repository>/<task-id>`, beside the
 checkout the launcher runs from, where `<repository>` is that checkout's
-directory name. The extra level matters because task ids repeat from one use
-case to the next: two repositories cloned side by side would otherwise both put
+directory name. The extra level matters because task ids repeat from one
+project to the next: two repositories cloned side by side would otherwise both put
 their `a-001` in `../lanes/a-001`. Nothing under `lanes/` is tracked by git:
 each directory is a `git worktree` registered with its own clone, holding that
 clone's task branch.
@@ -447,6 +453,10 @@ npx skills add https://github.com/ancelin-code/delivery-kit/tree/main \
 The `/tree/main` suffix installs what has been released to `main`. Without it,
 you get the default branch, `develop`, where unreleased work lands first.
 
+To install a release instead of the tip of `main`, name its tag:
+`…/delivery-kit/tree/v0.1.0`. The lock file then records that version, and
+`CHANGELOG.md` lists what each one changed.
+
 Add an `-a <agent>` for each other harness your team uses; `npx skills add
 --help` lists the names it knows.
 
@@ -606,6 +616,10 @@ Lanes run detached, one process per task, with no terminal attached. Each writes
 everything it does to `.lanes/logs/<task-id>.log` under the main checkout
 (`--log-dir` moves it).
 
+A lane's log prints `REFINE` when its second session starts, `PUBLISHED` with
+the pull request URL when it ends well, and `REFINE-FAILED` if the review
+session failed and the change was published as the first session left it.
+
 ```sh
 tail -f .lanes/logs/a-001.log          # follow one lane
 tail -n 40 .lanes/logs/*.log           # where each lane got to
@@ -674,6 +688,10 @@ file and the branch:
 ```sh
 cd "$lane" && claude "/delivery-implement $home/delivery/tasks/a-001.md"
 ```
+
+To redo only the review of a change the first session already left in the
+worktree, run `/delivery-refine` on the same task file and `--report
+.lane-report.md` instead.
 
 Claude Code can also run lanes as attachable background sessions
 (`claude --bg`, then `claude attach <id>`), which would remove this asymmetry on
@@ -757,6 +775,8 @@ the kit only if removing it measurably degrades results.
   moved or deleted.
 - Work done with an agent is labelled `ai-assisted`; see
   [AGENTS.md](AGENTS.md#pull-requests).
+- Each test marks its steps with `# Given`, `# When` and `# Then` comments; see
+  [AGENTS.md](AGENTS.md#validation).
 
 ## Maintenance
 
