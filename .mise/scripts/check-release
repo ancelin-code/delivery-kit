@@ -44,5 +44,18 @@ section=$(awk -v h="## [$version]" '
 [[ -n "${section//[[:space:]]/}" ]] || fail "CHANGELOG.md has no filled '## [$version]' section"
 
 ((failures == 0)) || exit 1
-$notes && printf '%s\n' "$section"
+
+# The changelog is wrapped for the repository; a release page is not, so a
+# bullet's continuation lines are joined onto it. Relative links would lead
+# nowhere from the release page, so they point at the tag when the repository
+# is known, as it is on a runner.
+if $notes; then
+  base=""
+  [[ -z "${GITHUB_REPOSITORY:-}" ]] || base="${GITHUB_SERVER_URL:-https://github.com}/$GITHUB_REPOSITORY/blob/$tag/"
+  printf '%s\n' "$section" | awk '
+    /^  / { sub(/^ +/, ""); line = line " " $0; next }
+    { if (NR > 1) print line; line = $0 }
+    END { print line }
+  ' | sed -E "s|\]\(|](${base}|g; s|\]\(${base}(https?://)|](\1|g"
+fi
 exit 0

@@ -27,13 +27,13 @@ def make_repo(root: Path, *, skill: str = "0.1.0", pyproject: str = "0.1.0") -> 
     )
 
 
-def run(root: Path, *args: str) -> subprocess.CompletedProcess[str]:
+def run(root: Path, *args: str, **env: str) -> subprocess.CompletedProcess[str]:
     return subprocess.run(  # noqa: S603
         ["bash", str(SCRIPT), *args],  # noqa: S607
         capture_output=True,
         text=True,
         check=False,
-        env={"CHECK_RELEASE_ROOT": str(root), "PATH": "/usr/bin:/bin"},
+        env={"CHECK_RELEASE_ROOT": str(root), "PATH": "/usr/bin:/bin", **env},
     )
 
 
@@ -58,6 +58,28 @@ def test_notes_are_the_matching_section_only(tmp_path: Path) -> None:
     # Then only that section's body comes back
     assert result.returncode == OK
     assert result.stdout.strip() == "- First release.\n- Second line."
+
+
+def test_notes_join_wrapped_lines_and_point_links_at_the_tag(tmp_path: Path) -> None:
+    # Given a changelog whose bullet wraps and links to a file in the repository
+    make_repo(tmp_path)
+    (tmp_path / "CHANGELOG.md").write_text(
+        "# Changelog\n\n## [0.1.0] - 2026-10-02\n\n"
+        "- First release, wrapped\n  onto a second line ([ADR](docs/a.md), [site](https://x.test/y)).\n"
+        "- Second.\n"
+    )
+
+    # When the notes are asked for on a runner, which names its repository
+    result = run(tmp_path, "v0.1.0", "--notes", GITHUB_REPOSITORY="org/repo")
+
+    # Then each bullet is one line, and only the relative link is rewritten
+    assert result.stdout.strip().splitlines() == [
+        (
+            "- First release, wrapped onto a second line "
+            "([ADR](https://github.com/org/repo/blob/v0.1.0/docs/a.md), [site](https://x.test/y))."
+        ),
+        "- Second.",
+    ]
 
 
 @pytest.mark.parametrize("tag", ["0.1.0", "v1", "v0.1", "v0.1.0-rc1", ""])
