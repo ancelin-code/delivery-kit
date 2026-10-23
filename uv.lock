@@ -1,5 +1,5 @@
 version = 1
-revision = 3
+revision = 5
 requires-python = "==3.12.*"
 
 [[package]]
@@ -223,7 +223,7 @@ wheels = [
 
 [[package]]
 name = "cisco-ai-skill-scanner"
-version = "2.2.2"
+version = "2.3.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "anthropic" },
@@ -250,13 +250,13 @@ dependencies = [
     { name = "uvicorn", extra = ["standard"] },
     { name = "yara-x" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/44/9e/8cdc90c01633a01f65e7482a4d922f8fc3e0b8f320813fe19b194abce174/cisco_ai_skill_scanner-2.2.2.tar.gz", hash = "sha256:ae1b1e69beed7ba2ae7132022840b11c55bcb4d851fa0659bd4d3a591f830a8a", size = 1182332, upload-time = "2026-10-09T02:43:50.73Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/5a/ee/39d9251ebff6faf6a72b3eeb49f219270a2be81ae903902e2e0f0d6b3d2e/cisco_ai_skill_scanner-2.3.0.tar.gz", hash = "sha256:11e78c3d816f7561c299146c7cfcdfd6433dd433f0fbf040393404205d0fde99", size = 1203492, upload-time = "2026-10-15T07:18:08.42Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/6c/79/8420c278c2ee67786326060650a131b1a5c47f990203894a6704a0282131/cisco_ai_skill_scanner-2.2.2-cp311.cp312.cp313.cp314-none-macosx_13_0_arm64.whl", hash = "sha256:ba6b9b5992fe51d2f041ac1d7edf0542abfe4d3b80641b9d9f7235ab7622fa67", size = 4858853, upload-time = "2026-10-09T02:43:40.345Z" },
-    { url = "https://files.pythonhosted.org/packages/0e/92/d7758d8b02da6ac274637f236f429f0d3ac21ffd6b35deb0a8e1fc37a94b/cisco_ai_skill_scanner-2.2.2-cp311.cp312.cp313.cp314-none-macosx_13_0_x86_64.whl", hash = "sha256:58be6433c8c67bbc5add4c660f33447ca0b37c1cb7ab18fdbd689b3cae38aa39", size = 5172009, upload-time = "2026-10-09T02:43:43.007Z" },
-    { url = "https://files.pythonhosted.org/packages/af/c1/64990862a1e4f05f18b5772fb994c80d49bb4a04617112b38c23a231170a/cisco_ai_skill_scanner-2.2.2-cp311.cp312.cp313.cp314-none-manylinux_2_17_aarch64.whl", hash = "sha256:dfd841bb83f3d2c643cc225c151dc6cc27bb78f109ce66a7b6134cbe4c6a6053", size = 4716459, upload-time = "2026-10-09T02:43:44.779Z" },
-    { url = "https://files.pythonhosted.org/packages/cc/48/db7ad3b0708cde2c78fbeef23bb9a8dbab9c144e679071f74b88d7096386/cisco_ai_skill_scanner-2.2.2-cp311.cp312.cp313.cp314-none-manylinux_2_17_x86_64.whl", hash = "sha256:6e84eb081de78fb4ba336b525cedb091dd5c81e7715e2ad71fb1ba10584e4129", size = 5113767, upload-time = "2026-10-09T02:43:46.87Z" },
-    { url = "https://files.pythonhosted.org/packages/6c/b0/febcaf700d1e7be7d4719ce8fdd2d209e6165026348196034b81f99c3309/cisco_ai_skill_scanner-2.2.2-cp311.cp312.cp313.cp314-none-win_amd64.whl", hash = "sha256:c93db6dc5ca956e2224fa189bcb0837f0b9c3bc84d779a173856003886754f02", size = 5219443, upload-time = "2026-10-09T02:43:48.908Z" },
+    { url = "https://files.pythonhosted.org/packages/95/ec/e169a1d75a5ed33e0ed0e873337ae7a7adb7fb6268e0e89be8bb80b3653d/cisco_ai_skill_scanner-2.3.0-cp311.cp312.cp313.cp314-none-macosx_13_0_arm64.whl", hash = "sha256:8272624385351eaab7e5b7bddccc2e109532ea590744497b1562973eb0869b8c", size = 4880247, upload-time = "2026-10-15T07:17:56.974Z" },
+    { url = "https://files.pythonhosted.org/packages/03/6b/c0956d5932246354ff2f53ca1ad1e12464183b1279466b3febc1e1601e41/cisco_ai_skill_scanner-2.3.0-cp311.cp312.cp313.cp314-none-macosx_13_0_x86_64.whl", hash = "sha256:b04a05c6282a8f959d8178734c5bbd6c2c2d1c98f543c7ae087724c7104881b1", size = 5193400, upload-time = "2026-10-15T07:17:59.756Z" },
+    { url = "https://files.pythonhosted.org/packages/4d/9f/8948337f405edd377bd8e267648aa792127312c0ab983302652e3618a06b/cisco_ai_skill_scanner-2.3.0-cp311.cp312.cp313.cp314-none-manylinux_2_17_aarch64.whl", hash = "sha256:1e206c93c7843aeb66d2086fb42d7a204af91c3639c916161fed920de9a031c5", size = 4737855, upload-time = "2026-10-15T07:18:02.103Z" },
+    { url = "https://files.pythonhosted.org/packages/09/68/2120191f278edc39b8a2b8583d837a61b5394f16b431fbce31ac6032809e/cisco_ai_skill_scanner-2.3.0-cp311.cp312.cp313.cp314-none-manylinux_2_17_x86_64.whl", hash = "sha256:1eb8634dc23257982c83b56ec8330c4b7fb1f48f42c8b93903206203ae48db77", size = 5135157, upload-time = "2026-10-15T07:18:04.416Z" },
+    { url = "https://files.pythonhosted.org/packages/02/39/83ba53e6156dd4f406898bed7106e14e2607695c88ba98fa42e00b734a23/cisco_ai_skill_scanner-2.3.0-cp311.cp312.cp313.cp314-none-win_amd64.whl", hash = "sha256:c456bfee19923cbee95542b5941b87cdd395dbb3b762a2cc1a234601b81a6ce5", size = 5240907, upload-time = "2026-10-15T07:18:06.452Z" },
 ]
 
 [[package]]
@@ -336,6 +336,7 @@ wheels = [
 name = "delivery-kit"
 version = "0.1.0"
 source = { virtual = "." }
+default-groups = []
 
 [package.dev-dependencies]
 lint = [
@@ -858,7 +859,7 @@ source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "colorclass" },
     { name = "easygui" },
-    { name = "msoffcrypto-tool", marker = "(platform_python_implementation != 'PyPy' and sys_platform == 'darwin') or (platform_python_implementation != 'PyPy' and sys_platform == 'win32') or (sys_platform != 'darwin' and sys_platform != 'win32')" },
+    { name = "msoffcrypto-tool", marker = "platform_python_implementation != 'PyPy' or (sys_platform != 'darwin' and sys_platform != 'win32')" },
     { name = "olefile" },
     { name = "pcodedmp" },
     { name = "pyparsing" },
