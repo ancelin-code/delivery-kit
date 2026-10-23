@@ -7,9 +7,9 @@ Agent Skills for AI-native delivery: requirements and design spine,
 decomposition, parallel implementation lanes, review. Git is the only state:
 no server, no database, no status file.
 
-> **Status: pre-release.** The kit is used on real projects, but no version is
-> tagged yet and conventions may still change between commits. Install from
-> `main`, read [CHANGELOG.md](CHANGELOG.md) before updating, and expect breaking
+> **Status: early.** The kit is used on real projects, and `v0.1.0` is its first
+> release. Conventions may still change between versions. Install from `main`,
+> read [CHANGELOG.md](CHANGELOG.md) before updating, and expect breaking
 > changes to be called out there rather than migrated.
 
 **This repository is the kit.** The six Delivery Kit skills are one workflow,
