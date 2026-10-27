@@ -188,7 +188,9 @@ and `COMPLETE`, `MILESTONE` or `STUCK` when it exits. `MILESTONE` means the
 current milestone needs a person: tell the user, and take up its review. Run it in the background where the
 harness reports a background command's output as it arrives, and tell the user
 about the lines that need them: a pull request to review, a failed lane, a stuck
-set. Merging stays with the user; the loop never merges.
+set. Where it does not, add `--exit-on-human`: the command ends (exit 4) when a
+lane publishes or fails, as it already does for `MILESTONE`, `STUCK` and
+`COMPLETE`, so its end is the notification. Tell the user, then run it again. Merging stays with the user; the loop never merges.
 
 The full lifecycle, the limits and what to do when a lane does not finish are in
 [lanes](references/lanes.md). The review budget and the two lenses worth running

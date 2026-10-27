@@ -607,7 +607,9 @@ Options after `--` go to the launcher. Your part is reviewing and merging the
 pull requests it reports; it never merges, and it exits once every task is
 merged, or when the remaining tasks can never become ready. With milestones, it
 stops at the end of each one with a `MILESTONE` line, and never starts the
-next. The orchestrator
+next. With `--exit-on-human` it also exits (code 4) when a lane publishes or
+fails, for a harness that cannot report a background command's output as it
+arrives: the command ending is the signal, and the agent runs it again. The orchestrator
 starts it for you after the first launch.
 
 ### 4. Watch a running lane

@@ -6,6 +6,10 @@ tagging it.
 
 ## [Unreleased]
 
+- `follow.sh --exit-on-human` ends the loop with exit code 4 when a lane
+  publishes or fails, so any harness learns a person is expected from the
+  command ending, with no background-output support needed.
+
 ## [0.1.0] - 2026-10-23
 
 First public release.
