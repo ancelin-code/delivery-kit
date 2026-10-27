@@ -15,6 +15,7 @@ SCRIPT = SKILLS / "delivery-orchestrator" / "scripts" / "follow.sh"
 
 COMPLETE = 0
 STUCK = 3
+HUMAN = 4
 
 
 def repo_with(tmp_path: Path, tasks: dict[str, str]) -> Path:
@@ -295,3 +296,68 @@ class TestLaneOutcomes:
         # Then it reports five errors and gives up
         assert result.returncode == 1
         assert [e[0] for e in events(result.stdout)] == ["ERROR"] * 5
+
+
+class TestExitOnHuman:
+    """With --exit-on-human the end of the command is the notification."""
+
+    def test_a_published_lane_ends_the_command(self, tmp_path: Path) -> None:
+        # Given a lane that published its pull request, and a ready task
+        repo = repo_with(tmp_path, {"a-001": "", "a-002": ""})
+        logs = repo / ".lanes" / "logs"
+        logs.mkdir(parents=True)
+        (logs / "a-001.log").write_text("PUBLISHED\ta-001\thttps://example.test/pr/4\n", encoding="utf-8")
+        status = scripted_status(tmp_path, [{"a-001": "in-progress", "a-002": "ready"}])
+
+        # When the loop follows with --exit-on-human
+        result = follow(repo, status, recording_launcher(tmp_path), "--exit-on-human")
+
+        # Then it reports the pull request, still launches the ready task, and exits distinctly
+        assert result.returncode == HUMAN, result.stdout + result.stderr
+        assert ["PUBLISHED", "a-001", "https://example.test/pr/4"] in events(result.stdout)
+        assert launched(tmp_path) == ["a-002"]
+
+    def test_a_failed_lane_ends_the_command(self, tmp_path: Path) -> None:
+        # Given a lane that ended without a pull request
+        repo = repo_with(tmp_path, {"a-001": ""})
+        logs = repo / ".lanes" / "logs"
+        logs.mkdir(parents=True)
+        (logs / "a-001.log").write_text("KEPT\ta-001\tthe worktree has changes\n", encoding="utf-8")
+        status = scripted_status(tmp_path, [{"a-001": "in-progress"}])
+
+        # When the loop follows with --exit-on-human
+        result = follow(repo, status, recording_launcher(tmp_path), "--exit-on-human")
+
+        # Then it exits distinctly
+        assert result.returncode == HUMAN
+        assert events(result.stdout)[0][:2] == ["LANE-FAILED", "a-001"]
+
+    def test_a_restart_does_not_stop_on_what_was_announced(self, tmp_path: Path) -> None:
+        # Given a published lane whose pull request is still a draft
+        repo = repo_with(tmp_path, {"a-001": ""})
+        logs = repo / ".lanes" / "logs"
+        logs.mkdir(parents=True)
+        (logs / "a-001.log").write_text("PUBLISHED\ta-001\thttps://example.test/pr/4\n", encoding="utf-8")
+        status = scripted_status(tmp_path, [{"a-001": "in-progress"}])
+        first = follow(repo, status, recording_launcher(tmp_path), "--exit-on-human")
+
+        # When the loop is run again
+        second = follow(repo, status, recording_launcher(tmp_path), "--exit-on-human", "--max-polls", "2")
+
+        # Then only the first run stopped
+        assert first.returncode == HUMAN
+        assert second.returncode == COMPLETE
+
+    def test_without_the_option_a_published_lane_does_not_stop_the_loop(self, tmp_path: Path) -> None:
+        # Given a published lane
+        repo = repo_with(tmp_path, {"a-001": ""})
+        logs = repo / ".lanes" / "logs"
+        logs.mkdir(parents=True)
+        (logs / "a-001.log").write_text("PUBLISHED\ta-001\thttps://example.test/pr/4\n", encoding="utf-8")
+        status = scripted_status(tmp_path, [{"a-001": "in-progress"}])
+
+        # When the loop polls twice
+        result = follow(repo, status, recording_launcher(tmp_path), "--max-polls", "2")
+
+        # Then it ends by its poll limit
+        assert result.returncode == COMPLETE

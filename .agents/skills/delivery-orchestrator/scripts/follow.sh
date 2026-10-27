@@ -27,6 +27,10 @@ Options:
   --summary-every <s>    Seconds between WAITING summaries (default: 300).
   --max-lanes <n>        Lanes running at once on this machine (default: 3).
   --no-launch            Report only; never start a lane.
+  --exit-on-human        Exit as soon as a lane ends (PUBLISHED or LANE-FAILED),
+                         so the end of the command is the notification. Run it
+                         again after telling the user; outcomes already
+                         announced this way do not stop the next run.
   --max-polls <n>        Stop after n polls (default: no limit).
   --log-dir <dir>        Lane logs (default: .lanes/logs).
   --status-script <path> status.sh from delivery-status (default: beside this skill).
@@ -53,6 +57,7 @@ Exit codes:
      was reached
   1  usage error, or task state unreadable five polls in a row
   3  stuck: the remaining tasks can never become ready
+  4  --exit-on-human: a lane ended and a person is expected
 USAGE
 }
 
@@ -61,6 +66,7 @@ interval=30
 summary_every=300
 max_lanes=3
 launch=1
+exit_on_human=0
 max_polls=0
 log_dir=".lanes/logs"
 status_script="$here/../../delivery-status/scripts/status.sh"
@@ -72,6 +78,7 @@ while [ $# -gt 0 ]; do
     --summary-every) [ $# -ge 2 ] || die "--summary-every requires a value"; summary_every="$2"; shift 2 ;;
     --max-lanes) [ $# -ge 2 ] || die "--max-lanes requires a value"; max_lanes="$2"; shift 2 ;;
     --no-launch) launch=0; shift ;;
+    --exit-on-human) exit_on_human=1; shift ;;
     --max-polls) [ $# -ge 2 ] || die "--max-polls requires a value"; max_polls="$2"; shift 2 ;;
     --log-dir) [ $# -ge 2 ] || die "--log-dir requires a value"; log_dir="$2"; shift 2 ;;
     --status-script) [ $# -ge 2 ] || die "--status-script requires a value"; status_script="$2"; shift 2 ;;
@@ -146,7 +153,7 @@ while :; do
     [ "$failures" -lt 5 ] || exit 1
   else
     failures=0
-    rm -rf "$store/now" "$store/ready" "$store/in_flight" "$store/blocked" "$store/review" "$store/running"
+    rm -rf "$store/now" "$store/ready" "$store/in_flight" "$store/blocked" "$store/review" "$store/running" "$store/human"
     mkdir "$store/now"
     while IFS="$tab" read -r kind id st _; do
       [ "$kind" = TASK ] || continue
@@ -192,6 +199,9 @@ EOF_END
       else
         event LANE-FAILED "$id" "$end"
       fi
+      # The log outlives this run, so what a previous run already announced is
+      # kept beside it; otherwise every restart would stop on the same lane.
+      [ "$exit_on_human" -eq 0 ] || grep -Fxq -- "$end" "$log_dir/announced" 2>/dev/null || add human "$end"
     done
     for id in $(items in_flight); do
       if [ "$(get now "$id")" = in-review ] || has published "$id"; then add review "$id"; fi
@@ -258,6 +268,10 @@ EOF_LAUNCHED
     if [ $(($(count ready) + $(count in_flight))) -eq 0 ] && [ "$(count blocked)" -gt 0 ]; then
       event STUCK "$(words blocked)"
       exit 3
+    fi
+    if [ "$(count human)" -gt 0 ]; then
+      items human >>"$log_dir/announced"
+      exit 4
     fi
 
     if [ $(($(date +%s) - last_summary)) -ge "$summary_every" ]; then
