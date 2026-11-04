@@ -24,6 +24,7 @@ CLAIM = SKILLS / "delivery-status" / "scripts" / "claim.sh"
 OK = 0
 USAGE_ERROR = 1
 NO_LANES = 3
+STAND_IN_LOG_LINES = 2  # the fake agent records its directory, then its arguments
 
 pytestmark = pytest.mark.skipif(
     shutil.which("git") is None,
@@ -123,6 +124,17 @@ def wait_for(condition: Callable[[], object], seconds: float = 10.0) -> None:
         time.sleep(0.1)
     message = "timed out waiting for the lane's session"
     raise AssertionError(message)
+
+
+def session_log(log: Path) -> str:
+    """What the lane's session recorded, once it has.
+
+    The launcher starts the session in the background and returns at once, so a
+    test that reads the log straight after launching races it: a loaded runner
+    shows an empty log. The stand-in writes ``STAND_IN_LOG_LINES`` lines.
+    """
+    wait_for(lambda: len(log.read_text(encoding="utf-8").splitlines()) >= STAND_IN_LOG_LINES)
+    return log.read_text(encoding="utf-8")
 
 
 def launched_ids(stdout: str) -> list[str]:
@@ -778,8 +790,7 @@ class TestLaneStartup:
 
         # Then the harness ran in the lane's worktree
         assert result.returncode == OK
-        recorded = log.read_text(encoding="utf-8")
-        assert recorded.strip(), "the harness was never invoked"
+        recorded = session_log(log)
         assert str(tmp_path / "lanes" / "a-001") in recorded
 
     def test_the_lane_branch_pushes_to_itself(self, tmp_path: Path) -> None:
@@ -836,7 +847,7 @@ class TestLaneStartup:
         # Then it runs on copilot
         assert result.returncode == OK, result.stderr
         assert result.stdout.strip().startswith("LAUNCHED\tb-001\tcopilot\tdefault")
-        assert log.read_text(encoding="utf-8").strip(), "copilot was never invoked"
+        assert session_log(log).strip(), "copilot was never invoked"
 
     def test_auto_prefers_claude_when_both_are_installed(self, tmp_path: Path) -> None:
         # Given a machine with claude and copilot
@@ -989,7 +1000,7 @@ class TestLaneStartup:
         )
 
         # Then the skill is invoked by slash command with the task file
-        recorded = log.read_text(encoding="utf-8")
+        recorded = session_log(log)
         assert "/delivery-implement " in recorded
         assert "a-001.md" in recorded, "the task file must reach the skill as its argument"
 
@@ -1009,7 +1020,7 @@ class TestLaneStartup:
         )
 
         # Then the session gets the deny rules
-        assert "terraform apply" in log.read_text(encoding="utf-8")
+        assert "terraform apply" in session_log(log)
 
     def test_lets_a_claude_lane_run_shell_commands(self, tmp_path: Path) -> None:
         """acceptEdits alone denies every shell command in -p mode.
@@ -1032,7 +1043,7 @@ class TestLaneStartup:
         )
 
         # Then it may run shell commands, minus the denied ones
-        recorded = log.read_text(encoding="utf-8")
+        recorded = session_log(log)
         assert "--allowedTools Bash" in recorded
         assert "--disallowedTools Bash(terraform apply:*)" in recorded
 
@@ -1079,7 +1090,7 @@ class TestLaneStartup:
             )
 
             # Then the web tools follow the setting
-            recorded = log.read_text(encoding="utf-8")
+            recorded = session_log(log)
             if web == "on":
                 assert web_on is None or web_on in recorded
                 assert "--excluded-tools" not in recorded
@@ -1104,7 +1115,7 @@ class TestLaneStartup:
         )
 
         # Then the session is asked for the report
-        assert "a-001.md --report .lane-report.md" in log.read_text(encoding="utf-8")
+        assert "a-001.md --report .lane-report.md" in session_log(log)
 
     def test_a_clean_session_ends_in_a_draft_pull_request(self, tmp_path: Path) -> None:
         """The session leaves its change uncommitted; the launcher publishes it."""

@@ -604,7 +604,7 @@ class TestDerivedStatus:
         no_gh.mkdir()
         for directory in os.environ["PATH"].split(os.pathsep):
             for tool in Path(directory).glob("*") if Path(directory).is_dir() else []:
-                if tool.name != "gh" and not (no_gh / tool.name).exists():
+                if tool.name != "gh" and not (no_gh / tool.name).is_symlink():
                     (no_gh / tool.name).symlink_to(tool)
 
         # When status is read
