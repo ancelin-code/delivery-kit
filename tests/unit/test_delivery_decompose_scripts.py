@@ -664,9 +664,35 @@ class TestMilestones:
         # When the task set is validated
         result = validate(tasks)
 
-        # Then every epic is accepted and no milestone is reported
+        # Then every epic is accepted, no milestone is reported and nothing warns
         assert result.returncode == VALID, result.stdout
         assert "MILESTONES" not in result.stdout
+        assert "WARN" not in result.stdout
+
+    def test_warns_when_a_summary_neither_plans_milestones_nor_records_a_decision(self, tmp_path: Path) -> None:
+        # Given a summary with no Milestones section and no recorded decision
+        tasks = tmp_path / "tasks"
+        write_task(tasks, "server-001", epic="server")
+        write_summary(tasks)
+
+        # When the task set is validated
+        result = validate(tasks)
+
+        # Then it is still valid, but a warning says milestones are the default
+        assert result.returncode == VALID, result.stdout
+        assert "WARN\t" in result.stdout
+        assert "only the user may decide against them" in result.stdout
+
+    def test_planned_milestones_draw_no_warning(self, tmp_path: Path) -> None:
+        # Given a summary that plans its milestones
+        tasks = tmp_path / "tasks"
+        self.setup_two_milestones(tasks)
+
+        # When the task set is validated
+        result = validate(tasks)
+
+        # Then nothing warns
+        assert "WARN" not in result.stdout
 
     def test_rejects_a_target_no_task_of_the_milestone_covers(self, tmp_path: Path) -> None:
         # Given a milestone target no task covers

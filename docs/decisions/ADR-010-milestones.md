@@ -56,9 +56,9 @@ execution are incremental.
   boundary, `follow.sh` stops with `MILESTONE` instead of `COMPLETE`.
 
 A plan without a Milestones section, and tasks without `## Covers`, take
-exactly the code paths they took before. The validator does not require the
-section: that the user decided against milestones is held by the skill, not
-checked.
+exactly the code paths they took before. The validator warns, without failing,
+when the summary has neither the section nor that line. It cannot tell who wrote
+the line, so the user's decision is held by the skill, not checked.
 
 ## Alternatives considered
 

@@ -13,7 +13,8 @@ tagging it.
   by running the script again: it changes nothing else.
 - Milestones are the default of a full route: `etabli-decompose` plans them
   before the epics and cuts only the first. Only the user can decide against
-  them, recorded as a `**Milestones:** none` line in the summary.
+  them, recorded as a `**Milestones:** none` line in the summary. The
+  validator warns, without failing, when the summary has neither.
 
 ## [0.1.0] - 2026-11-04
 

@@ -98,7 +98,9 @@ and it needs no milestone.
    1 is a usage error. Fix every reported failure. A set that fails validation
    stalls lanes hours later, when it is expensive to correct. It cross-checks the summary against the task
    files in both directions, so re-cutting tasks without revisiting the summary
-   fails here rather than at the approval gate. With milestones, it also checks
+   fails here rather than at the approval gate. It warns, without failing, when
+   the summary neither plans milestones nor records the user's decision against
+   them. With milestones, it also checks
    that every requirement the current milestone targets is covered by one of
    its tasks.
 
