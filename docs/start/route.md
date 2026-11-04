@@ -1,5 +1,14 @@
 # Drive the Route
 
+!!! info "The orchestrator drives this for you"
+
+    In practice you type `/etabli-orchestrator` and approve each phase. The
+    commands on this page, the launcher and the follow loop, are what the
+    orchestrator runs in the background: it starts the lanes, keeps the set
+    moving as pull requests merge, and tells you when one needs you, to review
+    a pull request or to look at a failed lane. They are shown so you know what
+    happens, and so you can run them by hand; you never have to.
+
 ## Ask for what you want built
 
 Tell the orchestrator what you want built:

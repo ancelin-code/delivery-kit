@@ -33,9 +33,8 @@ release changed. Replace the tag with the release you want, or install what has
 been released to `main` with `/tree/main`. Without a `/tree/…` suffix you get
 the default branch, `develop`, where unreleased work lands first.
 
-Choose no agent: the CLI puts the skills where both Claude Code and Copilot CLI
-read them, and Codex, OpenCode, Pi and the other harnesses read
-`.agents/skills/`. The CLI's own version is `1.7.6` as of this writing; on a
+Choose no agent: the CLI puts the skills in `.agents/skills/`, which Copilot CLI
+and Codex read, and links them into `.claude/skills/` for Claude Code. On a
 machine where it detects no agent installed, it also writes a copy under
 `agent/`, which a repository does not need and you can delete.
 
