@@ -77,5 +77,3 @@ With `--exit-on-human` it also exits (code 4) when a lane publishes or fails,
 for a harness that cannot report a background command's output as it arrives:
 the command ending is the signal, and the agent runs it again. The
 orchestrator starts the loop for you after the first launch.
-
-Next: [Watch and Resume Lanes](lanes.md).

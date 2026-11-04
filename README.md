@@ -11,8 +11,8 @@ no server, no database, no status file. *Établi* is French for *workbench*.
 The documentation is at <https://ancelin-code.github.io/etabli/>.
 
 > **Status: early.** The kit is used on real projects, and `v0.1.0` is its first
-> release. Conventions may still change between versions. Install from `main`,
-> read [CHANGELOG.md](CHANGELOG.md) before updating, and expect breaking
+> release. Conventions may still change between versions. Install a release
+> tag, read [CHANGELOG.md](CHANGELOG.md) before updating, and expect breaking
 > changes to be called out there rather than migrated.
 
 **This repository is the kit.** The six Établi skills are one workflow,
@@ -30,8 +30,7 @@ Each machine needs `git`, a POSIX `sh`, and an authenticated `gh` 2.0 or
 later. In the repository that holds the project's plan:
 
 ```sh
-npx skills add https://github.com/ancelin-code/etabli/tree/main \
-  --skill '*' -a claude-code -a github-copilot -y
+npx skills add https://github.com/ancelin-code/etabli/tree/v0.1.0 --skill '*' -y
 sh .agents/skills/etabli-orchestrator/scripts/install-routing.sh
 ```
 
@@ -42,12 +41,9 @@ Commit what that produced, then tell the orchestrator what you want built:
 ```
 
 It writes the requirements, then the tasks, and stops at each for your
-approval; then lanes build the tasks and open draft pull requests. Keep
-`-a github-copilot` even on a Claude Code team:
-[Install the Kit](https://ancelin-code.github.io/etabli/start/install/)
-explains why, and the rest of the
-[documentation](https://ancelin-code.github.io/etabli/) covers the route,
-lanes, tiers, harnesses, several repositories and connectors.
+approval; then lanes build the tasks and open draft pull requests. The
+[documentation](https://ancelin-code.github.io/etabli/) covers the install, the
+route, lanes, tiers, harnesses, several repositories, reviews and connectors.
 
 ## Develop
 

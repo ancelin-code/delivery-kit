@@ -11,7 +11,7 @@ status file.
 !!! note "Status: early"
 
     The kit is used on real projects, and `v0.1.0` is its first release.
-    Conventions may still change between versions. Install from `main`, read
+    Conventions may still change between versions. Install a release tag, read
     the [Changelog](changelog.md) before updating, and expect breaking changes
     to be called out there rather than migrated.
 

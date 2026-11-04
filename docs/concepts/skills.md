@@ -37,10 +37,8 @@ Review is deliberately **not** part of the kit: use the harness's own review
 capability, or install a review skill alongside the kit and compare it against
 the unassisted harness before adopting it.
 
-To have the orchestrator suggest which review skill a pull request needs, map
-concerns such as security or data to installed skills in
-`delivery/review-lenses.conf`; see
-[Choose review skills](../start/install.md#choose-review-skills).
+The orchestrator can suggest a review skill for each pull request; see
+[Review the Pull Requests](../guides/review.md).
 
 ## The rule behind every skill
 

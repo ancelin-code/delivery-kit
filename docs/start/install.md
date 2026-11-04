@@ -24,39 +24,20 @@ Use the `skills` CLI. It installs all six skills, writes each one to
 `skills-lock.json` so every developer restores the same version.
 
 ```sh
-npx skills add https://github.com/ancelin-code/etabli/tree/main \
-  --skill '*' -a claude-code -a github-copilot -y
+npx skills add https://github.com/ancelin-code/etabli/tree/v0.1.0 --skill '*' -y
 ```
 
-The `/tree/main` suffix installs what has been released to `main`. Without it,
-you get the default branch, `develop`, where unreleased work lands first.
+Naming a release tag, here `v0.1.0`, pins the install to it: the lock file
+records that version, and the [Changelog](../changelog.md) lists what each
+release changed. Replace the tag with the release you want, or install what has
+been released to `main` with `/tree/main`. Without a `/tree/…` suffix you get
+the default branch, `develop`, where unreleased work lands first.
 
-To install a release instead of the tip of `main`, name its tag:
-`…/etabli/tree/v0.1.0`. The lock file then records that version, and the
-[Changelog](../changelog.md) lists what each one changed.
-
-Add an `-a <agent>` for each other harness your team uses; `npx skills add
---help` lists the names it knows. Scope the agents with `-a`: plain `--all`
-also writes a full third copy under `agent/` for the other agents it supports,
-which a target repository does not need.
-
-!!! warning "Keep an agent that reads `.agents/skills/`"
-
-    Keep `-a github-copilot`, or another agent that reads `.agents/skills/`,
-    even if your team uses only Claude Code. With `-a claude-code` alone, the
-    CLI copies each skill into `.claude/skills/` and creates no `.agents/`. A
-    later `npx skills update` then moves the skills it updates to
-    `.agents/skills/` with links, and leaves the ones it finds up to date as
-    copies. The kit's skills find each other as siblings, so that split install
-    loses `etabli-implement`, and lanes would run without it.
-
-    `where.sh` reports a split install as `NEXT repair-install`, and the
-    launcher refuses to start. Installed with both agents, every skill is
-    linked from the start and updates keep it that way.
-
-Both directories matter: Copilot CLI reads `.agents/skills/`, while Claude Code
-reads `.claude/skills/` and will not fall back. Installing by hand into only
-`.agents/skills/` silently degrades every Claude Code lane.
+Choose no agent: the CLI puts the skills where both Claude Code and Copilot CLI
+read them, and Codex, OpenCode, Pi and the other harnesses read
+`.agents/skills/`. The CLI's own version is `1.7.6` as of this writing; on a
+machine where it detects no agent installed, it also writes a copy under
+`agent/`, which a repository does not need and you can delete.
 
 Then commit what the CLI produced, including `skills-lock.json` and the
 symlinks. Git stores symlinks natively, so **lanes running in worktrees get the
@@ -66,6 +47,17 @@ with:
 ```sh
 npx skills experimental_install
 ```
+
+!!! warning "Do not pass `-a claude-code` on its own"
+
+    With `-a claude-code` alone, the CLI copies each skill into
+    `.claude/skills/` and creates no `.agents/`. A later `npx skills update`
+    then moves the skills it updates to `.agents/skills/` with links, and
+    leaves the ones it finds up to date as copies. The kit's skills find each
+    other as siblings, so that split install loses `etabli-implement`, and
+    lanes would run without it. `where.sh` reports it as
+    `NEXT repair-install`, and the launcher refuses to start; see
+    [Repair a split install](#repair-a-split-install).
 
 ## Make the orchestrator the default assistant
 
@@ -83,25 +75,9 @@ status of this project?"* reached no kit skill in either harness, and Copilot
 answered from git alone, recommending a task already merged. The orchestrator
 runs the same step itself the first time it finds the block missing.
 
-## Choose review skills
-
-The same script writes a starter `delivery/review-lenses.conf`, which is worth
-committing too. When a task reaches review, the orchestrator reads this file to
-suggest which review skill to run on its pull request. As shipped, it suggests
-only the harness's own review. Edit it to map a concern to a review skill
-installed in the project, optionally with the paths that bring that concern
-in:
-
-```text
-# lens     skill             paths that bring the lens in
-general    code-review
-security   security-review   */auth/* *secret* *.tf
-```
-
-A task can also ask for a lens through its `review` field, and anyone can add
-one to a pull request with a `review:<lens>` label. The full format is in the
-[review lenses](https://github.com/ancelin-code/etabli/blob/main/.agents/skills/etabli-orchestrator/references/conventions.md#review-lenses)
-convention. The script never overwrites an existing file.
+The script also writes a starter `delivery/review-lenses.conf`. It only matters
+when you review pull requests; leave it as it is for now, and see
+[Review the Pull Requests](../guides/review.md) when you want it.
 
 ## Check for shadowing skills
 
@@ -121,12 +97,9 @@ To repair a split install, remove every copy and install again:
 
 ```sh
 rm -rf .claude/skills/etabli-* .agents/skills/etabli-*
-npx skills add https://github.com/ancelin-code/etabli/tree/main \
-  --skill '*' -a claude-code -a github-copilot -y
+npx skills add https://github.com/ancelin-code/etabli/tree/v0.1.0 --skill '*' -y
 ```
 
 Re-running `npx skills add` with `-a claude-code` alone is not a repair: it
 puts every skill back as a copy in `.claude/skills/`, and leaves the old
 `.agents/skills/` directories behind to go stale.
-
-Next: [Drive the Route](route.md).
