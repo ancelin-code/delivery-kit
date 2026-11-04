@@ -9,14 +9,14 @@ the route goes on, so no session has to stay alive across a gate.
   <ol class="route route--once">
     <li class="route__step">
       <span class="route__n">1</span>
-      <a class="route__name" href="../prd/">Requirements</a>
+      <a class="route__name" href="prd.md">Requirements</a>
       <span class="route__skill"><code>/etabli-spec</code> stage A</span>
       <span class="route__file">delivery/prd.md</span>
       <span class="route__badge">You approve</span>
     </li>
     <li class="route__step">
       <span class="route__n">2</span>
-      <a class="route__name" href="../skills/#why-the-spec-is-one-skill">Design spine</a>
+      <a class="route__name" href="skills.md#why-the-spec-is-one-skill">Design spine</a>
       <span class="route__skill"><code>/etabli-spec</code> stage B</span>
       <span class="route__file">decision records, contracts</span>
       <span class="route__badge">You approve</span>
@@ -24,36 +24,42 @@ the route goes on, so no session has to stay alive across a gate.
   </ol>
   <p class="route-fig__label route-fig__label--loop">Once per milestone</p>
   <ol class="route route--loop">
-    <li class="route__step">
+    <li class="route__step route__cut">
       <span class="route__n">3</span>
       <a class="route__name" href="#how-the-work-is-cut">Cut</a>
       <span class="route__skill"><code>/etabli-decompose</code></span>
       <span class="route__file">decomposition summary, task files</span>
       <span class="route__badge">You approve</span>
     </li>
-    <li class="route__step">
-      <span class="route__n">4</span>
-      <a class="route__name" href="../lanes/">Build</a>
-      <span class="route__skill"><code>/etabli-implement</code><code>/etabli-refine</code></span>
-      <span class="route__file">one lane per task, ending in a draft pull request</span>
-      <span class="route__badge route__badge--auto">Unattended</span>
+    <li class="route__group">
+      <p class="route__group-title">Repeat until every task is merged</p>
+      <p class="route__group-note">A task starts once the tasks it depends on are merged. Up to three lanes run at once, and tasks that touch the same files run one after the other.</p>
+      <ol class="route route__inner">
+        <li class="route__step">
+          <span class="route__n">4</span>
+          <a class="route__name" href="lanes.md">Build</a>
+          <span class="route__skill"><code>/etabli-implement</code><code>/etabli-refine</code></span>
+          <span class="route__file">one lane per ready task, ending in a draft pull request</span>
+          <span class="route__badge route__badge--auto">Unattended</span>
+        </li>
+        <li class="route__step">
+          <span class="route__n">5</span>
+          <a class="route__name" href="../guides/review.md">Review and merge</a>
+          <span class="route__skill">a review skill, or the harness's</span>
+          <span class="route__file">each pull request, merged in dependency order. Merging frees the tasks that waited for it</span>
+          <span class="route__badge">You merge</span>
+        </li>
+      </ol>
     </li>
-    <li class="route__step">
-      <span class="route__n">5</span>
-      <a class="route__name" href="../../guides/review/">Review and merge</a>
-      <span class="route__skill">a review skill, or the harness's</span>
-      <span class="route__file">the pull requests</span>
-      <span class="route__badge">You merge</span>
-    </li>
-    <li class="route__step">
+    <li class="route__step route__review">
       <span class="route__n">6</span>
       <a class="route__name" href="#milestones-are-the-default">Milestone review</a>
       <span class="route__skill"><code>/etabli-decompose</code></span>
       <span class="route__file">the milestone review note</span>
       <span class="route__badge">You approve</span>
     </li>
+    <li class="route__next">Another milestone to go? Back to 3, and cut it with what the review taught you.</li>
   </ol>
-  <p class="route__loop">Another milestone to go? Back to 3, and cut it with what the review taught you.</p>
 </div>
 
 ## Milestones are the default
