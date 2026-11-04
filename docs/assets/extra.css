@@ -98,16 +98,28 @@
   color: var(--md-default-fg-color--light);
 }
 .route-fig__label:first-child { margin-top: 0; }
+.route-fig__label::before {
+  content: "";
+  display: inline-block;
+  width: 2.1rem;
+  height: 2.1rem;
+  margin-right: 0.6rem;
+  vertical-align: middle;
+  background: center / contain no-repeat;
+  image-rendering: pixelated;
+}
+.route-fig__label--once::before { background-image: url("icons/blueprint.svg"); }
+.route-fig__label--loop::before { background-image: url("icons/birdhouse.svg"); }
 
 [dir] .md-typeset ol.route {
   display: grid;
-  gap: 1.1rem;
+  gap: 1rem;
   margin: 0;
   padding: 0;
   list-style: none;
 }
-.md-typeset ol.route--once { grid-template-columns: repeat(2, 1fr); }
-.md-typeset ol.route--loop { grid-template-columns: repeat(4, 1fr); }
+.md-typeset ol.route--once { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.md-typeset ol.route--loop { grid-template-columns: minmax(0, 1.08fr) minmax(0, 1.2fr) minmax(0, 0.9fr) minmax(0, 1.08fr); }
 .md-typeset ol.route > .route__step {
   position: relative;
   display: flex;
@@ -144,7 +156,24 @@
   font-size: 0.75rem;
   font-weight: 700;
 }
-.route__name { font-weight: 700; font-size: 0.9rem; }
+.md-typeset .route__name {
+  font-family: Daubenton, Georgia, serif;
+  font-weight: 400;
+  font-size: 1.1rem;
+  line-height: 1.2;
+  color: var(--md-default-fg-color);
+  text-decoration: none;
+}
+/* The whole card is the link target. */
+.md-typeset .route__name::after { content: ""; position: absolute; inset: 0; border-radius: inherit; }
+.md-typeset ol.route > .route__step { transition: border-color 0.15s, box-shadow 0.15s; }
+.md-typeset ol.route > .route__step:hover,
+.md-typeset ol.route > .route__step:focus-within {
+  border-color: var(--md-accent-fg-color);
+  box-shadow: 0 0 0 1px var(--md-accent-fg-color);
+}
+.md-typeset .route__name:hover { color: var(--md-accent-fg-color); }
+.route__skill code { display: block; width: fit-content; margin: 0 0 0.15rem; padding: 0 0.3em; font-size: 0.64rem; white-space: nowrap; }
 .route__skill, .route__file {
   font-size: 0.72rem;
   line-height: 1.3;

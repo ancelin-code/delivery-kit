@@ -5,50 +5,50 @@ writes a file, the next phase reads it, and a person approves the file before
 the route goes on, so no session has to stay alive across a gate.
 
 <div class="route-fig" role="group" aria-label="The route: requirements and design once, then cut, build, review and milestone review for each milestone">
-  <p class="route-fig__label">Once, for the whole project</p>
+  <p class="route-fig__label route-fig__label--once">Once, for the whole project</p>
   <ol class="route route--once">
     <li class="route__step">
       <span class="route__n">1</span>
-      <span class="route__name">Requirements</span>
-      <span class="route__skill">/etabli-spec, stage A</span>
+      <a class="route__name" href="../prd/">Requirements</a>
+      <span class="route__skill"><code>/etabli-spec</code> stage A</span>
       <span class="route__file">delivery/prd.md</span>
       <span class="route__badge">You approve</span>
     </li>
     <li class="route__step">
       <span class="route__n">2</span>
-      <span class="route__name">Design spine</span>
-      <span class="route__skill">/etabli-spec, stage B</span>
+      <a class="route__name" href="../skills/#why-the-spec-is-one-skill">Design spine</a>
+      <span class="route__skill"><code>/etabli-spec</code> stage B</span>
       <span class="route__file">decision records, contracts</span>
       <span class="route__badge">You approve</span>
     </li>
   </ol>
-  <p class="route-fig__label">Once per milestone</p>
+  <p class="route-fig__label route-fig__label--loop">Once per milestone</p>
   <ol class="route route--loop">
     <li class="route__step">
       <span class="route__n">3</span>
-      <span class="route__name">Cut</span>
-      <span class="route__skill">/etabli-decompose</span>
+      <a class="route__name" href="#how-the-work-is-cut">Cut</a>
+      <span class="route__skill"><code>/etabli-decompose</code></span>
       <span class="route__file">decomposition summary, task files</span>
       <span class="route__badge">You approve</span>
     </li>
     <li class="route__step">
       <span class="route__n">4</span>
-      <span class="route__name">Build</span>
-      <span class="route__skill">/etabli-implement, then /etabli-refine, in a lane per task</span>
-      <span class="route__file">draft pull requests</span>
+      <a class="route__name" href="../lanes/">Build</a>
+      <span class="route__skill"><code>/etabli-implement</code><code>/etabli-refine</code></span>
+      <span class="route__file">one lane per task, ending in a draft pull request</span>
       <span class="route__badge route__badge--auto">Unattended</span>
     </li>
     <li class="route__step">
       <span class="route__n">5</span>
-      <span class="route__name">Review and merge</span>
+      <a class="route__name" href="../../guides/review/">Review and merge</a>
       <span class="route__skill">a review skill, or the harness's</span>
       <span class="route__file">the pull requests</span>
       <span class="route__badge">You merge</span>
     </li>
     <li class="route__step">
       <span class="route__n">6</span>
-      <span class="route__name">Milestone review</span>
-      <span class="route__skill">/etabli-decompose</span>
+      <a class="route__name" href="#milestones-are-the-default">Milestone review</a>
+      <span class="route__skill"><code>/etabli-decompose</code></span>
       <span class="route__file">the milestone review note</span>
       <span class="route__badge">You approve</span>
     </li>
@@ -56,7 +56,7 @@ the route goes on, so no session has to stay alive across a gate.
   <p class="route__loop">Another milestone to go? Back to 3, and cut it with what the review taught you.</p>
 </div>
 
-## Build it in milestones
+## Milestones are the default
 
 A **milestone** is a slice of the project that works end to end and that you
 can run and test. Think of it as an MVP in the agile sense: some of its
@@ -65,7 +65,12 @@ milestone is usually a walking skeleton that runs the riskiest parts, such as
 sign-in, a remote connector or the deployment, from one end to the other. Each
 next milestone adds to a product that already works.
 
-!!! tip "Define milestones"
+The orchestrator plans milestones for every full route, and cuts the first one
+only. If it thinks they make no sense for your project, it tells you why and
+asks. The decision is yours alone, and it is written in the decomposition
+summary.
+
+!!! tip "Keep the milestones"
 
     **Without milestones, the route is one pass and is not incremental.** The
     whole scope is cut into tasks and built before anyone has a working product
@@ -73,10 +78,10 @@ next milestone adds to a product that already works.
     rest. You can still revise the requirements and cut again, but nothing in
     the route makes you stop, look at the result and adjust.
 
-    We strongly recommend milestones for anything beyond a small,
-    well-understood change. Say so in your request, for example
-    `/etabli-orchestrator <what to build>, in milestones, riskiest part first`,
-    and check the milestone plan when you approve the decomposition.
+    Decline them only for a project you can hold in your head, and say so when
+    the orchestrator asks. To steer them, say it in your request, for example
+    `/etabli-orchestrator <what to build>, riskiest part first`, and check the
+    milestone plan when you approve the decomposition.
 
 How a milestone runs:
 
@@ -135,7 +140,7 @@ How a milestone runs:
   head. A group that delivers two separate outcomes is two epics.
 - A **task** is one unit of work: one branch, one lane, one pull request.
 
-A project without milestones has the same epics and tasks in one flat set. The
+A project whose user decided against milestones has the same epics and tasks in one flat set. The
 definitions the agents apply are in the
 [delivery conventions](https://github.com/ancelin-code/etabli/blob/main/.agents/skills/etabli-orchestrator/references/conventions.md#projects-epics-and-tasks).
 
@@ -152,7 +157,7 @@ exist yet.
 | [Requirements, the PRD](prd.md)<br>`delivery/prd.md` | `etabli-spec`, stage A | What must be true when the project is done, what must not change, and what is out of scope. Everything else is built from it. |
 | Decision records (ADRs)<br>`ADR-<nnn>-<slug>.md` | `etabli-spec`, stage B | The choices that keep separately built parts compatible, with the alternatives that lost and why. |
 | Contracts<br>`delivery/contracts/<interface>.md` | `etabli-spec`, stage B | The written shape of an interface two lanes must agree on, so lanes depend on a document and never on each other's unfinished code. |
-| Decomposition summary<br>`delivery/decomposition.md` | `etabli-decompose` | The milestone plan, what each epic delivers, where the work runs in parallel or in series, and why it was cut this way. |
+| Decomposition summary<br>`delivery/decomposition.md` | `etabli-decompose` | The milestone plan (or the user's recorded decision against milestones), what each epic delivers, where the work runs in parallel or in series, and why it was cut this way. |
 | Task files<br>`delivery/tasks/<id>.md` | `etabli-decompose`, or the orchestrator on the direct path | One unit of work: acceptance criteria, scope, dependencies, files it touches and its tier. A lane builds from it. |
 | Milestone reviews<br>`delivery/milestones/<slug>.md` | `etabli-decompose`, with you | Whether the exit criterion held, what was learned, and whether to continue or revise. Read by the next cut. |
 | Handoff report<br>`.lane-report.md` | `etabli-implement`, extended by `etabli-refine` | What changed, which validation ran, what was deferred and what the review fixed. It becomes the pull request body, so it is what you read first. |
