@@ -667,8 +667,8 @@ class TestRouting:
         # When the routing is installed
         result = subprocess.run([SH, str(INSTALL)], cwd=repo, capture_output=True, text=True, check=False)  # noqa: S603
 
-        # Then AGENTS.md and the lens file are added
-        assert result.stdout == "ADDED\tAGENTS.md\nADDED\tdelivery/review-lenses.conf\n"
+        # Then AGENTS.md, the lens file and the lane log ignore are added
+        assert result.stdout == "ADDED\tAGENTS.md\nADDED\tdelivery/review-lenses.conf\nADDED\t.gitignore\n"
         assert "etabli-orchestrator" in (repo / "AGENTS.md").read_text(encoding="utf-8")
 
         # When where.sh runs afterwards
@@ -716,6 +716,55 @@ class TestRouting:
         # Then the lens file is reported present and left as it was
         assert "PRESENT\tdelivery/review-lenses.conf" in result.stdout
         assert (repo / "delivery/review-lenses.conf").read_text(encoding="utf-8") == LENSES
+
+    def test_install_ignores_the_lane_logs_in_a_new_gitignore(self, tmp_path: Path) -> None:
+        """The launcher writes .lanes/logs/ into the checkout; untracked, it would nag in every status."""
+        # Given a repository without a .gitignore
+        repo = make_repo(tmp_path)
+
+        # When the routing is installed
+        subprocess.run([SH, str(INSTALL)], cwd=repo, capture_output=True, text=True, check=True)  # noqa: S603
+
+        # Then .lanes/ is ignored, and git agrees
+        assert "\n.lanes/\n" in f"\n{(repo / '.gitignore').read_text(encoding='utf-8')}"
+        probe = subprocess.run(
+            ["git", "check-ignore", "-q", "--", ".lanes/logs/a-001.log"],  # noqa: S607
+            cwd=repo,
+            check=False,
+        )
+        assert probe.returncode == OK
+
+    def test_install_appends_to_an_existing_gitignore_once(self, tmp_path: Path) -> None:
+        # Given a .gitignore of its own, without a final newline
+        repo = make_repo(tmp_path)
+        (repo / ".gitignore").write_text("node_modules/\n.venv", encoding="utf-8")
+
+        # When the routing is installed twice
+        results = [
+            subprocess.run([SH, str(INSTALL)], cwd=repo, capture_output=True, text=True, check=True)  # noqa: S603
+            for _ in range(2)
+        ]
+
+        # Then the entry follows the existing lines, once
+        text = (repo / ".gitignore").read_text(encoding="utf-8")
+        assert text == "node_modules/\n.venv\n\n# Lane session logs\n.lanes/\n"
+        assert "ADDED\t.gitignore" in results[0].stdout
+        assert "PRESENT\t.gitignore" in results[1].stdout
+
+    @pytest.mark.parametrize("pattern", [".lanes/", ".lanes", "/.lanes/", ".lanes/*", ".*"])
+    def test_install_leaves_a_gitignore_that_already_covers_the_logs(self, tmp_path: Path, pattern: str) -> None:
+        """Git decides, so any pattern that already hides the logs counts."""
+        # Given a .gitignore that already hides .lanes/logs
+        repo = make_repo(tmp_path)
+        original = f"{pattern}\n"
+        (repo / ".gitignore").write_text(original, encoding="utf-8")
+
+        # When the routing is installed
+        result = subprocess.run([SH, str(INSTALL)], cwd=repo, capture_output=True, text=True, check=True)  # noqa: S603
+
+        # Then the file is reported present and left as it was
+        assert "PRESENT\t.gitignore" in result.stdout
+        assert (repo / ".gitignore").read_text(encoding="utf-8") == original
 
     @pytest.mark.parametrize("script", [WHERE, INSTALL])
     def test_refuses_to_run_below_the_repository_root(self, tmp_path: Path, script: Path) -> None:

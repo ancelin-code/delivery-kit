@@ -6,6 +6,12 @@ tagging it.
 
 ## [Unreleased]
 
+- `install-routing.sh` adds `.lanes/` to the project's `.gitignore`, so the lane
+  session logs no longer show up as untracked files. It asks git, so a pattern
+  that already hides them, in the project, a parent directory or the global
+  ignore, is left alone. A project that installed the kit earlier gets the entry
+  by running the script again: it changes nothing else.
+
 ## [0.1.0] - 2026-11-04
 
 First public release, under the name Établi (*établi*, French for workbench).
