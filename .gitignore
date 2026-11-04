@@ -66,3 +66,6 @@ venv.bak/
 
 # Misc
 .DS_Store
+
+# Documentation site, built by `mise run docs:build`
+/site/

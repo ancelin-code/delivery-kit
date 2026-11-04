@@ -19,8 +19,9 @@ The kit is exploratory. Prefer deleting a rule over defending it.
 - `.agents/skills/<skill-name>/SKILL.md`: skill entrypoint
 - `.agents/skills/<skill-name>/references/`: detail loaded on demand
 - `.agents/skills/<skill-name>/scripts/`: deterministic helpers, non-executable
-- `docs/`: maintainer records, not installed with the skills and not loaded at
-  run time
+- `docs/`: the user documentation site, built with Zensical from
+  `zensical.toml`, and maintainer records kept out of the site. Nothing there
+  is installed with the skills or loaded at run time
 - `docs/decisions/`: numbered decision records, `ADR-<nnn>-<slug>.md`
 - `tests/unit/`: behavioural tests driving the `sh` helpers
 - `.mise/scripts/`: repository validation helpers
@@ -76,10 +77,15 @@ Concretely:
   [ADR-007](docs/decisions/ADR-007-posix-sh-helpers.md) for what replaces them.
   They are covered behaviourally, so no coverage gate is applied. Add one if
   Python source ever lands here.
+- `mise run docs:build` builds the documentation site and fails on any
+  warning, such as a link to a page that does not exist. A change to how the
+  kit is installed or run updates the page that describes it under `docs/`
 - Re-run the checks in `docs/harness-validation.md` after any harness upgrade,
   and delete any rule that no longer earns its tokens
 
 CI runs `mise run lint` and `mise run test` on every push and pull request.
+The `docs` workflow builds the site on every pull request and publishes it to
+GitHub Pages from `develop`.
 The **pre-push hook** installed by `mise run dev` runs the same tasks locally,
 so a failure shows up before anything is shared. Do not bypass it with
 `--no-verify`. Reference every action by its full commit SHA, with the version

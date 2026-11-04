@@ -1,0 +1,73 @@
+/* Colours. Établi wears workwear blue, the bleu de travail of French workshop
+   jackets; Tiroir, its sibling, wears brown and amber. Zensical's header is
+   white, so the blue shows in the links and the current page, both primary and
+   accent. Copper, the colour of the bench and its brass, stays in the logo and
+   in the human gates of the diagrams. */
+[data-md-color-primary="custom"] {
+  --md-primary-fg-color: #23498a;
+  --md-primary-fg-color--light: #3c66ad;
+  --md-primary-fg-color--dark: #17325f;
+  --md-primary-bg-color: #ffffff;
+  --md-primary-bg-color--light: rgb(255 255 255 / 70%);
+}
+[data-md-color-accent="custom"] {
+  --md-accent-fg-color: #2f5fb3;
+  --md-accent-fg-color--transparent: rgb(47 95 179 / 10%);
+  --md-accent-bg-color: #ffffff;
+  --md-accent-bg-color--light: rgb(255 255 255 / 70%);
+}
+[data-md-color-scheme="slate"][data-md-color-primary="custom"] {
+  --md-primary-fg-color: #1f3f78;
+  --md-primary-fg-color--light: #3c66ad;
+  --md-primary-fg-color--dark: #142b52;
+  --md-typeset-a-color: #8db4f2;
+}
+[data-md-color-scheme="slate"][data-md-color-accent="custom"] {
+  --md-accent-fg-color: #8db4f2;
+  --md-accent-fg-color--transparent: rgb(141 180 242 / 12%);
+}
+[data-md-color-scheme="slate"] {
+  --md-default-bg-color: #161b24;
+}
+
+/* The logo is pixel art: keep its pixels square at any size. */
+.md-header__button.md-logo img,
+.md-nav__button.md-logo img {
+  image-rendering: pixelated;
+}
+
+/* Keep the first column of a table, the term, the code or the name, on one
+   line: only the explanation next to it wraps. */
+.md-typeset table:not([class]) td:first-child,
+.md-typeset table:not([class]) th:first-child {
+  white-space: nowrap;
+}
+
+/* Align the first line of every cell on a baseline, so that a cell starting
+   with code does not look lower than its neighbours. */
+.md-typeset table:not([class]) td {
+  vertical-align: baseline;
+}
+
+/* Daubenton, by Olivier Dolbeau (Velvetyne, SIL OFL): a serif revived from the
+   letters engraved on the Grande Galerie de l'Evolution in Paris, shared with
+   Tiroir. One weight, used for the site name and the headings. The licence is
+   next to the file. */
+@font-face {
+  font-family: Daubenton;
+  src: url("fonts/Daubenton.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+.md-header__topic:first-child .md-ellipsis,
+.md-typeset h1,
+.md-typeset h2 {
+  font-family: Daubenton, Georgia, serif;
+  font-weight: 400;
+  font-synthesis: none;
+}
+.md-header__topic:first-child .md-ellipsis {
+  font-size: 1.15em;
+  letter-spacing: 0.02em;
+}

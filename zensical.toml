@@ -1,0 +1,79 @@
+# The user documentation site, built by `mise run docs:build` and published to
+# GitHub Pages from `develop` by .github/workflows/docs.yaml.
+[project]
+site_name = "Établi"
+site_description = "Agent Skills that take a project from requirements to parallel lanes to draft pull requests, with git as the only state."
+site_url = "https://ancelin-code.github.io/etabli/"
+repo_url = "https://github.com/ancelin-code/etabli"
+edit_uri = "edit/develop/docs"
+copyright = "Apache-2.0"
+strict = true
+extra_css = ["assets/extra.css"]
+
+# The site is the user documentation only. The decision records and the
+# harness validation are maintainer records: they stay in the repository, out
+# of the site, and pages link to them on GitHub.
+exclude_docs = """
+decisions/
+harness-validation.md
+"""
+
+nav = [
+  { "Home" = "index.md" },
+  { "Get Started" = [
+    { "Install the Kit" = "start/install.md" },
+    { "Drive the Route" = "start/route.md" },
+    { "Watch and Resume Lanes" = "start/lanes.md" },
+  ] },
+  { "How It Works" = [
+    { "The Route" = "concepts/route.md" },
+    { "The Six Skills" = "concepts/skills.md" },
+    { "Lanes" = "concepts/lanes.md" },
+  ] },
+  { "Guides" = [
+    { "Choose Models with Tiers" = "guides/tiers.md" },
+    { "Harnesses" = "guides/harnesses.md" },
+    { "Several Repositories" = "guides/repositories.md" },
+    { "Plug a Connector" = "guides/connectors.md" },
+  ] },
+  { "Changelog" = "changelog.md" },
+]
+
+[project.theme]
+logo = "assets/logo.svg"
+favicon = "assets/logo.svg"
+# A copy button at the top right of every code block.
+features = ["content.code.copy"]
+
+# Light and dark palettes, following the visitor's system preference first.
+# The colours are custom, set in extra.css: a workwear blue, where Tiroir has
+# brown and amber.
+[[project.theme.palette]]
+media = "(prefers-color-scheme)"
+toggle.icon = "lucide/sun-moon"
+toggle.name = "Switch to light mode"
+
+[[project.theme.palette]]
+media = "(prefers-color-scheme: light)"
+scheme = "default"
+primary = "custom"
+accent = "custom"
+toggle.icon = "lucide/sun"
+toggle.name = "Switch to dark mode"
+
+[[project.theme.palette]]
+media = "(prefers-color-scheme: dark)"
+scheme = "slate"
+primary = "custom"
+accent = "custom"
+toggle.icon = "lucide/moon"
+toggle.name = "Switch to system preference"
+
+[project.plugins.llmstxt]
+markdown_description = "Établi is a family of Agent Skills that routes a project from requirements through parallel implementation lanes to draft pull requests. Git is the only state: no server, no database, no status file."
+
+[project.plugins.llmstxt.sections]
+"Get started" = ["index.md", "start/install.md", "start/route.md", "start/lanes.md"]
+"How it works" = ["concepts/route.md", "concepts/skills.md", "concepts/lanes.md"]
+Guides = ["guides/tiers.md", "guides/harnesses.md", "guides/repositories.md", "guides/connectors.md"]
+Project = ["changelog.md"]
