@@ -1,5 +1,14 @@
 # Watch and Resume Lanes
 
+!!! info "This page is for debugging"
+
+    In practice the orchestrator watches the lanes for you. The follow loop
+    reads their state as pull requests are published and merged, and the
+    orchestrator tells you which one needs you: a pull request to review, a
+    failed lane, a stuck set. The commands here show how a lane works, and what
+    to reach for when one misbehaves and you want to look yourself; you do not
+    need them to run a project.
+
 ## Watch a running lane
 
 Lanes run detached, one process per task, with no terminal attached. Each
