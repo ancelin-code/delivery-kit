@@ -33,23 +33,23 @@ and one pull request.
 | Unit | Written as |
 |---|---|
 | Project | `delivery/prd.md`, with its decision records and `delivery/contracts/` |
-| Milestone, optional | the Milestones section of `delivery/decomposition.md`, and a review note `delivery/milestones/<slug>.md` |
+| Milestone | the Milestones section of `delivery/decomposition.md`, and a review note `delivery/milestones/<slug>.md` |
 | Epic | a section of `delivery/decomposition.md` |
 | Task | `delivery/tasks/<id>.md` |
 
 Every artifact lives under `delivery/` at the repository root, so no agent has
 to search for one.
 
-A project too large or too uncertain to cut at once is delivered in
-**milestones**: ordered end-to-end slices, each with an exit criterion. The
+A project is delivered in **milestones** by default: ordered end-to-end
+slices, each with an exit criterion. The
 requirements and the design stay whole. Only the current milestone is cut into
 tasks, and once its tasks are merged a person reviews it in a short note:
 whether the exit held, what was learned, and whether to continue or to revise
 the requirements or a decision first. Approving the note lets the next
 milestone be cut. Tasks name the requirement ids they cover, in full or in
 part, so `etabli-status/scripts/coverage.sh` can say what is left of each
-requirement. A project without milestones runs as one flat set, exactly as
-before.
+requirement. Only the user can decide against milestones; the project then runs
+as one flat set.
 
 The definitions the agents apply are in
 [delivery conventions](.agents/skills/etabli-orchestrator/references/conventions.md#projects-epics-and-tasks).

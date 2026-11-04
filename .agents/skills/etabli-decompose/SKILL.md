@@ -5,8 +5,8 @@ description: >-
   Part of Établi, invoked by etabli-orchestrator. Break approved requirements
   and their design spine into task files that parallel lanes can execute independently,
   with dependencies, file conflicts and tiers made explicit, then validate the set
-  deterministically; for a large project, one milestone at a time, with a review note
-  closing each. Use when work has been approved and needs splitting into tasks, when an
+  deterministically, one milestone at a time by default, with a review note closing
+  each. Use when work has been approved and needs splitting into tasks, when an
   existing task set needs checking before lanes start, or when a merged milestone needs
   its review. Does not implement tasks or decide requirements.
 license: Apache-2.0
@@ -42,7 +42,8 @@ Run this after the requirements and the design decisions are approved. Running
 it earlier produces tasks that encode guesses, which then have to be rewritten.
 
 For a single well-understood change, skip decomposition entirely and implement
-it directly. Splitting a one-task change into an epic costs more than it saves.
+it directly. Splitting a one-task change into an epic costs more than it saves,
+and it needs no milestone.
 
 ## Workflow
 
@@ -54,16 +55,18 @@ it directly. Splitting a one-task change into an epic costs more than it saves.
    requirements alone invents work that is already done.
    On a project with milestones, also read the review notes in
    `delivery/milestones/`: the last one says what to carry into this cut.
-2. **Decide whether to cut in milestones**, as the delivery conventions,
+2. **Plan the milestones first**, as the delivery conventions,
    `<etabli-orchestrator>/references/conventions.md`, define them, when the
-   plan has none yet. Cut in milestones when the scope is too large or too
-   uncertain to cut at once, or when the riskiest parts should run end to end
-   before the rest is built. Order them so each is a working slice and the
-   riskiest come first, and write the plan into the summary's Milestones
-   section: every milestone, its exit criterion and the requirements it
-   targets. Then cut **only the current milestone**; the validator rejects
-   tasks of a later one. Without milestones, cut the whole approved scope.
-3. **Group work into epics**, as the delivery conventions,
+   plan has none yet and the user has not decided against them. Order
+   them so each is a working slice and the riskiest come first, and write the
+   plan into the summary's Milestones section: every milestone, its exit
+   criterion and the requirements it targets. Then cut **only the current
+   milestone**; the validator rejects tasks of a later one. Milestones come
+   before epics because the epics of a later milestone cannot be known before
+   the one ahead of it is reviewed. If milestones make no sense here, ask the
+   user rather than cut the whole scope; only their decision against them,
+   recorded as the conventions say, lets you cut it whole.
+3. **Group the milestone's work into epics**, as the delivery conventions,
    `<etabli-orchestrator>/references/conventions.md`, define them. A group
    that is more than one person can hold in their head, or that delivers two
    separate outcomes, is two epics, not one large one.
@@ -182,6 +185,8 @@ rediscovered at run time by the lanes.
 - each task states observable acceptance criteria and its files in scope
 - `delivery/decomposition.md` exists, names what every epic delivers, and lists the same
   tasks under the same epics as the task files do
+- the summary has a Milestones section, or a `**Milestones:** none` line that
+  records the user's decision against them
 - with milestones, only the current milestone has tasks, and they cover every
   requirement it targets
 - a closed milestone has an approved review note recording its exit evidence,
