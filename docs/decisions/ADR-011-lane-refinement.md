@@ -5,7 +5,7 @@
 
 ## Context
 
-A lane went straight from `delivery-implement` to a draft pull request. The
+A lane went straight from `etabli-implement` to a draft pull request. The
 only quality pass was the human review at the merge gate, which the kit itself
 names as its bottleneck: three lanes at most, because one person has to review
 what they produce. Nothing reviewed a change before that person did, and
@@ -33,8 +33,8 @@ Two findings from published work shaped the design:
 
 ## Decision
 
-A sixth skill, `delivery-refine`, is the second session of every lane. The
-launcher starts it in the lane's worktree after `delivery-implement` exits
+A sixth skill, `etabli-refine`, is the second session of every lane. The
+launcher starts it in the lane's worktree after `etabli-implement` exits
 cleanly and left a change, and before `publish-lane.sh` commits and pushes.
 
 - **One pass, in order:** review the change against the task's acceptance
@@ -49,7 +49,7 @@ cleanly and left a change, and before `publish-lane.sh` commits and pushes.
   also gets a second model family.
 - **Never lose the implementation:** a refinement that fails is logged as
   `REFINE-FAILED`, noted in the report, and the change is published as
-  `delivery-implement` left it. A refinement that finds the task wrong reports
+  `etabli-implement` left it. A refinement that finds the task wrong reports
   it as open on the draft pull request; it does not revert.
 - **On by default,** `--no-refine` to skip. The cost is a session per lane, in
   tokens, not in a person's time.
@@ -60,10 +60,10 @@ mechanism. Subagents differ between harnesses; a second session through
 
 ## Alternatives considered
 
-- **A second step inside `delivery-implement`.** That is one session, so no
+- **A second step inside `etabli-implement`.** That is one session, so no
   fresh context and no stronger model. It would also give a skill evaluated on
   implementing a second job, and the two could not be measured apart.
-- **Simplify while implementing, by instruction only.** `delivery-implement`
+- **Simplify while implementing, by instruction only.** `etabli-implement`
   already asks for the smallest edit and for reuse. While writing, a session
   optimises for the criteria it is meeting and cannot see the finished diff,
   where duplication across files and abstractions that turned out unneeded

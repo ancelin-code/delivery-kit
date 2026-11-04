@@ -26,8 +26,8 @@ Starts a lane per task id, reading ids from stdin when none are given. A task
 with a repo field gets its worktree, claim and pull request in that clone,
 beside this repository; the lane reads its task file and contracts here.
 
-A lane is two sessions in its worktree: delivery-implement on the task's tier,
-then, when it left a change, delivery-refine on a stronger one, which reviews
+A lane is two sessions in its worktree: etabli-implement on the task's tier,
+then, when it left a change, etabli-refine on a stronger one, which reviews
 the change, fixes what it finds and simplifies it. A lane whose implementation
 session exits cleanly is published as a draft pull request by publish-lane.sh,
 whatever the refinement did; one whose implementation session fails without
@@ -48,7 +48,7 @@ Options:
                         Defaults to $DELIVERY_WORKTREE_ROOT when set, else to
                         ../lanes/<name of this repository>.
   --log-dir <dir>       Where session logs are written (default: .lanes/logs).
-  --no-refine           Publish what delivery-implement leaves, with no review
+  --no-refine           Publish what etabli-implement leaves, with no review
                         and simplification session after it.
   --no-web              Take web fetch and web search away from the lanes.
                         SECURITY: web access is on by default, and it is a
@@ -57,7 +57,7 @@ Options:
                         text the model may follow. Use --no-web when lanes
                         should build from the repository and its contracts
                         alone. The shell can still reach the network.
-  --claim-script <path> claim.sh from the delivery-status skill. Defaults to the
+  --claim-script <path> claim.sh from the etabli-status skill. Defaults to the
                         copy installed beside this skill. A lane is never
                         started without a claim.
   --dry-run             Print what would happen; create nothing, launch nothing.
@@ -84,15 +84,15 @@ tasks_dir="delivery/tasks"
 # every launch, including the ones follow.sh and the orchestrator start.
 worktree_root="${DELIVERY_WORKTREE_ROOT:-}"
 log_dir=".lanes/logs"
-# The kit installs as a whole, so delivery-status sits beside this skill. Kept as
+# The kit installs as a whole, so etabli-status sits beside this skill. Kept as
 # an option because a consuming repository may relocate the scripts; never
 # optional in effect, since a lane that cannot claim must not start.
 here="$(cd "$(dirname "$0")" && pwd)"
-claim_script="$here/../../delivery-status/scripts/claim.sh"
+claim_script="$here/../../etabli-status/scripts/claim.sh"
 publish_script="$here/publish-lane.sh"
 release_script="$here/release-lane.sh"
-implement_skill="$here/../../delivery-implement/SKILL.md"
-refine_skill="$here/../../delivery-refine/SKILL.md"
+implement_skill="$here/../../etabli-implement/SKILL.md"
+refine_skill="$here/../../etabli-refine/SKILL.md"
 harness_lib="$here/harness.sh"
 # Written by the lane inside its worktree, where an unattended session may write,
 # and published as the pull request body rather than committed.
@@ -106,9 +106,9 @@ task_ids=""
 # A lane is told to follow this file. Without it the session would run with no
 # skill at all, so a split install stops here rather than in every lane.
 [ -f "$implement_skill" ] ||
-  die "delivery-implement is not installed beside delivery-orchestrator in $(cd -P "$here/../.." && pwd -P): reinstall the kit whole"
+  die "etabli-implement is not installed beside etabli-orchestrator in $(cd -P "$here/../.." && pwd -P): reinstall the kit whole"
 [ -f "$refine_skill" ] ||
-  die "delivery-refine is not installed beside delivery-orchestrator in $(cd -P "$here/../.." && pwd -P): reinstall the kit whole"
+  die "etabli-refine is not installed beside etabli-orchestrator in $(cd -P "$here/../.." && pwd -P): reinstall the kit whole"
 # shellcheck source=harness.sh source-path=SCRIPTDIR
 . "$harness_lib"
 
@@ -203,7 +203,7 @@ is_tier() {
 # tier_model, tier_advisor and tier_reviewer maps, where an empty value means a
 # tier the file names without that key.
 load_tiers() {
-  user_conf="${XDG_CONFIG_HOME:-${HOME:-}/.config}/delivery-kit/tiers.conf"
+  user_conf="${XDG_CONFIG_HOME:-${HOME:-}/.config}/etabli/tiers.conf"
   files=""
   if [ -n "${DELIVERY_TIERS:-}" ]; then
     [ -f "$DELIVERY_TIERS" ] || die "DELIVERY_TIERS names a missing file: $DELIVERY_TIERS"
@@ -520,7 +520,7 @@ while IFS= read -r task_id <&3; do
   # publisher finds nothing and opens no pull request. A failed implementation
   # session releases the claim, unless it left work behind.
   # A refinement session that fails takes nothing away: the change is published
-  # as delivery-implement left it, and the report says the review did not run.
+  # as etabli-implement left it, and the report says the review did not run.
   # shellcheck disable=SC2016 # expanded by the inner shell, not this one
   (cd "$worktree_abs" && nohup sh -c '
     lib="$1" publish="$2" release="$3" report="$4" task="$5"
@@ -537,7 +537,7 @@ while IFS= read -r task_id <&3; do
       harness_run "$refine_harness" "$refine_prompt" "$refine_model" "$refine_advisor" "$5" "$6" "$7" || status=$?
       if [ "$status" -ne 0 ]; then
         printf "REFINE-FAILED\t%s\n" "$status"
-        printf "\n## Refinement\n\nThe review and simplification session failed (exit %s), so this change is published as delivery-implement left it. The lane log has the details.\n" "$status" >>"$report"
+        printf "\n## Refinement\n\nThe review and simplification session failed (exit %s), so this change is published as etabli-implement left it. The lane log has the details.\n" "$status" >>"$report"
       fi
     fi
     sh "$publish" --report "$report" "$task"

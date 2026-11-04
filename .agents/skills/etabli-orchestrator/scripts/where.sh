@@ -21,10 +21,10 @@ Run from the repository root. Prints, tab-separated:
 
   ROUTING  present | missing          the AGENTS.md block that routes requests here
   PHASE    <phase> <state> <path>     requirements, design, decomposition
-  TASK     ...                        one row per task, as delivery-status prints it
+  TASK     ...                        one row per task, as etabli-status prints it
   MILESTONE ...                       one row per milestone when the plan has them,
-                                      as delivery-status prints it
-  SUMMARY  ...                        task counts, as delivery-status prints it
+                                      as etabli-status prints it
+  SUMMARY  ...                        task counts, as etabli-status prints it
   REVIEW   <id> <pr> <lens> <skill> <why>
                                       per task in review, one row per lens; skill
                                       is - when no skill is mapped to the lens
@@ -59,22 +59,22 @@ git rev-parse --is-inside-work-tree >/dev/null 2>&1 || die "not inside a git rep
 [ "$(git rev-parse --show-toplevel)" = "$(pwd -P)" ] || die "run from the repository root"
 
 # The kit installs as a whole: its skills find each other as siblings, the way
-# launch-lanes.sh finds claim.sh and delivery-implement. An install whose skills
+# launch-lanes.sh finds claim.sh and etabli-implement. An install whose skills
 # are split between two directories, as an update that relinks some skills and
 # leaves others copied produces, loses its siblings, so it is the first thing
 # to fix: nothing after it can be trusted.
 here="$(cd "$(dirname "$0")" && pwd)"
 missing=""
-for skill in delivery-spec delivery-decompose delivery-implement delivery-refine delivery-status; do
+for skill in etabli-spec etabli-decompose etabli-implement etabli-refine etabli-status; do
   [ -f "$here/../../$skill/SKILL.md" ] || missing="$missing${missing:+ }$skill"
 done
 if [ -n "$missing" ]; then
-  printf 'NEXT\trepair-install\t%s\n' "not beside delivery-orchestrator in $(cd -P "$here/../.." && pwd -P): $missing. The kit installs whole: remove every delivery-* skill directory, then reinstall them all in one 'npx skills add', naming at least one agent that reads .agents/skills"
+  printf 'NEXT\trepair-install\t%s\n' "not beside etabli-orchestrator in $(cd -P "$here/../.." && pwd -P): $missing. The kit installs whole: remove every etabli-* skill directory, then reinstall them all in one 'npx skills add', naming at least one agent that reads .agents/skills"
   exit 0
 fi
-status_dir="$(cd "$here/../../delivery-status/scripts" && pwd)"
+status_dir="$(cd "$here/../../etabli-status/scripts" && pwd)"
 status_script="$status_dir/status.sh"
-[ -f "$status_script" ] || die "delivery-status is not installed beside delivery-orchestrator"
+[ -f "$status_script" ] || die "etabli-status is not installed beside etabli-orchestrator"
 
 # The value of the "**Status:**" line, lowercased; empty when there is none.
 # An unfilled template reads "draft | approved", which is not approved.
@@ -89,7 +89,7 @@ status_of() {
   ' "$1"
 }
 
-if grep -qs 'delivery-kit:routing' AGENTS.md; then
+if grep -qs 'etabli:routing' AGENTS.md; then
   printf 'ROUTING\tpresent\n'
   routing=present
 else
@@ -159,7 +159,7 @@ next() {
   next install-routing "route this project's requests to the kit: sh $shown/install-routing.sh"
 
 if [ "$prd_state" = missing ]; then
-  next write-requirements "no delivery/prd.md: write it with delivery-spec, stage A"
+  next write-requirements "no delivery/prd.md: write it with etabli-spec, stage A"
   exit 0
 fi
 if [ "$prd_state" = draft ]; then
@@ -172,9 +172,9 @@ if [ "$design_state" = pending ]; then
 fi
 if [ "$decomposition_state" = missing ]; then
   if [ "$design_state" = none ]; then
-    next design-or-decompose "record the spine with delivery-spec, stage B, if parts need an agreed interface; otherwise decompose with delivery-decompose"
+    next design-or-decompose "record the spine with etabli-spec, stage B, if parts need an agreed interface; otherwise decompose with etabli-decompose"
   else
-    next decompose "decompose the approved requirements with delivery-decompose"
+    next decompose "decompose the approved requirements with etabli-decompose"
   fi
   exit 0
 fi
@@ -183,7 +183,7 @@ if [ "$decomposition_state" = draft ]; then
   exit 0
 fi
 
-# Lanes. Task state is delivery-status's to derive; it fails loudly when pull
+# Lanes. Task state is etabli-status's to derive; it fails loudly when pull
 # request state cannot be read, and so does this.
 rows="$(sh "$status_script" "$@")" ||
   die "task state could not be read; see the error above"
@@ -309,11 +309,11 @@ current="$(printf '%s\n' "$rows" | awk -F'\t' '$1 == "MILESTONE" && $3 != "close
 milestone="${current%%"$tab"*}"
 case "${current#*"$tab"}" in
   undecomposed)
-    next decompose-milestone "$milestone: decompose it with delivery-decompose, from delivery/milestones/ and the plan in delivery/decomposition.md"
+    next decompose-milestone "$milestone: decompose it with etabli-decompose, from delivery/milestones/ and the plan in delivery/decomposition.md"
     exit 0
     ;;
   merged)
-    next review-milestone "every task of $milestone is merged: check its exit criterion, then write delivery/milestones/$milestone.md with delivery-decompose (coverage: sh $(shown_path "$status_dir")/coverage.sh --milestone $milestone)"
+    next review-milestone "every task of $milestone is merged: check its exit criterion, then write delivery/milestones/$milestone.md with etabli-decompose (coverage: sh $(shown_path "$status_dir")/coverage.sh --milestone $milestone)"
     exit 0
     ;;
   reviewing)

@@ -169,8 +169,8 @@ answer, the same control used in tests 1 and 2.
 
 | Harness | Skill in `.agents/skills/` | Skill in `.claude/skills/` |
 |---|---|---|
-| Copilot CLI 1.0.87 | Invoked, reported as `skill(delivery-implement)` | not applicable |
-| Claude Code 2.1.278 | **Not registered**, `/delivery-implement isn't installed in this session` | Invoked, proof file correct |
+| Copilot CLI 1.0.87 | Invoked, reported as `skill(etabli-implement)` | not applicable |
+| Claude Code 2.1.278 | **Not registered**, `/etabli-implement isn't installed in this session` | Invoked, proof file correct |
 
 Claude Code's failure is explicit and safe: it refuses the unknown command and
 says so, rather than improvising. It does not fall back to `.agents/skills/`.
@@ -206,7 +206,7 @@ comma-separated list is rejected even when each name is valid.
 
 **Second consequence.** Slash invocation makes skill *names* part of the
 interface. A personal skill with the same name shadows the kit's, which makes the
-`delivery-orchestrator` prefix a correctness measure and not only a readability one.
+`etabli-orchestrator` prefix a correctness measure and not only a readability one.
 
 ## 5. Routing plain questions to the kit
 
@@ -215,7 +215,7 @@ own words has to reach it. Nothing had tested that: every earlier test invoked a
 skill by name.
 
 Assumption under test: *"what should we do next?"* and *"what's the current
-status of this project?"*, asked with no skill named, load `delivery-orchestrator`
+status of this project?"*, asked with no skill named, load `etabli-orchestrator`
 and produce a correct answer.
 
 Method: a throwaway repository with the kit installed by symlink, as the
@@ -235,14 +235,14 @@ Before, with the kit as it was:
 
 | Harness | Question | Routed to | Answer | Cost |
 |---|---|---|---|---|
-| Claude Code | next | `delivery-orchestrator` | correct | 9 turns, $0.35 |
-| Claude Code | status | **no skill**; found `delivery-status/SKILL.md` with `find` and read it as a file | correct | 6 turns, $0.25 |
+| Claude Code | next | `etabli-orchestrator` | correct | 9 turns, $0.35 |
+| Claude Code | status | **no skill**; found `etabli-status/SKILL.md` with `find` and read it as a file | correct | 6 turns, $0.25 |
 | Copilot CLI | next | **no skill** | **wrong**: start `mapping-001`, already merged | 93k tokens in |
 | Copilot CLI | status | **no skill** | **wrong**: "no implementation has started", Sam's claim missed | 120k tokens in |
 
 Adding a routing paragraph to the fixture's `AGENTS.md` routed all four to the
 orchestrator and made every answer correct, but each still spent four to six
-tool calls locating `delivery-status` and deriving state by hand, up to 160k
+tool calls locating `etabli-status` and deriving state by hand, up to 160k
 input tokens on Copilot.
 
 **Fix.** Three changes, each aimed at one of the gaps:
@@ -259,12 +259,12 @@ After, the same fixture and questions:
 
 | Harness | Question | `AGENTS.md` block | Routed to | Answer | Cost |
 |---|---|---|---|---|---|
-| Claude Code | next | yes | `delivery-orchestrator`, then `where.sh` | correct | 4 turns, $0.19 |
-| Claude Code | status | yes | `delivery-orchestrator`, then `where.sh` | correct | 4 turns, $0.19 |
-| Claude Code | status | no | `delivery-orchestrator`, then `where.sh` | correct; installed the block | 5 turns, $0.22 |
-| Copilot CLI | next | yes | `delivery-orchestrator`, then `where.sh` | correct | 80k tokens in |
-| Copilot CLI | status | yes | `delivery-orchestrator`, then `where.sh` | correct | 80k tokens in |
-| Copilot CLI | status | no | `delivery-orchestrator`, then `where.sh` | correct; told the user to install the block | 80k tokens in |
+| Claude Code | next | yes | `etabli-orchestrator`, then `where.sh` | correct | 4 turns, $0.19 |
+| Claude Code | status | yes | `etabli-orchestrator`, then `where.sh` | correct | 4 turns, $0.19 |
+| Claude Code | status | no | `etabli-orchestrator`, then `where.sh` | correct; installed the block | 5 turns, $0.22 |
+| Copilot CLI | next | yes | `etabli-orchestrator`, then `where.sh` | correct | 80k tokens in |
+| Copilot CLI | status | yes | `etabli-orchestrator`, then `where.sh` | correct | 80k tokens in |
+| Copilot CLI | status | no | `etabli-orchestrator`, then `where.sh` | correct; told the user to install the block | 80k tokens in |
 
 The description alone was enough to route both questions on both harnesses in
 this run. The routing block is kept anyway: a description is matched against
@@ -420,7 +420,7 @@ directory's repository.
 **Fix.** A lane in another repository gets `--add-dir <planning repository>` on
 both harnesses, for the task file, contracts and decisions. Claude Code keeps
 the slash invocation. Copilot CLI is told to read
-`delivery-implement/SKILL.md` by absolute path and follow it, which needs no
+`etabli-implement/SKILL.md` by absolute path and follow it, which needs no
 extra install in any repository.
 
 ## 10. An advisor in a lane
@@ -462,21 +462,21 @@ changed, and run `npx skills update -p -y`.
 
 | Install | After `add` | After `update` |
 |---|---|---|
-| `-a claude-code` | five copies in `.claude/skills/`, no `.agents/` | four links into `.agents/skills/`, `delivery-implement` still a copy in `.claude/skills/` |
+| `-a claude-code` | five copies in `.claude/skills/`, no `.agents/` | four links into `.agents/skills/`, `etabli-implement` still a copy in `.claude/skills/` |
 | `-a claude-code -a github-copilot` | five skills in `.agents/skills/`, five links in `.claude/skills/` | unchanged layout |
 
-In the split layout, `.claude/skills/delivery-orchestrator/scripts/../../delivery-implement`
-resolves through the link to `.agents/skills/delivery-implement`, which does
+In the split layout, `.claude/skills/etabli-orchestrator/scripts/../../etabli-implement`
+resolves through the link to `.agents/skills/etabli-implement`, which does
 not exist, whichever directory the script was reached from. The launcher
 passed that path to each lane without checking it.
 
 Re-running `add -a claude-code` on the split install made all five copies again
 and left the four directories in `.agents/skills/` behind, stale for any
-harness that reads them. Removing every `delivery-*` directory under both
+harness that reads them. Removing every `etabli-*` directory under both
 paths, then installing with both agents, restored a whole install.
 
 **Fix.** The README installs with an agent that reads `.agents/skills/`, warns
 against `-a claude-code` alone, and gives the repair. `where.sh` checks that
 the other four skills are beside the orchestrator and reports
 `NEXT repair-install` when one is not. The launcher refuses to start without
-`delivery-implement`.
+`etabli-implement`.

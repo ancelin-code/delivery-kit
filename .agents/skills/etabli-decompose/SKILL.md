@@ -1,8 +1,8 @@
 ---
-name: delivery-decompose
+name: etabli-decompose
 author: Ancelin Serre
 description: >-
-  Part of Delivery Kit, invoked by delivery-orchestrator. Break approved requirements
+  Part of Établi, invoked by etabli-orchestrator. Break approved requirements
   and their design spine into task files that parallel lanes can execute independently,
   with dependencies, file conflicts and tiers made explicit, then validate the set
   deterministically; for a large project, one milestone at a time, with a review note
@@ -10,8 +10,8 @@ description: >-
   existing task set needs checking before lanes start, or when a merged milestone needs
   its review. Does not implement tasks or decide requirements.
 license: Apache-2.0
-repository: https://github.com/ancelin-code/delivery-kit.git
-product-version: delivery-kit@v0
+repository: https://github.com/ancelin-code/etabli.git
+product-version: etabli@v0
 version: "0.1.0"
 keywords:
   - decompose
@@ -48,14 +48,14 @@ it directly. Splitting a one-task change into an epic costs more than it saves.
 
 1. **Read the approved artifacts**: `delivery/prd.md`, `delivery/contracts/`,
    and the decision records in `docs/adr/`, `docs/decisions/` or
-   `delivery/decisions/`, whichever `delivery-spec` wrote to. Read enough of
+   `delivery/decisions/`, whichever `etabli-spec` wrote to. Read enough of
    the codebase too to know what already exists, including the project's other
    repositories when they are cloned beside this one. Decomposing from the
    requirements alone invents work that is already done.
    On a project with milestones, also read the review notes in
    `delivery/milestones/`: the last one says what to carry into this cut.
 2. **Decide whether to cut in milestones**, as the delivery conventions,
-   `<delivery-orchestrator>/references/conventions.md`, define them, when the
+   `<etabli-orchestrator>/references/conventions.md`, define them, when the
    plan has none yet. Cut in milestones when the scope is too large or too
    uncertain to cut at once, or when the riskiest parts should run end to end
    before the rest is built. Order them so each is a working slice and the
@@ -64,7 +64,7 @@ it directly. Splitting a one-task change into an epic costs more than it saves.
    targets. Then cut **only the current milestone**; the validator rejects
    tasks of a later one. Without milestones, cut the whole approved scope.
 3. **Group work into epics**, as the delivery conventions,
-   `<delivery-orchestrator>/references/conventions.md`, define them. A group
+   `<etabli-orchestrator>/references/conventions.md`, define them. A group
    that is more than one person can hold in their head, or that delivers two
    separate outcomes, is two epics, not one large one.
 4. **Write one task file per unit of work**, from
@@ -111,7 +111,7 @@ human, at `delivery/milestones/<slug>.md`, from
 coverage:
 
 ```sh
-sh <delivery-status>/scripts/coverage.sh --milestone <slug>
+sh <etabli-status>/scripts/coverage.sh --milestone <slug>
 ```
 
 The human checks the exit criterion against the running system; record what
@@ -119,7 +119,7 @@ they observed, not what the tasks claimed. Then write down what was learned,
 the decision, and what the next cut must carry over: above all, what remains
 of each requirement left partly covered. The human approves the note, which
 closes the milestone. Revising the requirements or a decision record is
-`delivery-spec`'s job; name what to revise and stop.
+`etabli-spec`'s job; name what to revise and stop.
 
 ## Writing a task
 
@@ -137,7 +137,7 @@ it short; trim restatement, and link `delivery/prd.md` instead of repeating the
 requirements.
 
 Give each task a `tier` from the tiers table in
-`<delivery-orchestrator>/references/conventions.md`. Match it to what the task needs: `plan`
+`<etabli-orchestrator>/references/conventions.md`. Match it to what the task needs: `plan`
 where a wrong call costs the most, `build` for ordinary execution, `chore` for
 mechanical work. The tier only says how much capability the work needs, and the
 developer's own mapping decides which model that means.

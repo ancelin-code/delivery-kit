@@ -1,16 +1,16 @@
 ---
-name: delivery-implement
+name: etabli-implement
 author: Ancelin Serre
 description: >-
-  Part of Delivery Kit, invoked by delivery-orchestrator inside a lane. Turn one task
+  Part of Établi, invoked by etabli-orchestrator inside a lane. Turn one task
   into a validated change in the working tree: resolve its acceptance criteria, freeze the
   scope, implement, validate proportionally with the repository's own commands, check the
   diff back against the criteria, and hand off. Use when implementing a task file from a
   decomposed epic, or a single change with explicit acceptance criteria. Does not decide
   what to build, commit, push, or open a pull request.
 license: Apache-2.0
-repository: https://github.com/ancelin-code/delivery-kit.git
-product-version: delivery-kit@v0
+repository: https://github.com/ancelin-code/etabli.git
+product-version: etabli@v0
 version: "0.1.0"
 keywords:
   - implement
@@ -41,7 +41,7 @@ belongs to the review step. Those boundaries are not restated here.
 A task file from a decomposed epic, containing acceptance criteria and the files
 in scope. A single change with explicit acceptance criteria works equally well.
 
-Invoked as `/delivery-implement <path-to-task-file>`, read that file. Invoked with
+Invoked as `/etabli-implement <path-to-task-file>`, read that file. Invoked with
 a bare task id, the file is `delivery/tasks/<id>.md` under the repository root.
 The requirements it links are at `delivery/prd.md` and the contracts at
 `delivery/contracts/`; read them only when the task leaves a criterion unclear.
@@ -144,10 +144,10 @@ Report, in this shape, so the next step needs no rebuilt context:
 - the remaining open items or blockers
 
 Write it to the `--report` file when one was given, then stop, leaving the change
-uncommitted. `delivery-refine` reviews and simplifies the change next, from this
+uncommitted. `etabli-refine` reviews and simplifies the change next, from this
 report: the validation commands it names are the ones it re-runs. It must run in
 a separate session, never this one, which would review its own work. End the
-report by naming that next step, `delivery-refine` on this task file, so a run
+report by naming that next step, `etabli-refine` on this task file, so a run
 outside a lane does not read "stop" as "done".
 
 ## When to stop instead
