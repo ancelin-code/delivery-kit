@@ -35,6 +35,9 @@ without changing what it does.
 
 It works on the change as it stands in the working tree, and nothing else.
 
+Run it in a session that did not write the change. If this session ran
+`delivery-implement` on the task, stop and say so: start a fresh session instead.
+
 ## Input
 
 Invoked as `/delivery-refine <path-to-task-file> --report <path>`: the same task

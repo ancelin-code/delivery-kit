@@ -9,6 +9,9 @@ tagging it.
 - `follow.sh --exit-on-human` ends the loop with exit code 4 when a lane
   publishes or fails, so any harness learns a person is expected from the
   command ending, with no background-output support needed.
+- The direct implement path now says `delivery-refine` runs in a separate
+  session from `delivery-implement`, so the reviewer did not write the change,
+  and `delivery-implement`'s report names it as the next step.
 
 ## [0.1.0] - 2026-10-23
 

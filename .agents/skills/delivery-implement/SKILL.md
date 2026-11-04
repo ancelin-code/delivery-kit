@@ -144,8 +144,11 @@ Report, in this shape, so the next step needs no rebuilt context:
 - the remaining open items or blockers
 
 Write it to the `--report` file when one was given, then stop, leaving the change
-uncommitted. In a lane, `delivery-refine` reviews and simplifies the change next,
-from this report: the validation commands it names are the ones it re-runs.
+uncommitted. `delivery-refine` reviews and simplifies the change next, from this
+report: the validation commands it names are the ones it re-runs. It must run in
+a separate session, never this one, which would review its own work. End the
+report by naming that next step, `delivery-refine` on this task file, so a run
+outside a lane does not read "stop" as "done".
 
 ## When to stop instead
 

@@ -121,16 +121,18 @@ Whether a full-route set runs in parallel is decomposition's finding, not a
 choice made here: tasks marked `parallel: false` run alone, and a set that
 serializes marks them all. The phases and gates are the same either way. When
 one person holds a serial set, skip the launcher and invoke `delivery-implement`
-then `delivery-refine` per task in dependency order; the claim only earns its keep when several people
+then, in a separate session, `delivery-refine` per task in dependency order; the claim only earns its keep when several people
 pick from the same tasks.
 
 ### Direct implement
 
 Write one task file, `delivery/tasks/<id>.md`, from
 `<delivery-decompose>/assets/task.template.md`, then invoke `delivery-implement`
-on it in the ordinary checkout, and `delivery-refine` on the same task file
-after it, on a stronger model when the harness lets you choose one. Nothing else
-in this skill applies.
+on it in the ordinary checkout. Then run `delivery-refine` on the same task file
+in a separate session, on a stronger model when the harness lets you choose one.
+Never in the session that implemented: a reviewer that wrote the change defends
+it. Do not ask whether to review; end by giving the exact command that starts
+the second session. Nothing else in this skill applies.
 
 Skip the claim, the worktree, the launcher, `delivery-status` and all three
 approval gates. Those coordinate concurrent lanes and guard artifacts this path
