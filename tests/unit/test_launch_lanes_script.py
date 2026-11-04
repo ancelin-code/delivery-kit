@@ -18,8 +18,8 @@ from tests.conftest import SH
 from tests.unit.tiers import TIERS
 
 SKILLS = Path(__file__).resolve().parents[2] / ".agents" / "skills"
-SCRIPT = SKILLS / "delivery-orchestrator" / "scripts" / "launch-lanes.sh"
-CLAIM = SKILLS / "delivery-status" / "scripts" / "claim.sh"
+SCRIPT = SKILLS / "etabli-orchestrator" / "scripts" / "launch-lanes.sh"
+CLAIM = SKILLS / "etabli-status" / "scripts" / "claim.sh"
 
 OK = 0
 USAGE_ERROR = 1
@@ -69,9 +69,9 @@ def add_task(
 
 
 def clean_env(repo: Path) -> dict[str, str]:
-    """The ambient environment without the developer's own Delivery Kit settings.
+    """The ambient environment without the developer's own Établi settings.
 
-    A real ~/.config/delivery-kit/tiers.conf or DELIVERY_HARNESS on the machine
+    A real ~/.config/etabli/tiers.conf or DELIVERY_HARNESS on the machine
     running the suite would otherwise change what the launcher decides.
     """
     env = {k: v for k, v in os.environ.items() if not k.startswith("DELIVERY_")}
@@ -465,7 +465,7 @@ class TestTiers:
         repo = make_repo(tmp_path)
         add_task(repo, "a-001")
         mapping = conf(build={"harness": "claude", "model": "sonnet"})
-        write_tiers(tmp_path / "xdg" / "delivery-kit" / "tiers.conf", mapping)
+        write_tiers(tmp_path / "xdg" / "etabli" / "tiers.conf", mapping)
 
         # When a task is planned
         result = launch(repo, ["--dry-run", "a-001"], env_extra={"XDG_CONFIG_HOME": str(tmp_path / "xdg")})
@@ -1001,7 +1001,7 @@ class TestLaneStartup:
 
         # Then the skill is invoked by slash command with the task file
         recorded = session_log(log)
-        assert "/delivery-implement " in recorded
+        assert "/etabli-implement " in recorded
         assert "a-001.md" in recorded, "the task file must reach the skill as its argument"
 
     def test_passes_the_deny_rules_to_the_session(self, tmp_path: Path) -> None:
@@ -1346,15 +1346,15 @@ class TestLaneStartup:
 
 
 def test_refuses_to_launch_without_delivery_implement_beside_it(tmp_path: Path) -> None:
-    """A lane is told to follow delivery-implement; without it the session would run with no skill."""
-    # Given an install without delivery-implement
+    """A lane is told to follow etabli-implement; without it the session would run with no skill."""
+    # Given an install without etabli-implement
     skills = tmp_path / "skills"
     shutil.copytree(SKILLS, skills)
-    shutil.rmtree(skills / "delivery-implement")
+    shutil.rmtree(skills / "etabli-implement")
 
     # When the launcher runs from it
     result = subprocess.run(  # noqa: S603
-        [SH, str(skills / "delivery-orchestrator" / "scripts" / "launch-lanes.sh"), "--dry-run", "a-001"],
+        [SH, str(skills / "etabli-orchestrator" / "scripts" / "launch-lanes.sh"), "--dry-run", "a-001"],
         cwd=tmp_path,
         capture_output=True,
         text=True,
@@ -1363,7 +1363,7 @@ def test_refuses_to_launch_without_delivery_implement_beside_it(tmp_path: Path) 
 
     # Then it refuses, naming the missing skill
     assert result.returncode == 1
-    assert "delivery-implement is not installed beside delivery-orchestrator" in result.stderr
+    assert "etabli-implement is not installed beside etabli-orchestrator" in result.stderr
 
 
 REFINE_HARNESS, REFINE_MODEL = 4, 5
@@ -1463,7 +1463,7 @@ class TestRefineSelection:
 
 
 class TestRefineSession:
-    """A lane is two sessions: delivery-implement, then delivery-refine on its change."""
+    """A lane is two sessions: etabli-implement, then etabli-refine on its change."""
 
     def run(
         self,
@@ -1500,7 +1500,7 @@ class TestRefineSession:
 
     @staticmethod
     def prompts(log: Path) -> list[str]:
-        return [line for line in log.read_text(encoding="utf-8").splitlines() if line.startswith("-p /delivery")]
+        return [line for line in log.read_text(encoding="utf-8").splitlines() if line.startswith("-p /etabli")]
 
     def test_the_change_is_refined_on_the_tier_above_before_it_is_published(self, tmp_path: Path) -> None:
         # Given build on sonnet and plan on opus, and a session that leaves a change
@@ -1511,10 +1511,10 @@ class TestRefineSession:
 
         # Then implement runs on sonnet, refine on opus, then the lane publishes
         prompts = self.prompts(log)
-        assert [p.split()[1] for p in prompts] == ["/delivery-implement", "/delivery-refine"]
-        assert prompts[0].startswith("-p /delivery-implement delivery/tasks/a-001.md --report .lane-report.md")
+        assert [p.split()[1] for p in prompts] == ["/etabli-implement", "/etabli-refine"]
+        assert prompts[0].startswith("-p /etabli-implement delivery/tasks/a-001.md --report .lane-report.md")
         assert "--model sonnet" in prompts[0]
-        assert prompts[1].startswith("-p /delivery-refine delivery/tasks/a-001.md --report .lane-report.md")
+        assert prompts[1].startswith("-p /etabli-refine delivery/tasks/a-001.md --report .lane-report.md")
         assert "--model opus" in prompts[1]
         assert "REFINE\tclaude\topus" in lane_log.read_text(encoding="utf-8")
         assert "PUBLISHED" in lane_log.read_text(encoding="utf-8")
@@ -1541,7 +1541,7 @@ class TestRefineSession:
         log, lane_log = self.run(tmp_path, mapping=mapping, forced=None, names=("claude",), edits=True)
 
         # Then the lane's own harness reviews, on its default model
-        assert [p.split()[1] for p in self.prompts(log)] == ["/delivery-implement", "/delivery-refine"]
+        assert [p.split()[1] for p in self.prompts(log)] == ["/etabli-implement", "/etabli-refine"]
         assert "REFINE\tclaude\tdefault" in lane_log.read_text(encoding="utf-8")
 
     def test_nothing_to_refine_when_the_implementation_left_no_change(self, tmp_path: Path) -> None:
@@ -1549,7 +1549,7 @@ class TestRefineSession:
         log, lane_log = self.run(tmp_path)
 
         # Then no refinement runs
-        assert [p.split()[1] for p in self.prompts(log)] == ["/delivery-implement"]
+        assert [p.split()[1] for p in self.prompts(log)] == ["/etabli-implement"]
         assert "REFINE" not in lane_log.read_text(encoding="utf-8")
 
     def test_no_refine_publishes_the_implementation_as_it_is(self, tmp_path: Path) -> None:
@@ -1557,13 +1557,13 @@ class TestRefineSession:
         log, lane_log = self.run(tmp_path, "--no-refine", edits=True)
 
         # Then only implement runs, and the lane publishes
-        assert [p.split()[1] for p in self.prompts(log)] == ["/delivery-implement"]
+        assert [p.split()[1] for p in self.prompts(log)] == ["/etabli-implement"]
         assert "PUBLISHED" in lane_log.read_text(encoding="utf-8")
 
     def test_a_failed_refinement_still_publishes_and_says_so(self, tmp_path: Path) -> None:
         """The implementation was validated; losing it to a failed review would waste it."""
         # When a lane runs and its refinement fails
-        _, lane_log = self.run(tmp_path, edits=True, fails_on="delivery-refine")
+        _, lane_log = self.run(tmp_path, edits=True, fails_on="etabli-refine")
 
         # Then the lane publishes, and the log and report say it failed
         text = lane_log.read_text(encoding="utf-8")
@@ -1575,14 +1575,14 @@ class TestRefineSession:
 
 
 def test_refuses_to_launch_without_delivery_refine_beside_it(tmp_path: Path) -> None:
-    # Given an install without delivery-refine
+    # Given an install without etabli-refine
     skills = tmp_path / "skills"
     shutil.copytree(SKILLS, skills)
-    shutil.rmtree(skills / "delivery-refine")
+    shutil.rmtree(skills / "etabli-refine")
 
     # When the launcher runs from it
     result = subprocess.run(  # noqa: S603
-        [SH, str(skills / "delivery-orchestrator" / "scripts" / "launch-lanes.sh"), "--dry-run", "a-001"],
+        [SH, str(skills / "etabli-orchestrator" / "scripts" / "launch-lanes.sh"), "--dry-run", "a-001"],
         cwd=tmp_path,
         capture_output=True,
         text=True,
@@ -1591,4 +1591,4 @@ def test_refuses_to_launch_without_delivery_refine_beside_it(tmp_path: Path) -> 
 
     # Then it refuses, naming the missing skill
     assert result.returncode == 1
-    assert "delivery-refine is not installed beside delivery-orchestrator" in result.stderr
+    assert "etabli-refine is not installed beside etabli-orchestrator" in result.stderr

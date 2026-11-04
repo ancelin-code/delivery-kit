@@ -19,7 +19,7 @@ CONVENTIONS = (
     Path(__file__).resolve().parents[2]
     / ".agents"
     / "skills"
-    / "delivery-orchestrator"
+    / "etabli-orchestrator"
     / "references"
     / "conventions.md"
 )

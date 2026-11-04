@@ -30,7 +30,7 @@ from tests.unit.test_launch_lanes_script import (
 
 TASK_ARGS = "delivery/tasks/b-001.md --report .lane-report.md"
 READ_PROMPT = "Read {skill} and follow it as a skill, with the arguments: " + TASK_ARGS
-SLASH_PROMPT = "/delivery-implement " + TASK_ARGS
+SLASH_PROMPT = "/etabli-implement " + TASK_ARGS
 DENY_TERRAFORM = {"terraform apply*": "deny", "terraform destroy*": "deny"}
 
 
@@ -108,7 +108,7 @@ def run_lane(
 def skill_path() -> str:
     from tests.unit.test_launch_lanes_script import SKILLS  # noqa: PLC0415
 
-    return str(SKILLS / "delivery-orchestrator" / "scripts" / ".." / ".." / "delivery-implement" / "SKILL.md")
+    return str(SKILLS / "etabli-orchestrator" / "scripts" / ".." / ".." / "etabli-implement" / "SKILL.md")
 
 
 class TestCommandLines:
@@ -289,16 +289,16 @@ class TestPrompt:
     @pytest.mark.parametrize(
         ("harness", "cross", "expected"),
         [
-            ("claude", "0", "/delivery-refine t.md --report r.md"),
-            ("copilot", "0", "/delivery-refine t.md --report r.md"),
+            ("claude", "0", "/etabli-refine t.md --report r.md"),
+            ("copilot", "0", "/etabli-refine t.md --report r.md"),
             ("copilot", "1", "Read {skill} and follow it as a skill, with the arguments: t.md --report r.md"),
             ("codex", "0", "Read {skill} and follow it as a skill, with the arguments: t.md --report r.md"),
         ],
     )
     def test_names_the_skill_it_is_given(self, harness: str, cross: str, expected: str) -> None:
-        # Given the delivery-refine skill
-        skill = str(SKILLS / "delivery-orchestrator" / "scripts" / ".." / ".." / "delivery-refine" / "SKILL.md")
-        lib = SKILLS / "delivery-orchestrator" / "scripts" / "harness.sh"
+        # Given the etabli-refine skill
+        skill = str(SKILLS / "etabli-orchestrator" / "scripts" / ".." / ".." / "etabli-refine" / "SKILL.md")
+        lib = SKILLS / "etabli-orchestrator" / "scripts" / "harness.sh"
 
         # When a prompt is built for it
         result = subprocess.run(  # noqa: S603
@@ -317,5 +317,5 @@ class TestPrompt:
             check=True,
         )
 
-        # Then the prompt names that skill, not delivery-implement
+        # Then the prompt names that skill, not etabli-implement
         assert result.stdout == expected.format(skill=skill)

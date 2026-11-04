@@ -20,12 +20,12 @@ from tests.conftest import SH
 from tests.unit.test_delivery_decompose_scripts import validate, write_summary
 
 SKILLS = Path(__file__).resolve().parents[2] / ".agents" / "skills"
-STATUS = SKILLS / "delivery-status" / "scripts" / "status.sh"
-SNAPSHOT = SKILLS / "delivery-status" / "scripts" / "snapshot.sh"
-CLAIM = SKILLS / "delivery-status" / "scripts" / "claim.sh"
-LAUNCH = SKILLS / "delivery-orchestrator" / "scripts" / "launch-lanes.sh"
-PUBLISH = SKILLS / "delivery-orchestrator" / "scripts" / "publish-lane.sh"
-WHERE = SKILLS / "delivery-orchestrator" / "scripts" / "where.sh"
+STATUS = SKILLS / "etabli-status" / "scripts" / "status.sh"
+SNAPSHOT = SKILLS / "etabli-status" / "scripts" / "snapshot.sh"
+CLAIM = SKILLS / "etabli-status" / "scripts" / "claim.sh"
+LAUNCH = SKILLS / "etabli-orchestrator" / "scripts" / "launch-lanes.sh"
+PUBLISH = SKILLS / "etabli-orchestrator" / "scripts" / "publish-lane.sh"
+WHERE = SKILLS / "etabli-orchestrator" / "scripts" / "where.sh"
 
 # Exit codes: status.sh reports an environment error as 1, the validator a
 # rejected task set as 2.
@@ -283,7 +283,7 @@ class TestLaunchAcrossRepositories:
         assert f"--add-dir {home}" in recorded
         assert str(home / "delivery" / "tasks" / "a-001.md") in recorded
         if harness == "copilot":
-            assert "delivery-implement/SKILL.md" in recorded
+            assert "etabli-implement/SKILL.md" in recorded
 
     def test_a_lane_in_this_repository_gets_no_extra_directory(
         self, tmp_path: Path, use_case: tuple[Path, Path]
@@ -309,7 +309,7 @@ class TestLaunchAcrossRepositories:
             time.sleep(0.1)
         recorded = log.read_text(encoding="utf-8")
         assert "--add-dir" not in recorded
-        assert "/delivery-implement delivery/tasks/h-001.md" in recorded
+        assert "/etabli-implement delivery/tasks/h-001.md" in recorded
 
 
 class TestPublishAcrossRepositories:

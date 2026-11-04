@@ -17,7 +17,7 @@ import pytest
 
 from tests.conftest import SH
 
-SCRIPTS = Path(__file__).resolve().parents[2] / ".agents" / "skills" / "delivery-orchestrator" / "scripts"
+SCRIPTS = Path(__file__).resolve().parents[2] / ".agents" / "skills" / "etabli-orchestrator" / "scripts"
 WHERE = SCRIPTS / "where.sh"
 INSTALL = SCRIPTS / "install-routing.sh"
 
@@ -413,8 +413,8 @@ class TestMilestones:
         # Then its review is next, with the coverage command
         action, detail = rows(result.stdout, "NEXT")[-1]
         assert action == "review-milestone"
-        assert "write delivery/milestones/skeleton.md with delivery-decompose" in detail
-        assert detail.endswith("delivery-status/scripts/coverage.sh --milestone skeleton)")
+        assert "write delivery/milestones/skeleton.md with etabli-decompose" in detail
+        assert detail.endswith("etabli-status/scripts/coverage.sh --milestone skeleton)")
 
     def test_a_draft_review_awaits_approval(self, tmp_path: Path) -> None:
         # Given a merged milestone with a draft review
@@ -488,7 +488,7 @@ class TestMilestones:
 
 
 def split_install(tmp_path: Path) -> Path:
-    """The layout an update leaves after a copy install: delivery-implement was
+    """The layout an update leaves after a copy install: etabli-implement was
     up to date, so it stayed a copy in .claude/skills while the other four were
     moved to .agents/skills and linked. Returns where.sh as Claude Code reaches it.
     """
@@ -498,12 +498,12 @@ def split_install(tmp_path: Path) -> Path:
     canonical.mkdir(parents=True)
     linked.mkdir(parents=True)
     for skill in SCRIPTS.parents[1].iterdir():
-        if skill.name == "delivery-implement":
+        if skill.name == "etabli-implement":
             shutil.copytree(skill, linked / skill.name)
         else:
             shutil.copytree(skill, canonical / skill.name)
             (linked / skill.name).symlink_to(Path("../../.agents/skills") / skill.name)
-    return linked / "delivery-orchestrator" / "scripts" / "where.sh"
+    return linked / "etabli-orchestrator" / "scripts" / "where.sh"
 
 
 class TestInstallLayout:
@@ -527,21 +527,21 @@ class TestInstallLayout:
         assert result.returncode == OK, result.stderr
         assert actions(result.stdout) == ["repair-install"]
         detail = rows(result.stdout, "NEXT")[0][1]
-        assert ".agents/skills: delivery-implement." in detail
+        assert ".agents/skills: etabli-implement." in detail
         assert rows(result.stdout, "PHASE") == []
 
     def test_a_missing_delivery_refine_is_reported(self, tmp_path: Path) -> None:
-        # Given an install without delivery-refine
+        # Given an install without etabli-refine
         repo = make_repo(tmp_path)
         skills = tmp_path / "skills"
         shutil.copytree(SCRIPTS.parents[1], skills)
-        shutil.rmtree(skills / "delivery-refine")
+        shutil.rmtree(skills / "etabli-refine")
         env = os.environ.copy()
         env["PATH"] = f"{fake_gh(tmp_path)}{os.pathsep}{env['PATH']}"
 
         # When where.sh runs from it
         result = subprocess.run(  # noqa: S603
-            [SH, str(skills / "delivery-orchestrator" / "scripts" / "where.sh"), "--no-fetch"],
+            [SH, str(skills / "etabli-orchestrator" / "scripts" / "where.sh"), "--no-fetch"],
             cwd=repo,
             env=env,
             capture_output=True,
@@ -552,7 +552,7 @@ class TestInstallLayout:
         # Then repairing the install is next, naming the missing skill
         assert actions(result.stdout) == ["repair-install"]
         assert rows(result.stdout, "NEXT")[0][1].endswith(
-            ": delivery-refine. The kit installs whole: remove every delivery-* skill directory, "
+            ": etabli-refine. The kit installs whole: remove every etabli-* skill directory, "
             "then reinstall them all in one 'npx skills add', naming at least one agent that reads .agents/skills"
         )
 
@@ -669,7 +669,7 @@ class TestRouting:
 
         # Then AGENTS.md and the lens file are added
         assert result.stdout == "ADDED\tAGENTS.md\nADDED\tdelivery/review-lenses.conf\n"
-        assert "delivery-orchestrator" in (repo / "AGENTS.md").read_text(encoding="utf-8")
+        assert "etabli-orchestrator" in (repo / "AGENTS.md").read_text(encoding="utf-8")
 
         # When where.sh runs afterwards
         after = where(repo, fake_gh(tmp_path))
@@ -689,8 +689,8 @@ class TestRouting:
 
         # Then the block follows the content, once
         text = (repo / "AGENTS.md").read_text(encoding="utf-8")
-        assert text.startswith("# Rules\n\nKeep it tidy.\n\n<!-- delivery-kit:routing -->\n")
-        assert text.count("<!-- delivery-kit:routing -->") == 1
+        assert text.startswith("# Rules\n\nKeep it tidy.\n\n<!-- etabli:routing -->\n")
+        assert text.count("<!-- etabli:routing -->") == 1
 
     def test_install_seeds_review_lenses_that_where_reads(self, tmp_path: Path) -> None:
         # Given the routing installed, with its seeded lens file

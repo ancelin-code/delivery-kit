@@ -35,7 +35,7 @@ def test_a_helper_declares_posix_sh(script) -> None:
 def test_the_adapters_are_linted_as_sh() -> None:
     """harness.sh is sourced, so it has no shebang to tell ShellCheck its dialect."""
     # When the sourced adapters are read
-    text = PROJECT_DIR.joinpath(".agents/skills/delivery-orchestrator/scripts/harness.sh").read_text()
+    text = PROJECT_DIR.joinpath(".agents/skills/etabli-orchestrator/scripts/harness.sh").read_text()
 
     # Then their first line names the dialect instead
     assert text.startswith("# shellcheck shell=sh\n")

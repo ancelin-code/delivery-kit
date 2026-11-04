@@ -1,6 +1,6 @@
-# Delivery Kit
+# Établi
 
-[![CI](https://github.com/ancelin-code/delivery-kit/actions/workflows/ci.yaml/badge.svg?branch=develop)](https://github.com/ancelin-code/delivery-kit/actions/workflows/ci.yaml)
+[![CI](https://github.com/ancelin-code/etabli/actions/workflows/ci.yaml/badge.svg?branch=develop)](https://github.com/ancelin-code/etabli/actions/workflows/ci.yaml)
 [![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 
 Agent Skills for AI-native delivery: requirements and design spine,
@@ -12,7 +12,7 @@ no server, no database, no status file.
 > read [CHANGELOG.md](CHANGELOG.md) before updating, and expect breaking
 > changes to be called out there rather than migrated.
 
-**This repository is the kit.** The six Delivery Kit skills are one workflow,
+**This repository is the kit.** The six Établi skills are one workflow,
 not a catalogue you pick from. Each phase consumes the file the previous phase
 wrote, so a single skill installed alone is a phase with no input and no
 consumer. Install them together.
@@ -20,7 +20,7 @@ consumer. Install them together.
 The skills hold no harness-specific tool names. The lane launcher has adapters
 for Claude Code, GitHub Copilot CLI, Codex CLI, OpenCode and Pi, and a custom
 command for any other, so no single vendor's license is required. A task says how much capability it needs
-with a [tier](.agents/skills/delivery-orchestrator/references/conventions.md#tiers), and the
+with a [tier](.agents/skills/etabli-orchestrator/references/conventions.md#tiers), and the
 harness, or your own mapping, decides which model that means.
 
 ## How the kit fits together
@@ -47,20 +47,20 @@ tasks, and once its tasks are merged a person reviews it in a short note:
 whether the exit held, what was learned, and whether to continue or to revise
 the requirements or a decision first. Approving the note lets the next
 milestone be cut. Tasks name the requirement ids they cover, in full or in
-part, so `delivery-status/scripts/coverage.sh` can say what is left of each
+part, so `etabli-status/scripts/coverage.sh` can say what is left of each
 requirement. A project without milestones runs as one flat set, exactly as
 before.
 
 The definitions the agents apply are in
-[delivery conventions](.agents/skills/delivery-orchestrator/references/conventions.md#projects-epics-and-tasks).
+[delivery conventions](.agents/skills/etabli-orchestrator/references/conventions.md#projects-epics-and-tasks).
 
 ```mermaid
 flowchart TD
-    H([Human]) -->|invokes, once per phase| O["/delivery-orchestrator"]
+    H([Human]) -->|invokes, once per phase| O["/etabli-orchestrator"]
 
     subgraph PRJ["one repository = one project"]
-        O -.->|routes to| SPEC["/delivery-spec"]
-        O -.->|routes to| DEC["/delivery-decompose"]
+        O -.->|routes to| SPEC["/etabli-spec"]
+        O -.->|routes to| DEC["/etabli-decompose"]
         O -.->|routes to| LAUNCH["launch-lanes.sh<br/>up to 3 lanes"]
 
         SPEC -->|delivery/prd.md<br/>decisions + contracts| G1{{Human approves}}
@@ -68,9 +68,9 @@ flowchart TD
         DEC -->|delivery/decomposition.md<br/>delivery/tasks/*.md| G2{{Human approves}}
         G2 --> LAUNCH
 
-        LAUNCH -->|claims via| ST["/delivery-status"]
-        LAUNCH -->|one worktree per task| IMP["/delivery-implement"]
-        IMP -->|the change, uncommitted| REF["/delivery-refine<br/>one tier up"]
+        LAUNCH -->|claims via| ST["/etabli-status"]
+        LAUNCH -->|one worktree per task| IMP["/etabli-implement"]
+        IMP -->|the change, uncommitted| REF["/etabli-refine<br/>one tier up"]
         REF -->|draft pull request| G3{{Human approves the merge}}
     end
 
@@ -94,7 +94,7 @@ of the route to use:
 
 | Path | When | What runs |
 |---|---|---|
-| Direct implement | One well-understood change with obvious acceptance criteria | one task file, then `delivery-implement` and `delivery-refine` in the ordinary checkout; no claim, no worktree, only the merge gate |
+| Direct implement | One well-understood change with obvious acceptance criteria | one task file, then `etabli-implement` and `etabli-refine` in the ordinary checkout; no claim, no worktree, only the merge gate |
 | Full route | Several tasks, contracts to keep parallel work consistent, or a decision worth recording | every phase and every gate, up to three lanes at once |
 
 How much of a full route runs in parallel is decomposition's finding, not a
@@ -104,17 +104,17 @@ choice made up front; see [Parallel or serial](#parallel-or-serial).
 
 | Skill | Owns | Produces | Runs as |
 |---|---|---|---|
-| `delivery-orchestrator` | Where the project stands, the route, the gates, the lane policy | decisions about what happens next | a human's session |
-| `delivery-spec` | Requirements (stage A), then decisions and contracts (stage B) | `delivery/prd.md`, decision records, `delivery/contracts/` | a human's session |
-| `delivery-decompose` | Splitting approved work into epics and independent tasks | `delivery/decomposition.md` and `delivery/tasks/<id>.md`, validated | a human's session |
-| `delivery-status` | Claims and run state, read from git | exit codes and tab-separated rows | `sh`, no model |
-| `delivery-implement` | One task into one validated change | a working tree and a handoff report | an unattended lane |
-| `delivery-refine` | Reviewing that change, fixing what the review finds, and simplifying it | the same working tree, and a Refinement section in the report | the same lane, a second session on a stronger model |
+| `etabli-orchestrator` | Where the project stands, the route, the gates, the lane policy | decisions about what happens next | a human's session |
+| `etabli-spec` | Requirements (stage A), then decisions and contracts (stage B) | `delivery/prd.md`, decision records, `delivery/contracts/` | a human's session |
+| `etabli-decompose` | Splitting approved work into epics and independent tasks | `delivery/decomposition.md` and `delivery/tasks/<id>.md`, validated | a human's session |
+| `etabli-status` | Claims and run state, read from git | exit codes and tab-separated rows | `sh`, no model |
+| `etabli-implement` | One task into one validated change | a working tree and a handoff report | an unattended lane |
+| `etabli-refine` | Reviewing that change, fixing what the review finds, and simplifying it | the same working tree, and a Refinement section in the report | the same lane, a second session on a stronger model |
 
-Only `delivery-orchestrator` is invoked by a human directly. The rest are reached
+Only `etabli-orchestrator` is invoked by a human directly. The rest are reached
 through it, or through `launch-lanes.sh`.
 
-`delivery-refine` is the second session of every lane. It did not write the
+`etabli-refine` is the second session of every lane. It did not write the
 change, it runs on the tier above the task's, and it works in one pass: review
 the change against the task's acceptance criteria, fix what that finds, then
 simplify the lines the change added without altering their behaviour, and
@@ -123,7 +123,7 @@ effort goes into polishing code about to change. A failed refinement never
 loses the implementation: the change is published as it was, and the report
 says so. `--no-refine` on the launcher skips it.
 
-`delivery-spec` covers two stages rather than shipping as two skills: they are
+`etabli-spec` covers two stages rather than shipping as two skills: they are
 written in one sitting from the same source material, and the design spine is
 worthless without approved requirements to hang it on.
 
@@ -132,7 +132,7 @@ or install a review skill alongside the kit and compare it against the
 unassisted harness before adopting it. To have the orchestrator suggest which
 review skill a pull request needs, map concerns such as security or data to
 installed skills in `delivery/review-lenses.conf`; the format is in the
-[review lenses](.agents/skills/delivery-orchestrator/references/conventions.md#review-lenses)
+[review lenses](.agents/skills/etabli-orchestrator/references/conventions.md#review-lenses)
 convention.
 
 ## Where the work happens
@@ -167,8 +167,8 @@ from git refs and pull request state on every read.
 The lane cap is three because three is roughly what one person can review, not
 what the machine can run.
 
-A lane is two sessions in its worktree: `delivery-implement` writes the change,
-then `delivery-refine` reviews and tidies it on a stronger model. The launcher
+A lane is two sessions in its worktree: `etabli-implement` writes the change,
+then `etabli-refine` reviews and tidies it on a stronger model. The launcher
 then commits, pushes and opens the draft pull request. The lane's branch pushes
 to itself, so a plain `git push` from the worktree reaches `task/<id>` and never
 the default branch.
@@ -225,8 +225,8 @@ each merge to start the next task.
 A serial set still goes through every phase and every gate: the requirements,
 contracts and task files are what stop the work encoding guesses, whether or
 not it runs concurrently. What changes is who needs the lanes. When one person
-holds the whole set, skip the launcher and invoke `delivery-implement`, then
-`delivery-refine`, per task in dependency order; the claim only earns its keep when several people pick
+holds the whole set, skip the launcher and invoke `etabli-implement`, then
+`etabli-refine`, per task in dependency order; the claim only earns its keep when several people pick
 from the same tasks.
 
 ### Which model runs a lane
@@ -239,10 +239,10 @@ Each task's `tier` says how much capability its work needs:
 | `build` | Ordinary execution against explicit acceptance criteria. The default |
 | `chore` | Mechanical changes with no judgement in them |
 
-A tier is a hint, not a model name. Delivery Kit cannot know which models your
+A tier is a hint, not a model name. Établi cannot know which models your
 account may use, so by default it passes no model at all and the harness applies
 its own default. To say what a tier means for you, write a `tiers.conf` at
-`~/.config/delivery-kit/tiers.conf`. The names below are examples:
+`~/.config/etabli/tiers.conf`. The names below are examples:
 
 ```ini
 [plan]
@@ -262,7 +262,7 @@ in `.gitconfig`. Harness and model are both optional. A mapping applies only to
 the harness it names, so a model id never reaches a harness that would refuse
 it. A team that agrees on a mapping can commit it as `delivery/tiers.conf`; the
 developer's own file wins, tier by tier. The full rules are in the
-[conventions](.agents/skills/delivery-orchestrator/references/conventions.md#mapping-a-tier-to-a-model).
+[conventions](.agents/skills/etabli-orchestrator/references/conventions.md#mapping-a-tier-to-a-model).
 
 A lane runs on the first of: `--harness`, the harness its tier maps to,
 `$DELIVERY_HARNESS`, then the first harness found installed. `--harness` moves a
@@ -446,7 +446,7 @@ Use the `skills` CLI. It installs all six skills, writes each one to
 `skills-lock.json` so every developer restores the same version.
 
 ```sh
-npx skills add https://github.com/ancelin-code/delivery-kit/tree/main \
+npx skills add https://github.com/ancelin-code/etabli/tree/main \
   --skill '*' -a claude-code -a github-copilot -y
 ```
 
@@ -454,7 +454,7 @@ The `/tree/main` suffix installs what has been released to `main`. Without it,
 you get the default branch, `develop`, where unreleased work lands first.
 
 To install a release instead of the tip of `main`, name its tag:
-`…/delivery-kit/tree/v0.1.0`. The lock file then records that version, and
+`…/etabli/tree/v0.1.0`. The lock file then records that version, and
 `CHANGELOG.md` lists what each one changed.
 
 Add an `-a <agent>` for each other harness your team uses; `npx skills add
@@ -465,7 +465,7 @@ if your team uses only Claude Code. With `-a claude-code` alone, the CLI copies
 each skill into `.claude/skills/` and creates no `.agents/`. A later
 `npx skills update` then moves the skills it updates to `.agents/skills/` with
 links, and leaves the ones it finds up to date as copies. The kit's skills find
-each other as siblings, so that split install loses `delivery-implement`, and
+each other as siblings, so that split install loses `etabli-implement`, and
 lanes would run without it. `where.sh` reports a split install as
 `NEXT repair-install`, and the launcher refuses to start. Installed with both
 agents, every skill is linked from the start and updates keep it that way.
@@ -473,8 +473,8 @@ agents, every skill is linked from the start and updates keep it that way.
 To repair a split install, remove every copy and install again:
 
 ```sh
-rm -rf .claude/skills/delivery-* .agents/skills/delivery-*
-npx skills add https://github.com/ancelin-code/delivery-kit/tree/main \
+rm -rf .claude/skills/etabli-* .agents/skills/etabli-*
+npx skills add https://github.com/ancelin-code/etabli/tree/main \
   --skill '*' -a claude-code -a github-copilot -y
 ```
 
@@ -497,11 +497,11 @@ need.
 Then make the kit the project's default assistant, and commit `AGENTS.md`:
 
 ```sh
-sh .agents/skills/delivery-orchestrator/scripts/install-routing.sh
+sh .agents/skills/etabli-orchestrator/scripts/install-routing.sh
 ```
 
 It appends a short block to `AGENTS.md`, creating it if needed, that sends every
-request about the project to `delivery-orchestrator`. Claude Code and Copilot
+request about the project to `etabli-orchestrator`. Claude Code and Copilot
 CLI both read that file on every request, so the kit is consulted even when a
 question matches no skill description. Without it, a plain *"what's the status
 of this project?"* reached no kit skill in either harness, and Copilot answered
@@ -525,7 +525,7 @@ security   security-review   */auth/* *secret* *.tf
 
 A task can also ask for a lens through its `review` field, and anyone can add
 one to a pull request with a `review:<lens>` label. The full format is in the
-[review lenses](.agents/skills/delivery-orchestrator/references/conventions.md#review-lenses)
+[review lenses](.agents/skills/etabli-orchestrator/references/conventions.md#review-lenses)
 convention. The script never overwrites an existing file.
 
 Both directories matter: Copilot CLI reads `.agents/skills/`, while Claude Code
@@ -543,14 +543,14 @@ copilot skill list          # inspect Personal skills
 ls ~/.claude/skills         # and here
 ```
 
-Disable anything that collides with a `delivery` or `delivery-*` name.
+Disable anything that collides with an `etabli-*` name.
 
 ### 3. Drive the route
 
 Tell the orchestrator what you want built:
 
 ```text
-/delivery-orchestrator <what to build>
+/etabli-orchestrator <what to build>
 ```
 
 In a repository with no `delivery/prd.md` yet, that starts the requirements.
@@ -560,7 +560,7 @@ second one to start.
 
 Ask it where things stand at any time, in your own words: *"what's next?"*,
 *"what's the status?"*, *"who is on what?"*. The answer comes from
-`delivery-orchestrator/scripts/where.sh`, which reads `delivery/` and git in one
+`etabli-orchestrator/scripts/where.sh`, which reads `delivery/` and git in one
 call and names the next action. For each pull request in review, it also
 names the review skills to run on it.
 
@@ -572,9 +572,9 @@ are from `delivery/`, so no session has to stay alive across a gate.
 To start lanes once tasks are approved:
 
 ```sh
-sh .agents/skills/delivery-status/scripts/status.sh --ready \
+sh .agents/skills/etabli-status/scripts/status.sh --ready \
   | awk '$1=="TASK"{print $2}' \
-  | sh .agents/skills/delivery-orchestrator/scripts/launch-lanes.sh --dry-run
+  | sh .agents/skills/etabli-orchestrator/scripts/launch-lanes.sh --dry-run
 ```
 
 Drop `--dry-run` to start real lanes. Each lane ends as a draft pull request:
@@ -600,7 +600,7 @@ it depends on land, and prints one line per event, so nobody has to ask what is
 next or refresh the forge:
 
 ```sh
-sh .agents/skills/delivery-orchestrator/scripts/follow.sh -- --no-web
+sh .agents/skills/etabli-orchestrator/scripts/follow.sh -- --no-web
 ```
 
 Options after `--` go to the launcher. Your part is reviewing and merging the
@@ -688,11 +688,11 @@ worktree. When it is not, start a fresh session there and point it at the task
 file and the branch:
 
 ```sh
-cd "$lane" && claude "/delivery-implement $home/delivery/tasks/a-001.md"
+cd "$lane" && claude "/etabli-implement $home/delivery/tasks/a-001.md"
 ```
 
 To redo only the review of a change the first session already left in the
-worktree, run `/delivery-refine` on the same task file and `--report
+worktree, run `/etabli-refine` on the same task file and `--report
 .lane-report.md` instead.
 
 Claude Code can also run lanes as attachable background sessions
@@ -717,14 +717,14 @@ the state `status.sh` gives them, their repository and pull request, the
 coverage of each requirement, and the planning documents.
 
 ```sh
-sh .agents/skills/delivery-status/scripts/snapshot.sh
+sh .agents/skills/etabli-status/scripts/snapshot.sh
 ```
 
 A connector reads that on stdin:
 
 ```sh
-sh .agents/skills/delivery-status/scripts/snapshot.sh \
-  | delivery-kit-jira --config ~/jira/shop.toml --dry-run
+sh .agents/skills/etabli-status/scripts/snapshot.sh \
+  | etabli-jira --config ~/jira/shop.toml --dry-run
 ```
 
 Each run compares the whole snapshot with the tool and applies the difference,
@@ -734,7 +734,7 @@ non-zero, so no connector acts on a guess.
 
 | Connector | Tool | Repository |
 |---|---|---|
-| `delivery-kit-jira` | Jira Data Center | `delivery-kit-connector-jira` (not published yet) |
+| `etabli-jira` | Jira Data Center | `etabli-connector-jira` (not published yet) |
 
 What a connector must and must not do is the contract in
 [ADR-005](docs/decisions/ADR-005-external-tool-connectors.md). In short:
@@ -797,7 +797,7 @@ loudly:
 - the `.claude/skills/` symlinks, which exist only because Claude Code did not
   register `.agents/skills/`. Harmless if that changes, but dead weight.
 - slash-command invocation of a skill. If a harness stops resolving
-  `/delivery-implement <task-file>` as an invocation, every lane reverts to
+  `/etabli-implement <task-file>` as an invocation, every lane reverts to
   reading the skill as prose, which makes its boundaries advisory and leaves no
   trace in the lane log.
 
@@ -806,7 +806,7 @@ This is a maintainer's task, not part of a run. It is deliberately not in any
 
 ## Design
 
-The route, the gates and the lane policy live in the `delivery-orchestrator`
+The route, the gates and the lane policy live in the `etabli-orchestrator`
 skill. Shared conventions - the project, epic and task units, placeholders,
 task schema, branch names, the claim protocol, tiers, pull request rules -
 are in its `references/`, loaded on demand during a run.

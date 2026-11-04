@@ -33,7 +33,7 @@ Options:
                          announced this way do not stop the next run.
   --max-polls <n>        Stop after n polls (default: no limit).
   --log-dir <dir>        Lane logs (default: .lanes/logs).
-  --status-script <path> status.sh from delivery-status (default: beside this skill).
+  --status-script <path> status.sh from etabli-status (default: beside this skill).
   --launcher <path>      launch-lanes.sh (default: beside this script).
   -h, --help             Print this help.
 
@@ -69,7 +69,7 @@ launch=1
 exit_on_human=0
 max_polls=0
 log_dir=".lanes/logs"
-status_script="$here/../../delivery-status/scripts/status.sh"
+status_script="$here/../../etabli-status/scripts/status.sh"
 launcher="$here/launch-lanes.sh"
 
 while [ $# -gt 0 ]; do

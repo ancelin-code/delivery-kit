@@ -14,7 +14,7 @@ features, then the rest. After each, they want to stop and look at what was
 learned. That might lead them to revise the requirements or a decision record,
 or to cut the next slice.
 
-The kit had nothing between project and epic. `delivery-decompose` cut the
+The kit had nothing between project and epic. `etabli-decompose` cut the
 whole approved scope at once, so lessons from the first slice could not shape
 the second. `where.sh` and `follow.sh` saw one flat task set, which reads as
 complete once everything is merged. A task could not say that it delivers only
@@ -44,7 +44,7 @@ in full up front; only decomposition and execution are incremental.
   lists the ids it covers under `## Covers`, with `(part): <note>` after one it
   delivers only in part.
 - **Coverage is derived**, like task state, by
-  `delivery-status/scripts/coverage.sh`. It reports each requirement as covered,
+  `etabli-status/scripts/coverage.sh`. It reports each requirement as covered,
   partly covered, planned or not started, and names the tasks behind it.
 - **State is derived** by `status.sh`, which prints a `MILESTONE` row per
   milestone, so `where.sh`, `follow.sh` and `coverage.sh` share one reading of
