@@ -6,26 +6,9 @@ tagging it.
 
 ## [Unreleased]
 
-- The project is renamed from Delivery Kit to Établi (*établi*, French for
-  workbench), and its six skills from `delivery-*` to `etabli-*`
-  (`etabli-orchestrator`, `etabli-spec`, `etabli-decompose`,
-  `etabli-implement`, `etabli-refine` and `etabli-status`). The `delivery/`
-  directory and the `DELIVERY_*` variables are unchanged. Update by hand a
-  project that already uses the kit: remove the old `delivery-*` skill
-  directories before installing, rename the `delivery-kit:routing` marker
-  around the block in `AGENTS.md` to `etabli:routing`, move
-  `~/.config/delivery-kit/tiers.conf` to `~/.config/etabli/tiers.conf`, and
-  expect `product-version: etabli@v0` in the skill frontmatter.
-- `follow.sh --exit-on-human` ends the loop with exit code 4 when a lane
-  publishes or fails, so any harness learns a person is expected from the
-  command ending, with no background-output support needed.
-- The direct implement path now says `etabli-refine` runs in a separate
-  session from `etabli-implement`, so the reviewer did not write the change,
-  and `etabli-implement`'s report names it as the next step.
+## [0.1.0] - 2026-11-04
 
-## [0.1.0] - 2026-10-23
-
-First public release.
+First public release, under the name Établi (*établi*, French for workbench).
 
 - Six skills that take a project from requirements to draft pull requests:
   `etabli-orchestrator`, `etabli-spec`, `etabli-decompose`,
@@ -62,4 +45,10 @@ First public release.
   `DELIVERY_LANE_CMD` template for any other
   ([ADR-008](docs/decisions/ADR-008-harness-adapters.md)).
 - Multi-repository projects planned once and landed where each change belongs.
+- `follow.sh --exit-on-human` ends the loop with exit code 4 when a lane
+  publishes or fails, so any harness learns a person is expected from the
+  command ending, with no background-output support needed.
+- The direct implement path now says `etabli-refine` runs in a separate
+  session from `etabli-implement`, so the reviewer did not write the change,
+  and `etabli-implement`'s report names it as the next step.
 - Licensed under Apache-2.0.
