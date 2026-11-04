@@ -71,3 +71,162 @@
   font-size: 1.15em;
   letter-spacing: 0.02em;
 }
+
+/* The route and the way work is cut, drawn in HTML so they follow the theme and
+   fit the page without scrolling. */
+.route-fig {
+  --fig-line: var(--md-default-fg-color--lightest);
+  --fig-card: var(--md-code-bg-color);
+  --fig-gate: #c8601f;
+  --fig-gate-bg: rgb(200 96 31 / 12%);
+  --fig-auto: var(--md-primary-fg-color);
+  --fig-auto-bg: rgb(35 73 138 / 10%);
+  margin: 1.2rem 0 1.6rem;
+}
+[data-md-color-scheme="slate"] .route-fig {
+  --fig-gate: #f2924f;
+  --fig-gate-bg: rgb(242 146 79 / 14%);
+  --fig-auto: #8db4f2;
+  --fig-auto-bg: rgb(141 180 242 / 12%);
+}
+.route-fig__label {
+  margin: 1rem 0 0.4rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--md-default-fg-color--light);
+}
+.route-fig__label:first-child { margin-top: 0; }
+
+[dir] .md-typeset ol.route {
+  display: grid;
+  gap: 1.1rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.md-typeset ol.route--once { grid-template-columns: repeat(2, 1fr); }
+.md-typeset ol.route--loop { grid-template-columns: repeat(4, 1fr); }
+.md-typeset ol.route > .route__step {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin: 0;
+  padding: 0.7rem 0.75rem 0.8rem;
+  border: 1px solid var(--fig-line);
+  border-radius: 0.5rem;
+  background: var(--fig-card);
+  font-size: 0.78rem;
+  line-height: 1.35;
+}
+.route__step + .route__step::before {
+  content: "\203A";
+  position: absolute;
+  top: 50%;
+  left: -1.1rem;
+  width: 1.1rem;
+  transform: translateY(-50%);
+  text-align: center;
+  font-size: 1.3rem;
+  color: var(--md-default-fg-color--light);
+}
+.route__n {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.4rem;
+  height: 1.4rem;
+  border-radius: 50%;
+  background: var(--md-primary-fg-color);
+  color: var(--md-primary-bg-color);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+.route__name { font-weight: 700; font-size: 0.9rem; }
+.route__skill, .route__file {
+  font-size: 0.72rem;
+  line-height: 1.3;
+  color: var(--md-default-fg-color--light);
+}
+.route__skill { font-weight: 600; }
+.route__badge {
+  align-self: flex-start;
+  margin-top: auto;
+  padding: 0.05em 0.6em;
+  border-radius: 1em;
+  font-size: 0.68rem;
+  font-weight: 700;
+  white-space: nowrap;
+  color: var(--fig-gate);
+  background: var(--fig-gate-bg);
+}
+.route__badge--auto { color: var(--fig-auto); background: var(--fig-auto-bg); }
+.route__loop {
+  margin: 0.8rem 0 0;
+  padding: 0.45rem 0.8rem;
+  border: 1px dashed var(--fig-gate);
+  border-radius: 0.5rem;
+  font-size: 0.78rem;
+  color: var(--fig-gate);
+  text-align: center;
+}
+
+/* How the work is cut: a project holds milestones, a milestone epics, an epic
+   tasks. Only the current milestone has tasks. */
+.nest { display: grid; gap: 0.6rem; padding: 0.8rem; border: 1px solid var(--fig-line);
+  border-radius: 0.6rem; font-size: 0.78rem; line-height: 1.35; }
+.nest__tag {
+  display: block;
+  margin-bottom: 0.3rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--md-default-fg-color--light);
+}
+.nest__milestones { display: grid; grid-template-columns: 2.2fr 1fr 1fr; gap: 0.6rem; }
+.nest__milestone {
+  padding: 0.6rem 0.7rem;
+  border: 1px solid var(--fig-auto);
+  border-radius: 0.5rem;
+  background: var(--fig-auto-bg);
+}
+.nest__milestone--later {
+  border-style: dashed;
+  border-color: var(--md-default-fg-color--lighter);
+  background: transparent;
+  color: var(--md-default-fg-color--light);
+}
+.nest__milestone strong { display: block; margin-bottom: 0.4rem; font-size: 0.85rem; }
+.nest__epic {
+  margin-top: 0.4rem;
+  padding: 0.4rem 0.5rem;
+  border: 1px solid var(--fig-line);
+  border-radius: 0.4rem;
+  background: var(--md-default-bg-color);
+}
+.nest__chips { display: flex; flex-wrap: wrap; gap: 0.25rem; margin-top: 0.2rem; }
+.nest__chip {
+  padding: 0 0.5em;
+  border-radius: 0.3em;
+  background: var(--fig-card);
+  font-family: var(--md-code-font-family, monospace);
+  font-size: 0.68rem;
+}
+.nest__note { margin: 0; font-size: 0.74rem; color: var(--md-default-fg-color--light); }
+
+@media (max-width: 44.9375em) {
+  .md-typeset ol.route--once, .md-typeset ol.route--loop { grid-template-columns: 1fr; }
+  .route__step + .route__step::before {
+    content: "\2304";
+    top: -1.15rem;
+    left: 50%;
+    transform: translateX(-50%);
+    width: auto;
+    height: 1.1rem;
+    line-height: 1.1rem;
+  }
+  .nest__milestones { grid-template-columns: 1fr; }
+}

@@ -27,6 +27,7 @@ nav = [
   ] },
   { "How It Works" = [
     { "The Route" = "concepts/route.md" },
+    { "The Requirements (PRD)" = "concepts/prd.md" },
     { "The Six Skills" = "concepts/skills.md" },
     { "Lanes" = "concepts/lanes.md" },
   ] },
@@ -76,6 +77,6 @@ markdown_description = "Établi is a family of Agent Skills that routes a projec
 
 [project.plugins.llmstxt.sections]
 "Get started" = ["index.md", "start/install.md", "start/route.md", "start/lanes.md"]
-"How it works" = ["concepts/route.md", "concepts/skills.md", "concepts/lanes.md"]
+"How it works" = ["concepts/route.md", "concepts/prd.md", "concepts/skills.md", "concepts/lanes.md"]
 Guides = ["guides/tiers.md", "guides/harnesses.md", "guides/review.md", "guides/repositories.md", "guides/connectors.md"]
 Project = ["changelog.md"]
