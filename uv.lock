@@ -223,7 +223,7 @@ wheels = [
 
 [[package]]
 name = "cisco-ai-skill-scanner"
-version = "2.3.0"
+version = "2.3.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "anthropic" },
@@ -250,13 +250,13 @@ dependencies = [
     { name = "uvicorn", extra = ["standard"] },
     { name = "yara-x" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/5a/ee/39d9251ebff6faf6a72b3eeb49f219270a2be81ae903902e2e0f0d6b3d2e/cisco_ai_skill_scanner-2.3.0.tar.gz", hash = "sha256:11e78c3d816f7561c299146c7cfcdfd6433dd433f0fbf040393404205d0fde99", size = 1203492, upload-time = "2026-10-15T07:18:08.42Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/65/66/4dfb3b610799159d27dcb5b4dcb0f1aff739c2f27d159dedded844735229/cisco_ai_skill_scanner-2.3.1.tar.gz", hash = "sha256:9d7f7ee5503a2694aab6f963203ded30976bfb36282217d12713cffbbacbc4f9", size = 1226105, upload-time = "2026-10-21T15:05:21.88Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/95/ec/e169a1d75a5ed33e0ed0e873337ae7a7adb7fb6268e0e89be8bb80b3653d/cisco_ai_skill_scanner-2.3.0-cp311.cp312.cp313.cp314-none-macosx_13_0_arm64.whl", hash = "sha256:8272624385351eaab7e5b7bddccc2e109532ea590744497b1562973eb0869b8c", size = 4880247, upload-time = "2026-10-15T07:17:56.974Z" },
-    { url = "https://files.pythonhosted.org/packages/03/6b/c0956d5932246354ff2f53ca1ad1e12464183b1279466b3febc1e1601e41/cisco_ai_skill_scanner-2.3.0-cp311.cp312.cp313.cp314-none-macosx_13_0_x86_64.whl", hash = "sha256:b04a05c6282a8f959d8178734c5bbd6c2c2d1c98f543c7ae087724c7104881b1", size = 5193400, upload-time = "2026-10-15T07:17:59.756Z" },
-    { url = "https://files.pythonhosted.org/packages/4d/9f/8948337f405edd377bd8e267648aa792127312c0ab983302652e3618a06b/cisco_ai_skill_scanner-2.3.0-cp311.cp312.cp313.cp314-none-manylinux_2_17_aarch64.whl", hash = "sha256:1e206c93c7843aeb66d2086fb42d7a204af91c3639c916161fed920de9a031c5", size = 4737855, upload-time = "2026-10-15T07:18:02.103Z" },
-    { url = "https://files.pythonhosted.org/packages/09/68/2120191f278edc39b8a2b8583d837a61b5394f16b431fbce31ac6032809e/cisco_ai_skill_scanner-2.3.0-cp311.cp312.cp313.cp314-none-manylinux_2_17_x86_64.whl", hash = "sha256:1eb8634dc23257982c83b56ec8330c4b7fb1f48f42c8b93903206203ae48db77", size = 5135157, upload-time = "2026-10-15T07:18:04.416Z" },
-    { url = "https://files.pythonhosted.org/packages/02/39/83ba53e6156dd4f406898bed7106e14e2607695c88ba98fa42e00b734a23/cisco_ai_skill_scanner-2.3.0-cp311.cp312.cp313.cp314-none-win_amd64.whl", hash = "sha256:c456bfee19923cbee95542b5941b87cdd395dbb3b762a2cc1a234601b81a6ce5", size = 5240907, upload-time = "2026-10-15T07:18:06.452Z" },
+    { url = "https://files.pythonhosted.org/packages/21/c2/c48785204f56206ddc6c788782052a6cd6fce083f5941e7b095b5e40ee90/cisco_ai_skill_scanner-2.3.1-cp311.cp312.cp313.cp314-none-macosx_13_0_arm64.whl", hash = "sha256:28a1e168d6b6af5d7615d6b157dccca551a68d59cc96952d0b21658349fd28ac", size = 4902679, upload-time = "2026-10-21T15:05:12.647Z" },
+    { url = "https://files.pythonhosted.org/packages/ce/28/f49415469823bff3651fe5f4b93b43fa1d8ae21f5cf730ae2de804967d20/cisco_ai_skill_scanner-2.3.1-cp311.cp312.cp313.cp314-none-macosx_13_0_x86_64.whl", hash = "sha256:513648df459f0c05ba7bd7eb9dce51329aaf9d979a98acd5503521d43243fc2d", size = 5215835, upload-time = "2026-10-21T15:05:14.919Z" },
+    { url = "https://files.pythonhosted.org/packages/a7/66/f039e357d48bf5e65b2b6e001b158200b71586fd5ddf5582afee8bee3e92/cisco_ai_skill_scanner-2.3.1-cp311.cp312.cp313.cp314-none-manylinux_2_17_aarch64.whl", hash = "sha256:fb9f83a8472e654637f033d6014d7e77a2284387e2415763fcf12fb447180df0", size = 4760298, upload-time = "2026-10-21T15:05:16.881Z" },
+    { url = "https://files.pythonhosted.org/packages/cd/c8/44508fd6e2b45a5e980f01d98364bbfbc517487cd260f5e0a95b14136c2d/cisco_ai_skill_scanner-2.3.1-cp311.cp312.cp313.cp314-none-manylinux_2_17_x86_64.whl", hash = "sha256:e3ea642577578ddb41872b640253a44f7a11858d5d30fa426040b69528a6df23", size = 5157593, upload-time = "2026-10-21T15:05:18.525Z" },
+    { url = "https://files.pythonhosted.org/packages/6b/3f/7798707d0b84310cdd9841ca12d26b60c37385553791947dae7b362c35df/cisco_ai_skill_scanner-2.3.1-cp311.cp312.cp313.cp314-none-win_amd64.whl", hash = "sha256:d44221ea3bbdc9b82a4df8b6711aa93c5d3e9321365b8529177e33ebfb441d4b", size = 5263354, upload-time = "2026-10-21T15:05:20.288Z" },
 ]
 
 [[package]]
