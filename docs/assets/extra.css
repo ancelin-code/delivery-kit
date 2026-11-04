@@ -121,24 +121,14 @@
 .md-typeset ol.route--once { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .md-typeset ol.route--loop {
   grid-template-columns: minmax(0, 1fr) minmax(0, 2.6fr);
-  grid-template-areas: "cut group" "cut review" "next next";
+  grid-template-areas: "cut group" "review group" "next next";
   align-items: stretch;
 }
 [dir] .md-typeset .route__group, [dir] .md-typeset .route__next { margin: 0; }
-.md-typeset ol.route--loop > .route__cut { grid-area: cut; align-self: start; }
+.md-typeset ol.route--loop > .route__cut { grid-area: cut; }
 .md-typeset ol.route--loop > .route__group { grid-area: group; }
 .md-typeset ol.route--loop > .route__review { grid-area: review; }
 .md-typeset ol.route--loop > .route__next { grid-area: next; }
-.md-typeset .route__review::before {
-  content: "\2304";
-  position: absolute;
-  top: -1.15rem;
-  left: 50%;
-  transform: translateX(-50%);
-  line-height: 1.1rem;
-  font-size: 1.3rem;
-  color: var(--md-default-fg-color--light);
-}
 /* The inner loop: tasks are built and merged in waves, not all at once. */
 .md-typeset .route__group {
   position: relative;
@@ -150,10 +140,21 @@
 .route__group::before {
   content: "\203A";
   position: absolute;
-  top: 50%;
+  top: 25%;
   left: -1.1rem;
   width: 1.1rem;
   transform: translateY(-50%);
+  text-align: center;
+  font-size: 1.3rem;
+  color: var(--md-default-fg-color--light);
+}
+.route__group::after {
+  content: "\203A";
+  position: absolute;
+  top: 75%;
+  left: -1.1rem;
+  width: 1.1rem;
+  transform: translateY(-50%) scaleX(-1);
   text-align: center;
   font-size: 1.3rem;
   color: var(--md-default-fg-color--light);
@@ -233,10 +234,11 @@
   color: var(--md-default-fg-color--light);
 }
 .route__skill { font-weight: 600; }
+.md-typeset .route__file { margin-bottom: 0.7rem; }
 .route__badge {
   align-self: flex-start;
   margin-top: auto;
-  padding: 0.05em 0.6em;
+  padding: 0.18em 0.85em;
   border-radius: 1em;
   font-size: 0.68rem;
   font-weight: 700;
@@ -293,13 +295,10 @@
   .md-typeset ol.route--once, .md-typeset ol.route--loop, .md-typeset ol.route__inner { grid-template-columns: 1fr; }
   .md-typeset ol.route--loop { grid-template-areas: "cut" "group" "review" "next"; }
   .route__group::before, .route__step + .route__step::before {
-    content: "\2304";
-    top: -1.15rem;
+    top: -0.55rem;
     left: 50%;
-    transform: translateX(-50%);
-    width: auto;
-    height: 1.1rem;
-    line-height: 1.1rem;
+    transform: translate(-50%, -50%) rotate(90deg);
   }
+  .route__group::after { display: none; }
   .nest__milestones { grid-template-columns: 1fr; }
 }
