@@ -1,22 +1,22 @@
 # Changelog
 
-All notable changes to Delivery Kit are recorded here. The kit is installed whole,
+All notable changes to Établi are recorded here. The kit is installed whole,
 so one version covers every skill. Set the date on a release's heading when
 tagging it.
 
 ## [Unreleased]
 
-## [0.1.0] - 2026-10-23
+## [0.1.0] - 2026-11-04
 
-First public release.
+First public release, under the name Établi (*établi*, French for workbench).
 
 - Six skills that take a project from requirements to draft pull requests:
-  `delivery-orchestrator`, `delivery-spec`, `delivery-decompose`,
-  `delivery-implement`, `delivery-refine` and `delivery-status`.
+  `etabli-orchestrator`, `etabli-spec`, `etabli-decompose`,
+  `etabli-implement`, `etabli-refine` and `etabli-status`.
 - Parallel implementation lanes with claims made by create-only git pushes, so
   git is the only state. A lane's branch pushes to itself: a plain `git push`
   from a lane worktree reaches `task/<id>`, never the default branch.
-- Every lane is two sessions: `delivery-implement`, then `delivery-refine`, which
+- Every lane is two sessions: `etabli-implement`, then `etabli-refine`, which
   reviews the change on the tier above, fixes what it finds, simplifies it
   without changing its behaviour, re-validates, and adds a Refinement section to
   the pull request body. A tier can name its own `reviewer` in `tiers.conf`;
@@ -37,7 +37,7 @@ First public release.
 - An install split between `.claude/skills/` and `.agents/skills/`, as
   `npx skills update` can leave, is reported by `where.sh` as
   `NEXT repair-install`, and the lane launcher refuses to start without
-  `delivery-implement` or `delivery-refine`. The README explains how to install
+  `etabli-implement` or `etabli-refine`. The README explains how to install
   so this cannot happen, and how to repair it.
 - The helpers are POSIX `sh`: no bash is required, and they run on dash, macOS's
   own `sh` and BusyBox ([ADR-007](docs/decisions/ADR-007-posix-sh-helpers.md)).
@@ -45,4 +45,10 @@ First public release.
   `DELIVERY_LANE_CMD` template for any other
   ([ADR-008](docs/decisions/ADR-008-harness-adapters.md)).
 - Multi-repository projects planned once and landed where each change belongs.
+- `follow.sh --exit-on-human` ends the loop with exit code 4 when a lane
+  publishes or fails, so any harness learns a person is expected from the
+  command ending, with no background-output support needed.
+- The direct implement path now says `etabli-refine` runs in a separate
+  session from `etabli-implement`, so the reviewer did not write the change,
+  and `etabli-implement`'s report names it as the next step.
 - Licensed under Apache-2.0.

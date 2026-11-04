@@ -16,20 +16,20 @@ Skills are named by their role, under the prefix `delivery`:
 
 | Skill | Role |
 |---|---|
-| `delivery-orchestrator` | Where the project stands, the route, the gates, the lane policy. The entry point |
-| `delivery-spec` | Requirements, then decisions and contracts |
-| `delivery-decompose` | Approved work into validated task files |
-| `delivery-implement` | One task into one validated change |
-| `delivery-status` | Claims and run state, read from git |
+| `etabli-orchestrator` | Where the project stands, the route, the gates, the lane policy. The entry point |
+| `etabli-spec` | Requirements, then decisions and contracts |
+| `etabli-decompose` | Approved work into validated task files |
+| `etabli-implement` | One task into one validated change |
+| `etabli-status` | Claims and run state, read from git |
 
-The entry point reads `/delivery-orchestrator what's next`. It is the
+The entry point reads `/etabli-orchestrator what's next`. It is the
 orchestrator because that is its job, and the same pattern as its siblings
 rather than a bare `delivery` that would read as one of them. `delivery` also
 matches the `delivery/` directory the artifacts live in.
 
 ## Alternatives considered
 
-- **A bare `delivery` for the entry point.** Rejected: next to `delivery-spec` it
+- **A bare `delivery` for the entry point.** Rejected: next to `etabli-spec` it
   reads as a sibling, not as the parent that routes them.
 - **`ship-*`.** Rejected: shipping is the last step, and `/ship` is a common name
   for a personal skill, which would shadow ours.

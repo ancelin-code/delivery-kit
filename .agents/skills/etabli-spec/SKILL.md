@@ -1,15 +1,15 @@
 ---
-name: delivery-spec
+name: etabli-spec
 author: Ancelin Serre
 description: >-
-  Part of Delivery Kit, invoked by delivery-orchestrator. Turn an intent into a short
+  Part of Établi, invoked by etabli-orchestrator. Turn an intent into a short
   requirements document, then record the design decisions and interface contracts that let
   parallel lanes build compatible parts. Use when starting a project, when an ask is too
   vague to decompose, or when parallel work needs an agreed interface to build against.
   Does not break work into tasks or implement anything.
 license: Apache-2.0
-repository: https://github.com/ancelin-code/delivery-kit.git
-product-version: delivery-kit@v0
+repository: https://github.com/ancelin-code/etabli.git
+product-version: etabli@v0
 version: "0.1.0"
 keywords:
   - requirements
@@ -41,7 +41,7 @@ The requirements are as long as they need to be and no longer. Brevity is not
 the goal and neither is length: a document that restates its sources or carries
 design detail hides the decisions that matter, while one trimmed to a size loses
 what the lanes build from. Cut repetition, never content. The real test is that
-`delivery-decompose` can cut the requirements into tasks without asking
+`etabli-decompose` can cut the requirements into tasks without asking
 anything, and without re-reading the sources.
 
 When a document runs long, check whether the excess is design detail that
@@ -173,7 +173,7 @@ Read the requirements, decisions and contracts as a set, and confirm they do not
 contradict each other. A contradiction found here is cheap; found during
 integration it is not.
 
-Present them and stop. A human approves before `delivery-decompose` runs.
+Present them and stop. A human approves before `etabli-decompose` runs.
 
 ## Boundaries
 

@@ -1,6 +1,6 @@
 # Delivery conventions
 
-The shared contract for Delivery Kit. Task files, branches, claims, tiers
+The shared contract for Établi. Task files, branches, claims, tiers
 and pull requests follow these rules. Skills reference this file rather
 than restating it.
 
@@ -9,7 +9,7 @@ than restating it.
 `<skill-root>` names the root of whichever skill the instruction using it
 belongs to, never another one: the same token means a different directory in
 each skill's own files. A command spanning two skills names the other one as
-`<its-name>` instead, for example `<delivery-status>`, resolved to that
+`<its-name>` instead, for example `<etabli-status>`, resolved to that
 skill's own installed directory the same way `<skill-root>` is. Neither is a
 path assumed relative to the skill doing the naming; the kit does not require
 one skill to sit at a fixed offset from another.
@@ -30,7 +30,7 @@ A project has exactly one requirements document. New work on the same project
 revises that document and becomes new epics; it does not start a second one.
 
 An epic has no task count: it is as large as one person can hold in their head,
-and `delivery-decompose` cuts a bigger group into several.
+and `etabli-decompose` cuts a bigger group into several.
 
 ## Milestones
 
@@ -102,7 +102,7 @@ says what it does of a requirement it covers only in part:
 ```
 
 Coverage is derived from those lines and git, with nothing stored:
-`<delivery-status>/scripts/coverage.sh` reports each requirement as covered (a
+`<etabli-status>/scripts/coverage.sh` reports each requirement as covered (a
 merged task covers it in full), partly (merged tasks cover it in part only),
 planned (only unmerged tasks cover it) or not started.
 
@@ -114,12 +114,12 @@ for: when a file is not at its path below, it does not exist yet.
 
 | Artifact | Path | Written by |
 |---|---|---|
-| Requirements | `delivery/prd.md` | `delivery-spec`, stage A |
-| Decision records | the repository's existing decision record directory, else `delivery/decisions/ADR-<nnn>-<slug>.md` | `delivery-spec`, stage B |
-| Contracts | `delivery/contracts/<interface>.md` | `delivery-spec`, stage B |
-| Decomposition summary | `delivery/decomposition.md` | `delivery-decompose` |
-| Task files | `delivery/tasks/<id>.md` | `delivery-decompose`, or the orchestrator on the direct path |
-| Milestone reviews | `delivery/milestones/<slug>.md` | `delivery-decompose`, with the human who approves it |
+| Requirements | `delivery/prd.md` | `etabli-spec`, stage A |
+| Decision records | the repository's existing decision record directory, else `delivery/decisions/ADR-<nnn>-<slug>.md` | `etabli-spec`, stage B |
+| Contracts | `delivery/contracts/<interface>.md` | `etabli-spec`, stage B |
+| Decomposition summary | `delivery/decomposition.md` | `etabli-decompose` |
+| Task files | `delivery/tasks/<id>.md` | `etabli-decompose`, or the orchestrator on the direct path |
+| Milestone reviews | `delivery/milestones/<slug>.md` | `etabli-decompose`, with the human who approves it |
 | Review lenses | `delivery/review-lenses.conf` | `install-routing.sh` seeds it; the project's maintainers edit it |
 
 An existing decision record directory is one already holding ADR files, such as
@@ -131,7 +131,7 @@ The kit's scripts default to `delivery/tasks` and run from the repository root,
 so none of them needs a path argument.
 
 Files shipped with a skill are named from that skill's root, for example
-`<delivery-orchestrator>/references/conventions.md` for this file, as
+`<etabli-orchestrator>/references/conventions.md` for this file, as
 [placeholders](#placeholders) defines.
 
 ## Task identity
@@ -226,7 +226,7 @@ status file.
 type. Change type is carried by Conventional Commits and the pull request title.
 
 ```sh
-sh <delivery-status>/scripts/claim.sh ingestion-003
+sh <etabli-status>/scripts/claim.sh ingestion-003
 ```
 
 Run it from a clone of the repository the task lands in.
@@ -260,7 +260,7 @@ The holder and claim time come from `git log -1 task/<id>`.
 ## Tiers
 
 A task's `tier` says how much capability its work needs. It is a hint, not a
-model name: Delivery Kit cannot know which models an account may use, so unless a
+model name: Établi cannot know which models an account may use, so unless a
 tier is mapped (below) the harness picks its own default.
 
 | Tier | For | Typically |
@@ -307,14 +307,14 @@ Comments, quoting and syntax errors are git's.
 Two files are read, and the first to name a tier decides all of it:
 
 1. The developer's own: `$DELIVERY_TIERS`, else
-   `$XDG_CONFIG_HOME/delivery-kit/tiers.conf` (`~/.config/delivery-kit/tiers.conf`).
+   `$XDG_CONFIG_HOME/etabli/tiers.conf` (`~/.config/etabli/tiers.conf`).
    It lives outside every repository, so it is never committed by accident.
 2. The project's: `delivery/tiers.conf`, committed when a team agrees on one.
 
 A lane runs on the first of: `--harness`, the harness its tier maps to,
 `$DELIVERY_HARNESS`, then the first harness found installed.
 
-A lane's second session, `delivery-refine`, reviews on a stronger model than
+A lane's second session, `etabli-refine`, reviews on a stronger model than
 the one that wrote the change. It runs on the tier's `reviewer`, a model for the
 tier's own harness, when the tier names one. Otherwise it runs as the tier
 above would: `chore` as `build`, `build` as `plan`, `plan` as `plan`, on that
@@ -350,10 +350,10 @@ the file, only the general review is suggested, and it is the harness's own.
 
 ## Commits and pull requests
 
-A lane does not commit. Its two sessions, `delivery-implement` then
-`delivery-refine`, leave the change in the worktree. When the first exits
+A lane does not commit. Its two sessions, `etabli-implement` then
+`etabli-refine`, leave the change in the worktree. When the first exits
 cleanly,
-`<delivery-orchestrator>/scripts/publish-lane.sh` commits the worktree as
+`<etabli-orchestrator>/scripts/publish-lane.sh` commits the worktree as
 `<type>(<epic>): <title>`, pushes it, and opens the draft pull request. The body
 is the lane's handoff report, written in the repository's pull request template
 when there is one, else the task's acceptance criteria followed by the report.

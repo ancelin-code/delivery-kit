@@ -14,9 +14,9 @@ them.
    `<repository>` is the directory name of the checkout the launcher ran from,
    or `<dir>/<id>` when `DELIVERY_WORKTREE_ROOT=<dir>` is set in the
    environment or `--worktree-root <dir>` is given.
-4. A **session** runs `delivery-implement` in that worktree, unattended, to a
+4. A **session** runs `etabli-implement` in that worktree, unattended, to a
    validated working tree. When it left a change, a second session runs
-   `delivery-refine` on it, one tier up: it reviews the change, fixes what it
+   `etabli-refine` on it, one tier up: it reviews the change, fixes what it
    finds, simplifies it and re-validates. A refinement that fails takes nothing
    away: the change goes on as the first session left it, and the report says
    the review did not run. `--no-refine` skips the second session.
@@ -40,7 +40,7 @@ The launcher takes task ids and does the rest. It reads ids from arguments or
 from standard input, so it composes with whatever decided they were ready:
 
 ```sh
-sh <delivery-status>/scripts/status.sh --ready \
+sh <etabli-status>/scripts/status.sh --ready \
   | awk '$1 == "TASK" { print $2 }' \
   | sh <skill-root>/scripts/launch-lanes.sh
 ```
@@ -58,11 +58,11 @@ reviewed and its own cut approved.
 Use `--dry-run` first when the task set is unfamiliar. It makes every decision
 and prints the outcome without creating a worktree or starting a session.
 
-`<delivery-status>` and `<skill-root>` are two different skills' roots; see
+`<etabli-status>` and `<skill-root>` are two different skills' roots; see
 [placeholders](conventions.md#placeholders).
 
 The launcher claims every task before starting it, using
-`<delivery-status>/scripts/claim.sh`. It finds that copy beside itself, so
+`<etabli-status>/scripts/claim.sh`. It finds that copy beside itself, so
 `--claim-script <path>` is only needed when a repository has relocated the
 scripts. It refuses a task whose claim it loses, removing the worktree it had
 created: losing a claim is routine, not an error. A claim that fails for any other reason stops that lane and says

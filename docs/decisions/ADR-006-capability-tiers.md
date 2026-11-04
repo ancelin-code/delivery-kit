@@ -52,7 +52,7 @@ developer decides what that means.**
 which supersedes [ADR-002](ADR-002-reasoning-effort.md). That decision treated
 effort as an axis independent of the tier, and it is, but a level means
 something only for a particular model: the levels one harness accepts another
-refuses, and what `high` costs depends on the model behind it. Delivery Kit no longer
+refuses, and what `high` costs depends on the model behind it. Établi no longer
 chooses the model, so it cannot choose a level that fits it, and only the
 developer knows which model runs the lane. Effort belongs to the harness's own
 settings, where it is set once for the model in use.

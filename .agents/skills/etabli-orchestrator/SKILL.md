@@ -1,17 +1,17 @@
 ---
-name: delivery-orchestrator
+name: etabli-orchestrator
 author: Ancelin Serre
 description: >-
-  The project's delivery assistant and the entry point of Delivery Kit. Answers where
+  The project's delivery assistant and the entry point of Établi. Answers where
   the project stands, what to do next, and who is working on what, from delivery/ and git;
   and routes any request to build or change the project through requirements, design,
   decomposition, lanes and review, holding the approval gates and the lane policy. Use for
   "what's next", "what's the status", progress, blockers, or any new work on a project
   that has a delivery/ directory or asks to start one. Delegates the work itself to the
-  other Delivery Kit skills; it does not write requirements, code, or pull requests.
+  other Établi skills; it does not write requirements, code, or pull requests.
 license: Apache-2.0
-repository: https://github.com/ancelin-code/delivery-kit.git
-product-version: delivery-kit@v0
+repository: https://github.com/ancelin-code/etabli.git
+product-version: etabli@v0
 version: "0.1.0"
 keywords:
   - delivery-workflow
@@ -30,11 +30,11 @@ metadata:
 
 # Delivery Orchestrator
 
-The entry point to Delivery Kit: it routes a project from intent to merged
+The entry point to Établi: it routes a project from intent to merged
 work, deciding **what happens next** and **where a human must approve**. It does
 not do the work itself.
 
-The kit is the family of skills named `delivery-orchestrator` and `delivery-*`. They are one workflow, not a menu:
+The kit is the family of skills named `etabli-orchestrator` and `etabli-*`. They are one workflow, not a menu:
 each phase consumes the file the previous one wrote, so a phase cannot start
 before the phase ahead of it has written its artifact. Reach the other skills
 through this one.
@@ -85,12 +85,12 @@ fresh context, so a long session never has to stay alive to carry state.
 
 | Phase | Produces | Delegate to | Gate |
 |---|---|---|---|
-| Requirements | `delivery/prd.md` | `delivery-spec` (stage A) | **Human approves** |
-| Design spine | decision records in `docs/adr/`, `docs/decisions/` or `delivery/decisions/`, and `delivery/contracts/<interface>.md` | `delivery-spec` (stage B) | **Human approves** |
-| Decomposition | `delivery/decomposition.md`, plus `delivery/tasks/<id>.md` per task | `delivery-decompose` | **Human approves** |
-| Lanes | a draft pull request per task | `delivery-status`, then `delivery-implement`, then `delivery-refine` | none, runs unattended |
+| Requirements | `delivery/prd.md` | `etabli-spec` (stage A) | **Human approves** |
+| Design spine | decision records in `docs/adr/`, `docs/decisions/` or `delivery/decisions/`, and `delivery/contracts/<interface>.md` | `etabli-spec` (stage B) | **Human approves** |
+| Decomposition | `delivery/decomposition.md`, plus `delivery/tasks/<id>.md` per task | `etabli-decompose` | **Human approves** |
+| Lanes | a draft pull request per task | `etabli-status`, then `etabli-implement`, then `etabli-refine` | none, runs unattended |
 | Review | findings on the pull request | the review skill each `REVIEW` row names, else the harness review | **Human approves the merge** |
-| Milestone review, when the plan has milestones | `delivery/milestones/<slug>.md` | `delivery-decompose` | **Human approves** |
+| Milestone review, when the plan has milestones | `delivery/milestones/<slug>.md` | `etabli-decompose` | **Human approves** |
 
 Approval gates sit on **artifacts**, not on steps. Once decomposition is
 approved, lanes run unattended up to a draft pull request. Pull request review is
@@ -102,7 +102,7 @@ as the [delivery conventions](references/conventions.md#milestones) define.
 `approve-milestone-review` or `decompose-milestone` at the boundary. Never cut
 or start the next milestone before its predecessor's review note is approved:
 that stop is the point of having milestones. When the review decides to
-revise, route the revision to `delivery-spec`; the gates it reopens hold the
+revise, route the revision to `etabli-spec`; the gates it reopens hold the
 next cut back by themselves.
 
 ## Choosing the ceremony
@@ -120,25 +120,27 @@ Choosing direct implement for genuinely parallel work produces conflicting code.
 Whether a full-route set runs in parallel is decomposition's finding, not a
 choice made here: tasks marked `parallel: false` run alone, and a set that
 serializes marks them all. The phases and gates are the same either way. When
-one person holds a serial set, skip the launcher and invoke `delivery-implement`
-then `delivery-refine` per task in dependency order; the claim only earns its keep when several people
+one person holds a serial set, skip the launcher and invoke `etabli-implement`
+then, in a separate session, `etabli-refine` per task in dependency order; the claim only earns its keep when several people
 pick from the same tasks.
 
 ### Direct implement
 
 Write one task file, `delivery/tasks/<id>.md`, from
-`<delivery-decompose>/assets/task.template.md`, then invoke `delivery-implement`
-on it in the ordinary checkout, and `delivery-refine` on the same task file
-after it, on a stronger model when the harness lets you choose one. Nothing else
-in this skill applies.
+`<etabli-decompose>/assets/task.template.md`, then invoke `etabli-implement`
+on it in the ordinary checkout. Then run `etabli-refine` on the same task file
+in a separate session, on a stronger model when the harness lets you choose one.
+Never in the session that implemented: a reviewer that wrote the change defends
+it. Do not ask whether to review; end by giving the exact command that starts
+the second session. Nothing else in this skill applies.
 
-Skip the claim, the worktree, the launcher, `delivery-status` and all three
+Skip the claim, the worktree, the launcher, `etabli-status` and all three
 approval gates. Those coordinate concurrent lanes and guard artifacts this path
 does not produce. Do not create an epic, and do not run
-`<delivery-decompose>/scripts/validate-tasks.sh`: it enforces the full schema
+`<etabli-decompose>/scripts/validate-tasks.sh`: it enforces the full schema
 and will reject a task trimmed for this path.
 
-Keep the task file. `delivery-implement` halts without explicit acceptance
+Keep the task file. `etabli-implement` halts without explicit acceptance
 criteria, and the file is what the diff is checked back against and what the
 pull request points at. Only `id` and `title` carry meaning here: the dependency
 and conflict fields order lanes, and `tier` routes a launcher that never runs.
@@ -157,7 +159,7 @@ Commit and open the pull request as usual afterwards. Review is unchanged.
 ## Lane policy
 
 - one task, one branch, one worktree, one pull request
-- claim before starting, by invoking the `delivery-status` skill. A task reported
+- claim before starting, by invoking the `etabli-status` skill. A task reported
   as held is taken: choose another rather than retrying
 - at most three lanes at once, regardless of how many tasks are ready
 - never start two tasks that list each other in `conflicts_with`, even when both
@@ -188,7 +190,9 @@ and `COMPLETE`, `MILESTONE` or `STUCK` when it exits. `MILESTONE` means the
 current milestone needs a person: tell the user, and take up its review. Run it in the background where the
 harness reports a background command's output as it arrives, and tell the user
 about the lines that need them: a pull request to review, a failed lane, a stuck
-set. Merging stays with the user; the loop never merges.
+set. Where it does not, add `--exit-on-human`: the command ends (exit 4) when a
+lane publishes or fails, as it already does for `MILESTONE`, `STUCK` and
+`COMPLETE`, so its end is the notification. Tell the user, then run it again. Merging stays with the user; the loop never merges.
 
 The full lifecycle, the limits and what to do when a lane does not finish are in
 [lanes](references/lanes.md). The review budget and the two lenses worth running
