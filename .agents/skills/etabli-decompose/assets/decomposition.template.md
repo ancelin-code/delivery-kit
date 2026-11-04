@@ -13,10 +13,10 @@ reader who saw none of the decomposition must be able to follow it back.
 
 ## Milestones
 
-Optional: delete this section to cut the whole scope at once. Keep it when the
-project is delivered in end-to-end slices, with a review after each. List every
-milestone in delivery order. Only the current one has epics; a later one names
-its exit and targets, and is cut after the review of the one before.
+List every milestone in delivery order. Only the current one has epics; a later
+one names its exit and targets, and is cut after the review of the one before.
+If the user decided against milestones, replace this section with
+`**Milestones:** none, by <name>, <date>: <their reason>` under the status.
 
 ### <milestone-slug>
 

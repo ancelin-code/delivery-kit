@@ -34,6 +34,10 @@ Options:
                         delivery/decomposition.md).
   -h, --help            Print this help.
 
+A summary with neither a Milestones section nor a '**Milestones:** none' line
+draws a WARN row: milestones are the default, and only the user may decide
+against them. It does not change the exit code.
+
 Exit codes:
   0  every task file is valid
   1  usage or environment error
@@ -490,6 +494,10 @@ checks="$(RUN_AS="$run_as" SUMMARY="$summary_name" SUMMARY_PATH="$decomposition"
 ' "$store/facts" "$store/milestones" "$store/requirements" "$store/declared")"
 
 printf '%s\n' "$checks"
+if [ -f "$decomposition" ] && [ "$has_milestones" -eq 0 ] &&
+  ! grep -Eiq '^\*\*Milestones:\*\*[[:space:]]*none' "$decomposition"; then
+  printf 'WARN\t%s\tno Milestones section and no "**Milestones:** none" line: milestones are the default, and only the user may decide against them\n' "$decomposition"
+fi
 failures=$((failures + $(printf '%s\n' "$checks" | grep -c '^FAIL' || true)))
 
 if [ "$failures" -gt 0 ]; then

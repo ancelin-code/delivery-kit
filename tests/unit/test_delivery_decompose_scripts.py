@@ -647,6 +647,53 @@ class TestMilestones:
         assert result.returncode == VALID, result.stdout
         assert "MILESTONES\t2\tcurrent=skeleton" in result.stdout
 
+    def test_a_recorded_decision_against_milestones_cuts_the_whole_scope(self, tmp_path: Path) -> None:
+        # Given a summary that records the user's decision against milestones
+        tasks = tmp_path / "tasks"
+        write_task(tasks, "server-001", epic="server")
+        write_task(tasks, "client-001", epic="client")
+        write_summary(tasks)
+        summary = tasks.parent / "decomposition.md"
+        summary.write_text(
+            summary.read_text(encoding="utf-8").replace(
+                "\n## ", "\n**Milestones:** none, by Ana, 2026-11-04: one small change.\n\n## ", 1
+            ),
+            encoding="utf-8",
+        )
+
+        # When the task set is validated
+        result = validate(tasks)
+
+        # Then every epic is accepted, no milestone is reported and nothing warns
+        assert result.returncode == VALID, result.stdout
+        assert "MILESTONES" not in result.stdout
+        assert "WARN" not in result.stdout
+
+    def test_warns_when_a_summary_neither_plans_milestones_nor_records_a_decision(self, tmp_path: Path) -> None:
+        # Given a summary with no Milestones section and no recorded decision
+        tasks = tmp_path / "tasks"
+        write_task(tasks, "server-001", epic="server")
+        write_summary(tasks)
+
+        # When the task set is validated
+        result = validate(tasks)
+
+        # Then it is still valid, but a warning says milestones are the default
+        assert result.returncode == VALID, result.stdout
+        assert "WARN\t" in result.stdout
+        assert "only the user may decide against them" in result.stdout
+
+    def test_planned_milestones_draw_no_warning(self, tmp_path: Path) -> None:
+        # Given a summary that plans its milestones
+        tasks = tmp_path / "tasks"
+        self.setup_two_milestones(tasks)
+
+        # When the task set is validated
+        result = validate(tasks)
+
+        # Then nothing warns
+        assert "WARN" not in result.stdout
+
     def test_rejects_a_target_no_task_of_the_milestone_covers(self, tmp_path: Path) -> None:
         # Given a milestone target no task covers
         tasks = tmp_path / "tasks"

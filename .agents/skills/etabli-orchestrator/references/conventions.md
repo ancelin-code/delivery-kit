@@ -16,13 +16,13 @@ one skill to sit at a fixed offset from another.
 
 ## Projects, epics and tasks
 
-Three nested units, and an optional fourth between the first two. Every
+Three nested units, and a fourth between the first two. Every
 artifact the kit produces belongs to one of them.
 
 | Unit | What it is | Where it is written |
 |---|---|---|
 | Project | One team, one set of requirements, in one repository or [several](#several-repositories) | `delivery/prd.md`, with its decision records and contracts |
-| Milestone | Optional. An ordered, end-to-end slice of the project: a group of epics with an observable exit criterion | the Milestones section of `delivery/decomposition.md`, then `delivery/milestones/<slug>.md` once reviewed |
+| Milestone | The [default](#milestones). An ordered, end-to-end slice of the project: a group of epics with an observable exit criterion | the Milestones section of `delivery/decomposition.md`, then `delivery/milestones/<slug>.md` once reviewed |
 | Epic | A coherent slice of the project, small enough for one person to hold in their head | a section of `delivery/decomposition.md` |
 | Task | One unit of work: one branch, one lane, one pull request | `delivery/tasks/<id>.md` |
 
@@ -34,14 +34,19 @@ and `etabli-decompose` cuts a bigger group into several.
 
 ## Milestones
 
-A project too large or too uncertain to cut in one go is delivered in
-milestones, each a working end-to-end slice, with a stop after each to look at
-what it taught. Only decomposition and execution are incremental: the
-requirements and the design spine are written in full up front, and a
-milestone review that finds them wrong revises them through their own gates.
+A project is delivered in milestones by default, each a working end-to-end
+slice that can be run and tested, even if some features are very simple or
+missing, with a stop after each to look at what it taught. Cut in one go, a
+project is not incremental: nothing makes anyone stop and adjust. Only
+decomposition and execution are incremental: the requirements and the design
+spine are written in full up front, and a milestone review that finds them
+wrong revises them through their own gates.
 
-A project without a Milestones section in `delivery/decomposition.md` has no
-milestones, and nothing in this section applies to it.
+Only the user may decide against milestones. An agent that finds them senseless
+for a project says why and asks; it never drops them itself. The decision
+replaces the Milestones section of `delivery/decomposition.md` with a
+`**Milestones:** none, by <name>, <date>: <reason>` line, and nothing in this
+section then applies.
 
 - **The plan.** The Milestones section lists every milestone in delivery order,
   each under `### <slug>` with an `**Exit:**` line, the outcome that shows the

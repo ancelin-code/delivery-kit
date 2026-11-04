@@ -2,6 +2,7 @@
 
 **Status:** accepted
 **Date:** 2026-10-22
+**Amended:** 2026-11-04, milestones became the default of a full route
 
 ## Context
 
@@ -23,9 +24,12 @@ what was left of each requirement.
 
 ## Decision
 
-A **milestone** is an optional, ordered group of epics with an observable exit
-criterion. Requirements and the design spine stay project-wide and are written
-in full up front; only decomposition and execution are incremental.
+A **milestone** is an ordered group of epics with an observable exit
+criterion. It is the default of a full route, which is cut one milestone at a
+time; only the user may decide against milestones, and the summary then records
+it as a `**Milestones:** none` line. Requirements and the design spine stay
+project-wide and are written in full up front; only decomposition and
+execution are incremental.
 
 - **The plan** is a Milestones section of `delivery/decomposition.md`. Each
   milestone has an `**Exit:**` line, a `**Requirements:**` line with the
@@ -52,7 +56,9 @@ in full up front; only decomposition and execution are incremental.
   boundary, `follow.sh` stops with `MILESTONE` instead of `COMPLETE`.
 
 A plan without a Milestones section, and tasks without `## Covers`, take
-exactly the code paths they took before.
+exactly the code paths they took before. The validator warns, without failing,
+when the summary has neither the section nor that line. It cannot tell who wrote
+the line, so the user's decision is held by the skill, not checked.
 
 ## Alternatives considered
 

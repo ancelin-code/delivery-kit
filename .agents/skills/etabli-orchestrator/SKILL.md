@@ -96,8 +96,9 @@ Approval gates sit on **artifacts**, not on steps. Once decomposition is
 approved, lanes run unattended up to a draft pull request. Pull request review is
 the final gate.
 
-A plan cut in milestones goes round the last three phases once per milestone,
-as the [delivery conventions](references/conventions.md#milestones) define.
+A full route is cut in milestones unless the user decided against them, and
+goes round the last three phases once per milestone, as the
+[delivery conventions](references/conventions.md#milestones) define.
 `where.sh` prints a `MILESTONE` row for each, and `NEXT review-milestone`,
 `approve-milestone-review` or `decompose-milestone` at the boundary. Never cut
 or start the next milestone before its predecessor's review note is approved:
