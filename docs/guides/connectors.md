@@ -21,17 +21,13 @@ A connector reads that on stdin:
 
 ```sh
 sh .agents/skills/etabli-status/scripts/snapshot.sh \
-  | etabli-jira --config ~/jira/shop.toml --dry-run
+  | my-connector --config ~/shop.toml --dry-run
 ```
 
 Each run compares the whole snapshot with the tool and applies the difference,
 so it can run by hand, after each merge, or from a scheduled job, with the
 same result. If the state cannot be derived, `snapshot.sh` prints nothing and
 exits non-zero, so no connector acts on a guess.
-
-| Connector | Tool | Repository |
-|---|---|---|
-| `etabli-jira` | Jira Data Center | `etabli-connector-jira` (not published yet) |
 
 ## The connector contract
 
