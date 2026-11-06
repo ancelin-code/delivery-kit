@@ -125,6 +125,8 @@
   align-items: stretch;
 }
 [dir] .md-typeset .route__group, [dir] .md-typeset .route__next { margin: 0; }
+/* The note sits at the top and the cards at the bottom, so the space goes between them. */
+[dir] .md-typeset ol.route__inner { margin-top: auto; }
 .md-typeset ol.route--loop > .route__cut { grid-area: cut; }
 .md-typeset ol.route--loop > .route__group { grid-area: group; }
 .md-typeset ol.route--loop > .route__review { grid-area: review; }
@@ -132,6 +134,8 @@
 /* The inner loop: tasks are built and merged in waves, not all at once. */
 .md-typeset .route__group {
   position: relative;
+  display: flex;
+  flex-direction: column;
   padding: 0.6rem 0.7rem 0.7rem;
   border: 1px dashed var(--fig-auto);
   border-radius: 0.6rem;
