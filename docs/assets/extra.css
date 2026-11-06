@@ -1,0 +1,308 @@
+/* Colours. Établi wears workwear blue, the bleu de travail of French workshop
+   jackets; Tiroir, its sibling, wears brown and amber. Zensical's header is
+   white, so the blue shows in the links and the current page, both primary and
+   accent. Copper, the colour of the bench and its brass, stays in the logo and
+   in the human gates of the diagrams. */
+[data-md-color-primary="custom"] {
+  --md-primary-fg-color: #23498a;
+  --md-primary-fg-color--light: #3c66ad;
+  --md-primary-fg-color--dark: #17325f;
+  --md-primary-bg-color: #ffffff;
+  --md-primary-bg-color--light: rgb(255 255 255 / 70%);
+}
+[data-md-color-accent="custom"] {
+  --md-accent-fg-color: #2f5fb3;
+  --md-accent-fg-color--transparent: rgb(47 95 179 / 10%);
+  --md-accent-bg-color: #ffffff;
+  --md-accent-bg-color--light: rgb(255 255 255 / 70%);
+}
+[data-md-color-scheme="slate"][data-md-color-primary="custom"] {
+  --md-primary-fg-color: #1f3f78;
+  --md-primary-fg-color--light: #3c66ad;
+  --md-primary-fg-color--dark: #142b52;
+  --md-typeset-a-color: #8db4f2;
+}
+[data-md-color-scheme="slate"][data-md-color-accent="custom"] {
+  --md-accent-fg-color: #8db4f2;
+  --md-accent-fg-color--transparent: rgb(141 180 242 / 12%);
+}
+[data-md-color-scheme="slate"] {
+  --md-default-bg-color: #161b24;
+}
+
+/* The logo is pixel art: keep its pixels square at any size. */
+.md-header__button.md-logo img,
+.md-nav__button.md-logo img {
+  image-rendering: pixelated;
+}
+
+/* Keep the first column of a table, the term, the code or the name, on one
+   line: only the explanation next to it wraps. */
+.md-typeset table:not([class]) td:first-child,
+.md-typeset table:not([class]) th:first-child {
+  white-space: nowrap;
+}
+
+/* Align the first line of every cell on a baseline, so that a cell starting
+   with code does not look lower than its neighbours. */
+.md-typeset table:not([class]) td {
+  vertical-align: baseline;
+}
+
+/* Daubenton, by Olivier Dolbeau (Velvetyne, SIL OFL): a serif revived from the
+   letters engraved on the Grande Galerie de l'Evolution in Paris, shared with
+   Tiroir. One weight, used for the site name and the headings. The licence is
+   next to the file. */
+@font-face {
+  font-family: Daubenton;
+  src: url("fonts/Daubenton.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+.md-header__topic:first-child .md-ellipsis,
+.md-typeset h1,
+.md-typeset h2 {
+  font-family: Daubenton, Georgia, serif;
+  font-weight: 400;
+  font-synthesis: none;
+}
+.md-header__topic:first-child .md-ellipsis {
+  font-size: 1.15em;
+  letter-spacing: 0.02em;
+}
+
+/* The route and the way work is cut, drawn in HTML so they follow the theme and
+   fit the page without scrolling. */
+.route-fig {
+  --fig-line: var(--md-default-fg-color--lightest);
+  --fig-card: var(--md-code-bg-color);
+  --fig-gate: #c8601f;
+  --fig-gate-bg: rgb(200 96 31 / 12%);
+  --fig-auto: var(--md-primary-fg-color);
+  --fig-auto-bg: rgb(35 73 138 / 10%);
+  margin: 1.2rem 0 1.6rem;
+}
+[data-md-color-scheme="slate"] .route-fig {
+  --fig-gate: #f2924f;
+  --fig-gate-bg: rgb(242 146 79 / 14%);
+  --fig-auto: #8db4f2;
+  --fig-auto-bg: rgb(141 180 242 / 12%);
+}
+.route-fig__label {
+  margin: 1rem 0 0.4rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--md-default-fg-color--light);
+}
+.route-fig__label:first-child { margin-top: 0; }
+.route-fig__label::before {
+  content: "";
+  display: inline-block;
+  width: 2.1rem;
+  height: 2.1rem;
+  margin-right: 0.6rem;
+  vertical-align: middle;
+  background: center / contain no-repeat;
+  image-rendering: pixelated;
+}
+.route-fig__label--once::before { background-image: url("icons/blueprint.svg"); }
+.route-fig__label--loop::before { background-image: url("icons/saw.svg"); }
+
+[dir] .md-typeset ol.route {
+  display: grid;
+  gap: 1rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.md-typeset ol.route--once { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.md-typeset ol.route--loop {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 2.6fr);
+  grid-template-areas: "cut group" "review group" "next next";
+  align-items: stretch;
+}
+[dir] .md-typeset .route__group, [dir] .md-typeset .route__next { margin: 0; }
+/* The cards grow to fill the frame, below a fixed space under the note. */
+[dir] .md-typeset ol.route__inner { flex: 1; margin-top: 0.5rem; }
+.md-typeset ol.route--loop > .route__cut { grid-area: cut; }
+.md-typeset ol.route--loop > .route__group { grid-area: group; }
+.md-typeset ol.route--loop > .route__review { grid-area: review; }
+.md-typeset ol.route--loop > .route__next { grid-area: next; }
+/* The inner loop: tasks are built and merged in waves, not all at once. */
+.md-typeset .route__group {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  padding: 0.6rem 0.7rem 0.7rem;
+  border: 1px dashed var(--fig-auto);
+  border-radius: 0.6rem;
+  font-size: 0.78rem;
+}
+.route__group::before {
+  content: "\203A";
+  position: absolute;
+  top: 25%;
+  left: -1.1rem;
+  width: 1.1rem;
+  transform: translateY(-50%);
+  text-align: center;
+  font-size: 1.3rem;
+  color: var(--md-default-fg-color--light);
+}
+.route__group::after {
+  content: "\203A";
+  position: absolute;
+  top: 75%;
+  left: -1.1rem;
+  width: 1.1rem;
+  transform: translateY(-50%) scaleX(-1);
+  text-align: center;
+  font-size: 1.3rem;
+  color: var(--md-default-fg-color--light);
+}
+.md-typeset .route__group-title { margin: 0; font-weight: 700; font-size: 0.8rem; color: var(--fig-auto); }
+.route__group-title::before { content: "\21BB\00a0"; }
+.md-typeset .route__group-note { margin: 0.15rem 0 0.2rem; font-size: 0.72rem; line-height: 1.35; color: var(--md-default-fg-color--light); }
+.md-typeset ol.route__inner { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 1.1rem; margin: 0; padding: 0; list-style: none; }
+.md-typeset .route__next {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.45rem 0.8rem;
+  border: 1px dashed var(--fig-gate);
+  border-radius: 0.5rem;
+  font-size: 0.78rem;
+  color: var(--fig-gate);
+  text-align: center;
+}
+.md-typeset ol.route > .route__step {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin: 0;
+  padding: 0.7rem 0.75rem 0.8rem;
+  border: 1px solid var(--fig-line);
+  border-radius: 0.5rem;
+  background: var(--fig-card);
+  font-size: 0.78rem;
+  line-height: 1.35;
+}
+.route__step + .route__step::before {
+  content: "\203A";
+  position: absolute;
+  top: 50%;
+  left: -1.1rem;
+  width: 1.1rem;
+  transform: translateY(-50%);
+  text-align: center;
+  font-size: 1.3rem;
+  color: var(--md-default-fg-color--light);
+}
+.route__n {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.4rem;
+  height: 1.4rem;
+  border-radius: 50%;
+  background: var(--md-primary-fg-color);
+  color: var(--md-primary-bg-color);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+.md-typeset .route__name {
+  font-family: Daubenton, Georgia, serif;
+  font-weight: 400;
+  font-size: 1.1rem;
+  line-height: 1.2;
+  color: var(--md-default-fg-color);
+  text-decoration: none;
+}
+/* The whole card is the link target. */
+.md-typeset .route__name::after { content: ""; position: absolute; inset: 0; border-radius: inherit; }
+.md-typeset ol.route > .route__step { transition: border-color 0.15s, box-shadow 0.15s; }
+.md-typeset ol.route > .route__step:hover,
+.md-typeset ol.route > .route__step:focus-within {
+  border-color: var(--md-accent-fg-color);
+  box-shadow: 0 0 0 1px var(--md-accent-fg-color);
+}
+.md-typeset .route__name:hover { color: var(--md-accent-fg-color); }
+.route__skill code { display: block; width: fit-content; margin: 0 0 0.15rem; padding: 0 0.3em; font-size: 0.64rem; white-space: nowrap; }
+.route__skill, .route__file {
+  font-size: 0.72rem;
+  line-height: 1.3;
+  color: var(--md-default-fg-color--light);
+}
+.route__skill { font-weight: 600; }
+.md-typeset .route__file { margin-bottom: 0.7rem; }
+.route__badge {
+  align-self: flex-start;
+  margin-top: auto;
+  padding: 0.18em 0.85em;
+  border-radius: 1em;
+  font-size: 0.68rem;
+  font-weight: 700;
+  white-space: nowrap;
+  color: var(--fig-gate);
+  background: var(--fig-gate-bg);
+}
+.route__badge--auto { color: var(--fig-auto); background: var(--fig-auto-bg); }
+/* How the work is cut: a project holds milestones, a milestone epics, an epic
+   tasks. Only the current milestone has tasks. */
+.nest { display: grid; gap: 0.6rem; padding: 0.8rem; border: 1px solid var(--fig-line);
+  border-radius: 0.6rem; font-size: 0.78rem; line-height: 1.35; }
+.nest__tag {
+  display: block;
+  margin-bottom: 0.3rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--md-default-fg-color--light);
+}
+.nest__milestones { display: grid; grid-template-columns: 2.2fr 1fr 1fr; gap: 0.6rem; }
+.nest__milestone {
+  padding: 0.6rem 0.7rem;
+  border: 1px solid var(--fig-auto);
+  border-radius: 0.5rem;
+  background: var(--fig-auto-bg);
+}
+.nest__milestone--later {
+  border-style: dashed;
+  border-color: var(--md-default-fg-color--lighter);
+  background: transparent;
+  color: var(--md-default-fg-color--light);
+}
+.nest__milestone strong { display: block; margin-bottom: 0.4rem; font-size: 0.85rem; }
+.nest__epic {
+  margin-top: 0.4rem;
+  padding: 0.4rem 0.5rem;
+  border: 1px solid var(--fig-line);
+  border-radius: 0.4rem;
+  background: var(--md-default-bg-color);
+}
+.nest__chips { display: flex; flex-wrap: wrap; gap: 0.25rem; margin-top: 0.2rem; }
+.nest__chip {
+  padding: 0 0.5em;
+  border-radius: 0.3em;
+  background: var(--fig-card);
+  font-family: var(--md-code-font-family, monospace);
+  font-size: 0.68rem;
+}
+.nest__note { margin: 0; font-size: 0.74rem; color: var(--md-default-fg-color--light); }
+
+@media (max-width: 44.9375em) {
+  .md-typeset ol.route--once, .md-typeset ol.route--loop, .md-typeset ol.route__inner { grid-template-columns: 1fr; }
+  .md-typeset ol.route--loop { grid-template-areas: "cut" "group" "review" "next"; }
+  .route__group::before, .route__step + .route__step::before {
+    top: -0.55rem;
+    left: 50%;
+    transform: translate(-50%, -50%) rotate(90deg);
+  }
+  .route__group::after { display: none; }
+  .nest__milestones { grid-template-columns: 1fr; }
+}

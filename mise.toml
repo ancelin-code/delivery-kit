@@ -31,6 +31,14 @@ run = "uv lock --upgrade"
 description = "Upgrade uv.lock."
 run = [{ task = "uv:lock" }]
 
+[tasks."docs:build"]
+description = "Build the documentation site into site/, failing on any warning."
+run = "uv run --isolated --locked --only-group=docs zensical build --clean --strict"
+
+[tasks."docs:serve"]
+description = "Serve the documentation site locally, rebuilt on each change."
+run = "uv run --isolated --locked --only-group=docs zensical serve"
+
 [tasks.format]
 description = "Check Python import order and formatting."
 run = [
