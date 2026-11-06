@@ -223,7 +223,7 @@ wheels = [
 
 [[package]]
 name = "cisco-ai-skill-scanner"
-version = "2.3.1"
+version = "2.3.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "anthropic" },
@@ -250,13 +250,13 @@ dependencies = [
     { name = "uvicorn", extra = ["standard"] },
     { name = "yara-x" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/65/66/4dfb3b610799159d27dcb5b4dcb0f1aff739c2f27d159dedded844735229/cisco_ai_skill_scanner-2.3.1.tar.gz", hash = "sha256:9d7f7ee5503a2694aab6f963203ded30976bfb36282217d12713cffbbacbc4f9", size = 1226105, upload-time = "2026-10-21T15:05:21.88Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/d8/77/c064e189682f5516579cba6dcc664c3c6243be8990f8fccabb7c188ab73c/cisco_ai_skill_scanner-2.3.2.tar.gz", hash = "sha256:d019afd9c491794e4dda6cc05e629f2a0b2ce015bc65fbe91e514d5547b5e883", size = 1226473, upload-time = "2026-10-26T19:41:42.299Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/21/c2/c48785204f56206ddc6c788782052a6cd6fce083f5941e7b095b5e40ee90/cisco_ai_skill_scanner-2.3.1-cp311.cp312.cp313.cp314-none-macosx_13_0_arm64.whl", hash = "sha256:28a1e168d6b6af5d7615d6b157dccca551a68d59cc96952d0b21658349fd28ac", size = 4902679, upload-time = "2026-10-21T15:05:12.647Z" },
-    { url = "https://files.pythonhosted.org/packages/ce/28/f49415469823bff3651fe5f4b93b43fa1d8ae21f5cf730ae2de804967d20/cisco_ai_skill_scanner-2.3.1-cp311.cp312.cp313.cp314-none-macosx_13_0_x86_64.whl", hash = "sha256:513648df459f0c05ba7bd7eb9dce51329aaf9d979a98acd5503521d43243fc2d", size = 5215835, upload-time = "2026-10-21T15:05:14.919Z" },
-    { url = "https://files.pythonhosted.org/packages/a7/66/f039e357d48bf5e65b2b6e001b158200b71586fd5ddf5582afee8bee3e92/cisco_ai_skill_scanner-2.3.1-cp311.cp312.cp313.cp314-none-manylinux_2_17_aarch64.whl", hash = "sha256:fb9f83a8472e654637f033d6014d7e77a2284387e2415763fcf12fb447180df0", size = 4760298, upload-time = "2026-10-21T15:05:16.881Z" },
-    { url = "https://files.pythonhosted.org/packages/cd/c8/44508fd6e2b45a5e980f01d98364bbfbc517487cd260f5e0a95b14136c2d/cisco_ai_skill_scanner-2.3.1-cp311.cp312.cp313.cp314-none-manylinux_2_17_x86_64.whl", hash = "sha256:e3ea642577578ddb41872b640253a44f7a11858d5d30fa426040b69528a6df23", size = 5157593, upload-time = "2026-10-21T15:05:18.525Z" },
-    { url = "https://files.pythonhosted.org/packages/6b/3f/7798707d0b84310cdd9841ca12d26b60c37385553791947dae7b362c35df/cisco_ai_skill_scanner-2.3.1-cp311.cp312.cp313.cp314-none-win_amd64.whl", hash = "sha256:d44221ea3bbdc9b82a4df8b6711aa93c5d3e9321365b8529177e33ebfb441d4b", size = 5263354, upload-time = "2026-10-21T15:05:20.288Z" },
+    { url = "https://files.pythonhosted.org/packages/64/15/01db90dae5d2456ad513029d827e7c09141be9b5c9e69f634c2d7d4544ec/cisco_ai_skill_scanner-2.3.2-cp311.cp312.cp313.cp314-none-macosx_13_0_arm64.whl", hash = "sha256:dcc22928431cf570285b3de874adec9f5e43b7dfa207a9b259b6f9e9489f34e4", size = 4903112, upload-time = "2026-10-26T19:41:32.042Z" },
+    { url = "https://files.pythonhosted.org/packages/b5/7d/c3c7a5cdc12645083bddae020f26629ae476c44cccefe699e9d8e8d37f31/cisco_ai_skill_scanner-2.3.2-cp311.cp312.cp313.cp314-none-macosx_13_0_x86_64.whl", hash = "sha256:2e85840899fe98e116d0e93da08f83c0c58843b4adf1a0ef388c6da92cf7a9a2", size = 5216257, upload-time = "2026-10-26T19:41:34.369Z" },
+    { url = "https://files.pythonhosted.org/packages/c9/c3/681409a398063a8822ef51e100d427c3a86caef2cc8f524aba6116050f37/cisco_ai_skill_scanner-2.3.2-cp311.cp312.cp313.cp314-none-manylinux_2_17_aarch64.whl", hash = "sha256:e97e9a9cb9bd0ca71116c1b5185dffc3ad7b20c9bec25468fdffa6720f959557", size = 4760714, upload-time = "2026-10-26T19:41:36.248Z" },
+    { url = "https://files.pythonhosted.org/packages/6c/ec/6dcd5e66e943ee884639838e485f9705b7e964df66a5a466f367f8d63c15/cisco_ai_skill_scanner-2.3.2-cp311.cp312.cp313.cp314-none-manylinux_2_17_x86_64.whl", hash = "sha256:0222d84c9c98419623d1e2a1b56a52af4b9ca07a6e9767cb6241dc7a16f0efa5", size = 5158012, upload-time = "2026-10-26T19:41:38.001Z" },
+    { url = "https://files.pythonhosted.org/packages/e9/4a/2414377b639227f835e198add7743782fb3b1d43fa5551cba905afafdfc8/cisco_ai_skill_scanner-2.3.2-cp311.cp312.cp313.cp314-none-win_amd64.whl", hash = "sha256:cd4d17147604b1623c5caec6e21d093741fb95ab9ee112741e12b60fe758a611", size = 5263767, upload-time = "2026-10-26T19:41:40.468Z" },
 ]
 
 [[package]]
@@ -333,6 +333,33 @@ wheels = [
 ]
 
 [[package]]
+name = "distro"
+version = "1.9.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/fc/f8/98eea607f65de6527f8a2e8885fc8015d3e6f5775df186e443e0964a11c3/distro-1.9.0.tar.gz", hash = "sha256:2fa77c6fd8940f116ee1d6b94a2f90b13b5ea8d019b98bc8bafdcabcdd9bdbed", size = 60722, upload-time = "2023-12-24T09:54:32.31Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/12/b3/231ffd4ab1fc9d679809f356cebee130ac7daa00d6d6f3206dd4fd137e9e/distro-1.9.0-py3-none-any.whl", hash = "sha256:7bffd925d65168f85027d8da9af6bddab658135b840670a223589bc0c8ef02b2", size = 20277, upload-time = "2023-12-24T09:54:30.421Z" },
+]
+
+[[package]]
+name = "docstring-parser"
+version = "0.18.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/e0/4d/f332313098c1de1b2d2ff91cf2674415cc7cddab2ca1b01ae29774bd5fdf/docstring_parser-0.18.0.tar.gz", hash = "sha256:292510982205c12b1248696f44959db3cdd1740237a968ea1e2e7a900eeb2015", size = 29341, upload-time = "2026-04-14T04:09:19.867Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/a7/5f/ed01f9a3cdffbd5a008556fc7b2a08ddb1cc6ace7effa7340604b1d16699/docstring_parser-0.18.0-py3-none-any.whl", hash = "sha256:b3fcbed555c47d8479be0796ef7e19c2670d428d72e96da63f3a40122860374b", size = 22484, upload-time = "2026-04-14T04:09:18.638Z" },
+]
+
+[[package]]
+name = "easygui"
+version = "0.98.3"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/cc/ad/e35f7a30272d322be09dc98592d2f55d27cc933a7fde8baccbbeb2bd9409/easygui-0.98.3.tar.gz", hash = "sha256:d653ff79ee1f42f63b5a090f2f98ce02335d86ad8963b3ce2661805cafe99a04", size = 85583, upload-time = "2022-04-01T13:15:50.752Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/8e/a7/b276ff776533b423710a285c8168b52551cb2ab0855443131fdc7fd8c16f/easygui-0.98.3-py2.py3-none-any.whl", hash = "sha256:33498710c68b5376b459cd3fc48d1d1f33822139eb3ed01defbc0528326da3ba", size = 92655, upload-time = "2022-04-01T13:15:49.568Z" },
+]
+
+[[package]]
 name = "etabli"
 version = "0.1.0"
 source = { virtual = "." }
@@ -362,33 +389,6 @@ test = [
     { name = "pytest", specifier = ">=9.0.1,<10" },
     { name = "pytest-html", specifier = ">=4.1.1,<5" },
     { name = "pyyaml", specifier = ">=6.0,<7" },
-]
-
-[[package]]
-name = "distro"
-version = "1.9.0"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/fc/f8/98eea607f65de6527f8a2e8885fc8015d3e6f5775df186e443e0964a11c3/distro-1.9.0.tar.gz", hash = "sha256:2fa77c6fd8940f116ee1d6b94a2f90b13b5ea8d019b98bc8bafdcabcdd9bdbed", size = 60722, upload-time = "2023-12-24T09:54:32.31Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/12/b3/231ffd4ab1fc9d679809f356cebee130ac7daa00d6d6f3206dd4fd137e9e/distro-1.9.0-py3-none-any.whl", hash = "sha256:7bffd925d65168f85027d8da9af6bddab658135b840670a223589bc0c8ef02b2", size = 20277, upload-time = "2023-12-24T09:54:30.421Z" },
-]
-
-[[package]]
-name = "docstring-parser"
-version = "0.18.0"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/e0/4d/f332313098c1de1b2d2ff91cf2674415cc7cddab2ca1b01ae29774bd5fdf/docstring_parser-0.18.0.tar.gz", hash = "sha256:292510982205c12b1248696f44959db3cdd1740237a968ea1e2e7a900eeb2015", size = 29341, upload-time = "2026-04-14T04:09:19.867Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/a7/5f/ed01f9a3cdffbd5a008556fc7b2a08ddb1cc6ace7effa7340604b1d16699/docstring_parser-0.18.0-py3-none-any.whl", hash = "sha256:b3fcbed555c47d8479be0796ef7e19c2670d428d72e96da63f3a40122860374b", size = 22484, upload-time = "2026-04-14T04:09:18.638Z" },
-]
-
-[[package]]
-name = "easygui"
-version = "0.98.3"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/cc/ad/e35f7a30272d322be09dc98592d2f55d27cc933a7fde8baccbbeb2bd9409/easygui-0.98.3.tar.gz", hash = "sha256:d653ff79ee1f42f63b5a090f2f98ce02335d86ad8963b3ce2661805cafe99a04", size = 85583, upload-time = "2022-04-01T13:15:50.752Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/8e/a7/b276ff776533b423710a285c8168b52551cb2ab0855443131fdc7fd8c16f/easygui-0.98.3-py2.py3-none-any.whl", hash = "sha256:33498710c68b5376b459cd3fc48d1d1f33822139eb3ed01defbc0528326da3ba", size = 92655, upload-time = "2022-04-01T13:15:49.568Z" },
 ]
 
 [[package]]
@@ -1093,7 +1093,7 @@ wheels = [
 
 [[package]]
 name = "pytest"
-version = "9.1.1"
+version = "9.2.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "colorama", marker = "sys_platform == 'win32'" },
@@ -1102,9 +1102,9 @@ dependencies = [
     { name = "pluggy" },
     { name = "pygments" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/e4/47/b9efed96c114afcfa3c9d3fe98a76a1d14c74a9e266d397cf6eb64be5e01/pytest-9.1.1.tar.gz", hash = "sha256:1088fbde8f2b49d95a549a195707afa7a76a3ce9bcadc26b6d71f0ffda5fe313", size = 1636369, upload-time = "2026-06-19T10:58:32.857Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/79/42/bb4641652e58dedeac2ec51abc1f8cae4fee4ec63899a0999016229a0f2a/pytest-9.2.0.tar.gz", hash = "sha256:97c4f3b1f3c7414aa36465e09b8220f1d03627993bd51b1282e193753c80557b", size = 1797555, upload-time = "2026-10-27T21:30:20.728Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/24/25/1de2678b631f5a49215c6c96fff41ba892b0a34df68d6d80292b1b48aa7f/pytest-9.1.1-py3-none-any.whl", hash = "sha256:37a86b45efb9a47a61a36449063e8e18d0cab3161329fc099eb21783169c4f0c", size = 386536, upload-time = "2026-06-19T10:58:31.347Z" },
+    { url = "https://files.pythonhosted.org/packages/51/39/1f5d8c8877a0fa327db959c19341d4be61660de1ab6b7391f9eb805bcd67/pytest-9.2.0-py3-none-any.whl", hash = "sha256:07acdcf88ec174f907dc01af70bf52d49b014bbab03faeeade31c96b18c2e588", size = 411776, upload-time = "2026-10-27T21:30:19.131Z" },
 ]
 
 [[package]]
