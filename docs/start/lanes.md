@@ -12,17 +12,19 @@
 ## Watch a running lane
 
 Lanes run detached, one process per task, with no terminal attached. Each
-writes everything it does to `.lanes/logs/<task-id>.log` under the main
-checkout (`--log-dir` moves it).
+writes everything it does to `.logs/<task-id>.log` in the worktree root, beside
+the worktrees and outside every repository, so a log survives the removal of
+its worktree (`--log-dir` moves it).
 
 A lane's log prints `REFINE` when its second session starts, `PUBLISHED` with
 the pull request URL when it ends well, and `REFINE-FAILED` if the review
 session failed and the change was published as the first session left it.
 
 ```sh
-tail -f .lanes/logs/a-001.log          # follow one lane
-tail -n 40 .lanes/logs/*.log           # where each lane got to
-pgrep -af 'claude -p|copilot -p'       # which lanes are still alive
+lanes=${DELIVERY_WORKTREE_ROOT:-../lanes/$(basename "$PWD")}
+tail -f "$lanes/.logs/a-001.log"       # follow one lane
+tail -n 40 "$lanes"/.logs/*.log        # where each lane got to
+pgrep -af 'tasks/.*\.md'               # which lanes are still alive
 ```
 
 The worktree is the other live view. The commands below name it once, from
@@ -70,7 +72,7 @@ Copilot lanes print the command to do it as their last line, so it is already
 in the log:
 
 ```sh
-grep -h 'copilot --resume' .lanes/logs/a-001.log
+grep -h 'copilot --resume' "$lanes/.logs/a-001.log"
 cd "$lane" && copilot --resume=<session-id>
 ```
 

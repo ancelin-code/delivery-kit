@@ -13,6 +13,14 @@ optional: task branches are deleted on merge, so merged pull requests are the
 only record of which tasks are done, and `status.sh` refuses to run without
 them.
 
+!!! warning "GitHub only, for now"
+
+    `gh` talks to GitHub, so the kit works with GitHub repositories only. The
+    claims are plain git and would work anywhere; the status, snapshot and
+    publishing helpers are what ask `gh`. Support for other forges is planned
+    for a later version. See
+    [ADR-012](https://github.com/ancelin-code/etabli/blob/main/docs/decisions/ADR-012-github-only.md).
+
 The helpers are POSIX `sh` and POSIX `awk`, so nothing else is installed: they
 run on the `sh` of Linux, macOS and Alpine as they come, and CI runs them on
 dash, BusyBox ash and macOS's own `sh`.

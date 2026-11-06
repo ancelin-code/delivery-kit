@@ -330,7 +330,7 @@ tier's harness when it is installed and with its model and advisor.
 
 A lens is a concern that deserves its own review pass, such as security or
 data. The project names its lenses in `delivery/review-lenses.conf`, one per
-line: the lens, the review skill that covers it (`-` for none), and optionally
+line: the lens, the review skill that covers it (`-` for the harness's own review), and optionally
 the path patterns that bring it in.
 
 ```text

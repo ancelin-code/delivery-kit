@@ -33,7 +33,9 @@ To say what a tier means for you, write a `tiers.conf` at
 The file uses git's own config format, so comments and quoting work as they do
 in `.gitconfig`. Harness and model are both optional. A mapping applies only to
 the harness it names, so a model id never reaches a harness that would refuse
-it.
+it. `advisor` names a stronger model a Claude Code lane may consult; no other
+harness has one. `$XDG_CONFIG_HOME` moves the file, and `$DELIVERY_TIERS`
+names another file to read instead of it.
 
 A team that agrees on a mapping can commit it as `delivery/tiers.conf`; the
 developer's own file wins, tier by tier. The full rules are in the
