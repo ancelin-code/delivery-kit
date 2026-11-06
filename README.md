@@ -615,25 +615,25 @@ starts it for you after the first launch.
 ### 4. Watch a running lane
 
 Lanes run detached, one process per task, with no terminal attached. Each writes
-everything it does to `.lanes/logs/<task-id>.log` under the main checkout
-(`--log-dir` moves it).
+everything it does to `.logs/<task-id>.log` in the worktree root, beside the
+worktrees and outside every repository (`--log-dir` moves it).
 
 A lane's log prints `REFINE` when its second session starts, `PUBLISHED` with
 the pull request URL when it ends well, and `REFINE-FAILED` if the review
 session failed and the change was published as the first session left it.
 
 ```sh
-tail -f .lanes/logs/a-001.log          # follow one lane
-tail -n 40 .lanes/logs/*.log           # where each lane got to
+home=$PWD
+lanes=${DELIVERY_WORKTREE_ROOT:-../lanes/$(basename "$home")}
+tail -f "$lanes/.logs/a-001.log"       # follow one lane
+tail -n 40 "$lanes"/.logs/*.log        # where each lane got to
 pgrep -af 'claude -p|copilot -p'       # which lanes are still alive
 ```
 
-The worktree is the other live view. The commands below name it once, from the
-planning repository, wherever the launcher put it:
+The worktree is the other live view, in the same directory:
 
 ```sh
-home=$PWD
-lane=${DELIVERY_WORKTREE_ROOT:-../lanes/$(basename "$home")}/a-001
+lane=$lanes/a-001
 git -C "$lane" status                  # what the lane has changed
 git -C "$lane" log --oneline           # what it has committed
 ```
@@ -671,7 +671,7 @@ Copilot lanes print the command to do it as their last line, so it is already in
 the log:
 
 ```sh
-grep -h 'copilot --resume' .lanes/logs/a-001.log
+grep -h 'copilot --resume' "$lanes/.logs/a-001.log"
 cd "$lane" && copilot --resume=<session-id>
 ```
 

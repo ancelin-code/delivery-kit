@@ -1171,6 +1171,26 @@ class TestLaneStartup:
         assert not (tmp_path / "lanes" / "a-001").exists()
         assert not (tmp_path / "gh.log").exists(), "a failed session must not be published"
 
+    def test_logs_go_beside_the_worktrees_by_default(self, tmp_path: Path) -> None:
+        """Outside every repository, so nothing needs ignoring and a log outlives its worktree."""
+        # Given a session that fails at startup, and no --log-dir
+        origin_path = make_shared_origin(tmp_path)
+        dev = clone_of(tmp_path, origin_path, "devA")
+        log = tmp_path / "agent.log"
+        bin_dir = fake_harness(tmp_path, log, fails=True)
+        root = tmp_path / "lanes"
+
+        # When a lane is launched
+        launch_live(dev, ["--claim-script", str(CLAIM), "--worktree-root", str(root), "a-001"], bin_dir, log)
+
+        # Then its log is in .logs under the worktree root, and the checkout holds none
+        lane_log = root / ".logs" / "a-001.log"
+        deadline = time.monotonic() + 20
+        while "RELEASED" not in (lane_log.read_text(encoding="utf-8") if lane_log.exists() else ""):
+            assert time.monotonic() < deadline, "the lane log never appeared beside the worktrees"
+            time.sleep(0.2)
+        assert not (dev / ".lanes").exists()
+
     def test_a_task_that_runs_alone_waits_for_another_developers_lane(self, tmp_path: Path) -> None:
         """The batch is not the whole picture: in-flight work lives on the remote."""
         # Given devA holding a-001, and a-002 that runs alone
