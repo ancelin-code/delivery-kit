@@ -47,7 +47,9 @@ Options:
   --worktree-root <dir> Directory that receives one <task-id> worktree per lane.
                         Defaults to $DELIVERY_WORKTREE_ROOT when set, else to
                         ../lanes/<name of this repository>.
-  --log-dir <dir>       Where session logs are written (default: .lanes/logs).
+  --log-dir <dir>       Where session logs are written. Defaults to .logs inside
+                        the worktree root, beside the worktrees and outside
+                        every repository.
   --no-refine           Publish what etabli-implement leaves, with no review
                         and simplification session after it.
   --no-web              Take web fetch and web search away from the lanes.
@@ -83,7 +85,7 @@ tasks_dir="delivery/tasks"
 # A developer's own choice, so read from the environment: set once, it reaches
 # every launch, including the ones follow.sh and the orchestrator start.
 worktree_root="${DELIVERY_WORKTREE_ROOT:-}"
-log_dir=".lanes/logs"
+log_dir=""
 # The kit installs as a whole, so etabli-status sits beside this skill. Kept as
 # an option because a consuming repository may relocate the scripts; never
 # optional in effect, since a lane that cannot claim must not start.
@@ -340,6 +342,9 @@ home="$(git rev-parse --show-toplevel)"
 # would share a bare ../lanes, and a second project's a-001 would find the
 # first one's worktree in its place.
 [ -n "$worktree_root" ] || worktree_root="../lanes/$(basename "$home")"
+# Logs live beside the worktrees, not in a checkout, so nothing needs ignoring and
+# a log outlives the worktree that is removed when a lane is stopped.
+[ -n "$log_dir" ] || log_dir="$worktree_root/.logs"
 repo_dir_of() {
   repo="$(field "$1" repo)"
   if [ -z "$repo" ]; then printf '%s' "$home"; else printf '%s' "$(dirname "$home")/$repo"; fi

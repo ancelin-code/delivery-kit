@@ -229,7 +229,7 @@ class TestLimits:
     def test_lanes_running_here_use_up_slots(self, tmp_path: Path) -> None:
         # Given one lane already running from this checkout
         repo = repo_with(tmp_path, {"a-001": "", "a-002": ""})
-        logs = repo / ".lanes" / "logs"
+        logs = repo.parent / "lanes" / repo.name / ".logs"
         logs.mkdir(parents=True)
         (logs / "a-001.log").write_text("working\n", encoding="utf-8")
         status = scripted_status(tmp_path, [{"a-001": "in-progress", "a-002": "ready"}])
@@ -243,7 +243,7 @@ class TestLimits:
     def test_no_launch_when_every_slot_is_taken(self, tmp_path: Path) -> None:
         # Given one lane already running from this checkout
         repo = repo_with(tmp_path, {"a-001": "", "a-002": ""})
-        logs = repo / ".lanes" / "logs"
+        logs = repo.parent / "lanes" / repo.name / ".logs"
         logs.mkdir(parents=True)
         (logs / "a-001.log").write_text("working\n", encoding="utf-8")
         status = scripted_status(tmp_path, [{"a-001": "in-progress", "a-002": "ready"}])
@@ -259,7 +259,7 @@ class TestLaneOutcomes:
     def test_a_published_lane_is_announced_once(self, tmp_path: Path) -> None:
         # Given a lane log that records a published pull request
         repo = repo_with(tmp_path, {"a-001": ""})
-        logs = repo / ".lanes" / "logs"
+        logs = repo.parent / "lanes" / repo.name / ".logs"
         logs.mkdir(parents=True)
         (logs / "a-001.log").write_text("done\nPUBLISHED\ta-001\thttps://example.test/pr/4\n", encoding="utf-8")
         status = scripted_status(tmp_path, [{"a-001": "in-progress"}])
@@ -273,7 +273,7 @@ class TestLaneOutcomes:
     def test_a_lane_that_ended_without_a_pull_request_is_reported(self, tmp_path: Path) -> None:
         # Given a lane log that ended with the lane kept
         repo = repo_with(tmp_path, {"a-001": ""})
-        logs = repo / ".lanes" / "logs"
+        logs = repo.parent / "lanes" / repo.name / ".logs"
         logs.mkdir(parents=True)
         (logs / "a-001.log").write_text("KEPT\ta-001\tthe worktree has changes\n", encoding="utf-8")
         status = scripted_status(tmp_path, [{"a-001": "in-progress"}])
@@ -304,7 +304,7 @@ class TestExitOnHuman:
     def test_a_published_lane_ends_the_command(self, tmp_path: Path) -> None:
         # Given a lane that published its pull request, and a ready task
         repo = repo_with(tmp_path, {"a-001": "", "a-002": ""})
-        logs = repo / ".lanes" / "logs"
+        logs = repo.parent / "lanes" / repo.name / ".logs"
         logs.mkdir(parents=True)
         (logs / "a-001.log").write_text("PUBLISHED\ta-001\thttps://example.test/pr/4\n", encoding="utf-8")
         status = scripted_status(tmp_path, [{"a-001": "in-progress", "a-002": "ready"}])
@@ -320,7 +320,7 @@ class TestExitOnHuman:
     def test_a_failed_lane_ends_the_command(self, tmp_path: Path) -> None:
         # Given a lane that ended without a pull request
         repo = repo_with(tmp_path, {"a-001": ""})
-        logs = repo / ".lanes" / "logs"
+        logs = repo.parent / "lanes" / repo.name / ".logs"
         logs.mkdir(parents=True)
         (logs / "a-001.log").write_text("KEPT\ta-001\tthe worktree has changes\n", encoding="utf-8")
         status = scripted_status(tmp_path, [{"a-001": "in-progress"}])
@@ -335,7 +335,7 @@ class TestExitOnHuman:
     def test_a_restart_does_not_stop_on_what_was_announced(self, tmp_path: Path) -> None:
         # Given a published lane whose pull request is still a draft
         repo = repo_with(tmp_path, {"a-001": ""})
-        logs = repo / ".lanes" / "logs"
+        logs = repo.parent / "lanes" / repo.name / ".logs"
         logs.mkdir(parents=True)
         (logs / "a-001.log").write_text("PUBLISHED\ta-001\thttps://example.test/pr/4\n", encoding="utf-8")
         status = scripted_status(tmp_path, [{"a-001": "in-progress"}])
@@ -351,7 +351,7 @@ class TestExitOnHuman:
     def test_without_the_option_a_published_lane_does_not_stop_the_loop(self, tmp_path: Path) -> None:
         # Given a published lane
         repo = repo_with(tmp_path, {"a-001": ""})
-        logs = repo / ".lanes" / "logs"
+        logs = repo.parent / "lanes" / repo.name / ".logs"
         logs.mkdir(parents=True)
         (logs / "a-001.log").write_text("PUBLISHED\ta-001\thttps://example.test/pr/4\n", encoding="utf-8")
         status = scripted_status(tmp_path, [{"a-001": "in-progress"}])

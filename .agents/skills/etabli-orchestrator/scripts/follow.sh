@@ -32,7 +32,9 @@ Options:
                          again after telling the user; outcomes already
                          announced this way do not stop the next run.
   --max-polls <n>        Stop after n polls (default: no limit).
-  --log-dir <dir>        Lane logs (default: .lanes/logs).
+  --log-dir <dir>        Lane logs (default: .logs inside the worktree root, where
+                         the launcher puts them, including a --worktree-root
+                         passed after --).
   --status-script <path> status.sh from etabli-status (default: beside this skill).
   --launcher <path>      launch-lanes.sh (default: beside this script).
   -h, --help             Print this help.
@@ -68,7 +70,7 @@ max_lanes=3
 launch=1
 exit_on_human=0
 max_polls=0
-log_dir=".lanes/logs"
+log_dir=""
 status_script="$here/../../etabli-status/scripts/status.sh"
 launcher="$here/launch-lanes.sh"
 
@@ -89,6 +91,17 @@ while [ $# -gt 0 ]; do
   esac
 done
 # What is left in "$@" goes to the launcher.
+
+# The launcher writes its logs beside the worktrees, so the loop looks where the
+# launcher was told to put them.
+root="${DELIVERY_WORKTREE_ROOT:-}"
+prev=""
+for arg in "$@"; do
+  [ "$prev" != --worktree-root ] || root="$arg"
+  prev="$arg"
+done
+[ -n "$root" ] || root="../lanes/$(basename "$(git rev-parse --show-toplevel 2>/dev/null || pwd)")"
+[ -n "$log_dir" ] || log_dir="$root/.logs"
 
 case "$interval" in "" | *[!0-9]*) die "--interval must be a number of seconds" ;; esac
 case "$max_lanes" in "" | 0* | *[!0-9]*) die "--max-lanes must be a positive number" ;; esac

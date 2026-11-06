@@ -184,7 +184,7 @@ else
     if [ -s "$report" ]; then
       cat "$report"
     else
-      printf 'The lane wrote no report. Its session log is `.lanes/logs/%s.log` on the machine that launched it.\n' "$task_id"
+      printf 'The lane wrote no report. Its session log is `%s.log` in the `.logs` directory beside the lane worktrees, on the machine that launched it.\n' "$task_id"
     fi
   } >"$body"
 fi

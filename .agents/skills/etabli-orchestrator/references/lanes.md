@@ -129,9 +129,9 @@ the tree:
 git worktree remove ../lanes/<repository>/<id>
 ```
 
-Session logs are written to `.lanes/logs/<id>.log` under the repository root
-the launcher ran from, or under `--log-dir` when given. They are the record of
+Session logs are written to `.logs/<id>.log` inside the worktree root, beside
+the lane worktrees (`../lanes/<repository>/.logs/` by default), or under
+`--log-dir` when given. They live outside every repository, so nothing needs
+ignoring, and removing a lane's worktree keeps its log. They are the record of
 what an unattended lane actually did, so keep them until the pull request is
-reviewed. `install-routing.sh` adds `.lanes/` to the project's `.gitignore`, so
-the logs never show up as untracked files; a `--log-dir` outside `.lanes/` is
-the caller's to ignore.
+reviewed.

@@ -223,8 +223,7 @@ request commands the harness already performs well.
   in one call
 - [Routing installer](scripts/install-routing.sh) - adds
   [the routing block](assets/agents-routing.md) to the project's `AGENTS.md`
-  a [starter review lenses file](assets/review-lenses.conf), and `.lanes/` in
-  `.gitignore`, idempotently
+  a [starter review lenses file](assets/review-lenses.conf), idempotently
 - [Lane launcher](scripts/launch-lanes.sh) - claims a task, creates its worktree,
   and starts an unattended session, capped and conflict-aware
 - [Lane publisher](scripts/publish-lane.sh) - commits a finished lane, pushes it,

@@ -8,9 +8,6 @@ set -eu
 #
 # Also seed delivery/review-lenses.conf, so the file that maps review concerns to
 # review skills is found where it is read rather than in the conventions.
-#
-# And keep the lane session logs out of git: the launcher writes them to
-# .lanes/ in the checkout, where they would otherwise show up as untracked.
 
 die() {
   printf 'ERROR\t%s\n' "$*" >&2
@@ -22,9 +19,8 @@ usage() {
 usage: sh install-routing.sh
 
 Run from the repository root. Appends the routing block to AGENTS.md, creating
-the file when there is none, writes a starter delivery/review-lenses.conf when
-the project has none, and adds .lanes/ to .gitignore unless git already ignores
-it. Running it again changes nothing.
+the file when there is none, and writes a starter delivery/review-lenses.conf
+when the project has none. Running it again changes nothing.
 
 Prints ADDED or PRESENT, then the path, once per file.
 USAGE
@@ -70,14 +66,4 @@ else
   mkdir -p delivery
   cp "$lenses" "$target"
   printf 'ADDED\t%s\n' "$target"
-fi
-
-# Ask git rather than read .gitignore, so a pattern that already covers the logs,
-# in this file, a parent directory or the user's global ignore, is respected.
-if git check-ignore -q -- .lanes/logs/probe.log; then
-  printf 'PRESENT\t.gitignore\n'
-else
-  separate .gitignore
-  printf '# Lane session logs\n.lanes/\n' >>.gitignore
-  printf 'ADDED\t.gitignore\n'
 fi

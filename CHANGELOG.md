@@ -6,11 +6,12 @@ tagging it.
 
 ## [Unreleased]
 
-- `install-routing.sh` adds `.lanes/` to the project's `.gitignore`, so the lane
-  session logs no longer show up as untracked files. It asks git, so a pattern
-  that already hides them, in the project, a parent directory or the global
-  ignore, is left alone. A project that installed the kit earlier gets the entry
-  by running the script again: it changes nothing else.
+- Lane session logs are written to `.logs/` in the worktree root, beside the
+  lane worktrees (`../lanes/<repository>/.logs/` by default), instead of
+  `.lanes/logs/` in the checkout. They live outside every repository, so
+  nothing needs ignoring and a log survives the removal of its worktree.
+  `--log-dir` still overrides it. A project that ran lanes before can delete its
+  `.lanes/` directory.
 - Milestones are the default of a full route: `etabli-decompose` plans them
   before the epics and cuts only the first. Only the user can decide against
   them, recorded as a `**Milestones:** none` line in the summary. The
