@@ -6,6 +6,10 @@ tagging it.
 
 ## [Unreleased]
 
+- The GitHub-only requirement is now stated and recorded
+  ([ADR-012](https://github.com/ancelin-code/etabli/blob/main/docs/decisions/ADR-012-github-only.md)):
+  the status, snapshot and publishing helpers ask `gh` which pull requests exist.
+  A forge-agnostic version is planned.
 - Lane session logs are written to `.logs/` in the worktree root, beside the
   lane worktrees (`../lanes/<repository>/.logs/` by default), instead of
   `.lanes/logs/` in the checkout. They live outside every repository, so

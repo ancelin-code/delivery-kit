@@ -433,7 +433,8 @@ Each developer machine needs `git`, a POSIX `sh`, and `gh` 2.0 or later,
 authenticated with `gh auth login` against the repository's forge. `gh` is not
 optional: task branches are deleted on merge, so merged pull requests are the
 only record of which tasks are done, and `status.sh` refuses to run without
-them.
+them. The forge must therefore be GitHub for now; supporting others is planned
+([ADR-012](docs/decisions/ADR-012-github-only.md)).
 
 The helpers are POSIX `sh` and POSIX `awk`, so nothing else is installed: they
 run on the `sh` of Linux, macOS and Alpine as they come, and CI runs them on
