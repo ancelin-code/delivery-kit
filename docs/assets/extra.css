@@ -125,8 +125,8 @@
   align-items: stretch;
 }
 [dir] .md-typeset .route__group, [dir] .md-typeset .route__next { margin: 0; }
-/* The note sits at the top and the cards at the bottom, so the space goes between them. */
-[dir] .md-typeset ol.route__inner { margin-top: auto; }
+/* The cards grow to fill the frame, below a fixed space under the note. */
+[dir] .md-typeset ol.route__inner { flex: 1; margin-top: 0.5rem; }
 .md-typeset ol.route--loop > .route__cut { grid-area: cut; }
 .md-typeset ol.route--loop > .route__group { grid-area: group; }
 .md-typeset ol.route--loop > .route__review { grid-area: review; }
@@ -163,9 +163,9 @@
   font-size: 1.3rem;
   color: var(--md-default-fg-color--light);
 }
-.route__group-title { margin: 0; font-weight: 700; font-size: 0.8rem; color: var(--fig-auto); }
+.md-typeset .route__group-title { margin: 0; font-weight: 700; font-size: 0.8rem; color: var(--fig-auto); }
 .route__group-title::before { content: "\21BB\00a0"; }
-.route__group-note { margin: 0.15rem 0 0.6rem; font-size: 0.72rem; line-height: 1.35; color: var(--md-default-fg-color--light); }
+.md-typeset .route__group-note { margin: 0.15rem 0 0.2rem; font-size: 0.72rem; line-height: 1.35; color: var(--md-default-fg-color--light); }
 .md-typeset ol.route__inner { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 1.1rem; margin: 0; padding: 0; list-style: none; }
 .md-typeset .route__next {
   display: flex;
